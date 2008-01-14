@@ -1,0 +1,10 @@
+<types>
+  <type name="integer" dotnet="Int32" sql="INTEGER" dotnet-kind="value" default="0" />
+  <type name="real" dotnet="Double" sql="REAL" dotnet-kind="value" default="0.0"/>
+  <type name="boolean" dotnet="Boolean" sql="BIT" dotnet-kind="value" default="false"/>
+  <type name="date" dotnet="DateTime" sql="DATETIME" dotnet-kind="value" />
+  <type name="time" dotnet="TimeSpan" sql="DECIMAL" dotnet-kind="value" />
+  <type name="money" dotnet="Decimal" sql="MONEY" dotnet-kind="value" />
+
+  <type name="string" dotnet="String" sql="NVARCHAR" dotnet-kind="reference" />
+</types>

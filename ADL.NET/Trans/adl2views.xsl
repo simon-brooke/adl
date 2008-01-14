@@ -9,8 +9,8 @@
     Transform ADL into velocity view templates
     
     $Author: af $
-    $Revision: 1.1 $
-    $Date: 2008-01-09 15:01:45 $
+    $Revision: 1.2 $
+    $Date: 2008-01-14 16:53:31 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -31,7 +31,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.1 $', 11)"/>
+                select="substring( '$Revision: 1.2 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -81,7 +81,7 @@
             <xsl:otherwise>
               <!-- there isn't a natural primary key; create a hidden widget 
                   for the abstract primary key -->
-              ${FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>Id")}
+              ${FormHelper.HiddenField( "instance.Id")}
             </xsl:otherwise>
           </xsl:choose>
           <table>
@@ -146,7 +146,6 @@
         ${FormHelper.InstallScripts()}
         ${Validation.InstallScripts()}
         ${Scriptaculous.InstallScripts()}
-        ${DateTime.InstallScripts()}
         ${ShuffleWidgetHelper.InstallScripts()}
         <script type="text/javascript" language='JavaScript1.2' src="../script/panes.js"></script>
 
@@ -239,7 +238,7 @@
               <xsl:otherwise>
                 <!-- there isn't a natural primary key; create a hidden widget 
                   for the abstract primary key -->
-                ${FormHelper.HiddenField( "instance.<xsl:value-of select="ancestor::entity/@name"/>Id")}
+                ${FormHelper.HiddenField( "instance.Id")}
               </xsl:otherwise>
             </xsl:choose>
             <xsl:if test="fieldgroup">
@@ -336,7 +335,7 @@
           <xsl:value-of select="//entity[@name=$farent]/@natural-key"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="concat( $farent, 'Id')"/>
+          <xsl:value-of select="concat( '', 'Id')"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
@@ -349,7 +348,7 @@
           <xsl:value-of select="ancestor::entity[@natural-key]"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="concat( $nearent, 'Id')"/>
+          <xsl:value-of select="concat( '', 'Id')"/>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
@@ -464,7 +463,7 @@
           <td>
             <a>
               <xsl:attribute name="href">
-                <xsl:value-of select="concat( $action, '.rails?', ../@name, 'Id=$instance.', ../@name, 'Id')"/>
+                <xsl:value-of select="concat( $action, '.rails?', ../@name, 'Id=$instance.Id')"/>
               </xsl:attribute>
               Edit!
             </a>
@@ -524,7 +523,7 @@
       </xsl:when>
       <xsl:otherwise>
         <!-- it's presumably intended to be a computed field -->
-        Computed field? TODO: Not yet implememented
+        Computed field '<xsl:value-of select="$propname"/>'? TODO: Not yet implememented
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -675,7 +674,7 @@
         <xsl:when test="../permission">
           <xsl:value-of select="../permission[position()=1]/@permission"/>
         </xsl:when>
-        <xsl:otherwise>none</xsl:otherwise>
+        <xsl:otherwise>edit</xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
     <tr>
@@ -712,14 +711,14 @@
           <xsl:when test="@type='entity'">
             <!-- a menu of the appropriate entity -->
             #if ( $instance)
-              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]' firstoptionvalue='-1' text='UserIdentifier' value='<xsl:value-of select="concat( @entity, 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]' firstoptionvalue='-1' text='UserIdentifier' value='<xsl:value-of select="concat( '', 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
             #else
-              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]' firstoptionvalue='-1' text='UserIdentifier' value='<xsl:value-of select="concat( @entity, 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]' firstoptionvalue='-1' text='UserIdentifier' value='<xsl:value-of select="concat( '', 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
             #end
           </xsl:when>
           <xsl:when test="@type='list'">
             <!-- a multi-select menu of the appropriate entity -->
-            ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{multiple='multiple' size='8' text='UserIdentifier' value='<xsl:value-of select="concat( @entity, 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+            ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{multiple='multiple' size='8' text='UserIdentifier' value='<xsl:value-of select="concat( '', 'Id')"/>' title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
           </xsl:when>
           <xsl:when test="@type='defined'">
             <!-- likely to be hardest of all... -->
@@ -930,7 +929,6 @@
         ${FormHelper.InstallScripts()}
         ${Validation.InstallScripts()}
         ${Scriptaculous.InstallScripts()}
-        ${DateTime.InstallScripts()}
       </head>
       <body>
 
@@ -1016,7 +1014,7 @@
                   <td>
                     <a>
                       <xsl:attribute name="href">
-                        <xsl:value-of select="concat( $action, '.rails?', ../@name, 'Id=$instance.', ../@name, 'Id')"/>
+                        <xsl:value-of select="concat( $action, '.rails?Id=$instance.Id')"/>
                       </xsl:attribute>
                       Edit!
                     </a>
@@ -1055,7 +1053,7 @@
               <td>
                 <a>
                   <xsl:attribute name="href">
-                    <xsl:value-of select="concat( $action, '.rails?', ../@name, 'Id=$instance.', ../@name, 'Id')"/>
+                    <xsl:value-of select="concat( $action, '.rails?Id=$instance.Id')"/>
                   </xsl:attribute>
                   Edit!
                 </a>
