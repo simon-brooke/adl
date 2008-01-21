@@ -8,16 +8,21 @@
     Transform ADL into entity classes
     
     $Author: af $
-    $Revision: 1.2 $
-    $Date: 2008-01-14 16:53:31 $
+    $Revision: 1.1 $
+    $Date: 2008-01-21 16:38:31 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:exsl="http://exslt.org/common" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+<xsl:stylesheet version="1.0" 
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+  xmlns:exsl="http://exslt.org/common"
+  xmlns:a="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 
+  <xsl:import href="types.xslt"/>
+  
   <xsl:output encoding="UTF-8" method="text"/>
-
 
   <!-- The locale for which these entities are generated 
       TODO: Entities should NOT be locale specific. Instead, the
@@ -25,33 +30,29 @@
       client's locale. However, there may still need to be a concept of a
       'default locale', for when we don't have messages which suit the
       client's locale -->
-  <xsl:param name="locale" select="en-UK"/>
+  <xsl:param name="lang" select="en-UK"/>
 
   <!-- The C# namespace within which I shall generate controllers -->
   <xsl:param name="controllerns" select="Unset"/>
   <!-- The C# namespace within which I shall generate entities -->
   <xsl:param name="entityns" select="Unset"/>
 
-  <xsl:template match="application">
-    <xsl:apply-templates select="entity"/>
+  <xsl:template match="a:application">
+    <xsl:apply-templates select="a:entity"/>
   </xsl:template>
 
-  <xsl:template match="application">
-    <xsl:apply-templates select="entity"/>
-  </xsl:template>
-
-  <xsl:template match="entity">
+  <xsl:template match="a:entity">
     <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.2 $', 11)"/>
+                  select="substring( '$Revision: 1.1 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
-    <xsl:variable name="keynames" select="property[@distinct='system']" />
+    <xsl:variable name="keynames" select="a:key/a:property" />
 
 /* ---- [ cut here: next file '<xsl:value-of select="@name"/>.auto.cs'] ---------------- */
 
@@ -74,8 +75,8 @@
     using System.Collections.Generic;
     using System.Text;
     using System.Text.RegularExpressions;
-    using ADL.Entities;
-    using ADL.Exceptions;
+    using Cygnet.Entities;
+    using Cygnet.Entities.Exceptions;
     using Iesi.Collections.Generic;
 
     /// &lt;summary&gt;
@@ -95,52 +96,6 @@
     <xsl:call-template name="initialise-lists"/>
     }
 
-    /*
-    /// &lt;summary&gt;
-    /// Auto-generated one-arg constructor; initialises Id slot and also all
-    /// one-to-many slots
-    /// &lt;/summary&gt;
-    public <xsl:value-of select="@name"/>( int key)
-    {
-    <xsl:call-template name="initialise-lists"/>
-
-    <!--xsl:choose>
-      <xsl:when test="@natural-key">
-        /* natural primary key exists - not initialising abstract key */
-      </xsl:when>
-      <xsl:otherwise>
-        _Id = key;
-      </xsl:otherwise>
-    </xsl:choose-->
-    }
-    */
-
-    <!--xsl:choose>
-      <xsl:when test="@natural-key">
-        /* natural primary key exists - not generating abstract key */
-      </xsl:when>
-      <xsl:otherwise>
-        /// &lt;summary&gt;
-        /// Auto-generated iv/property for Id slot
-        /// &lt;/summary&gt;
-        private int _Id = -1;
-
-        public virtual int Id
-        {
-        get { return _Id; }
-        set { _Id = value; }
-        }
-
-        /// &lt;summary&gt;
-        /// Auto-generated overridden property for the Key slot, maps onto
-        /// _Id
-        /// &lt;/summary&gt;
-        public override int Key
-        {
-        get { return _Id; }
-        }
-      </xsl:otherwise>
-    </xsl:choose-->
     /// &lt;summary&gt;
     /// Auto-generated overridden property for the Key slot, maps onto
     /// &lt;/summary&gt;
@@ -154,10 +109,12 @@
             return <xsl:value-of select="$keynames[1]/@name"/>.ToString(); // Single key.
           </xsl:when>
           <xsl:otherwise>
-            StringBuilder result = new StringBuilder(<xsl:value-of select="$keynames[1]/@name"/>);
-            <xsl:for-each select="$keynames[position() != 1]">
-              result.Append('|');
-              result.Append(<xsl:value-of select="@name"/>);
+            StringBuilder result = new StringBuilder();
+            <xsl:for-each select="$keynames">
+              result.Append(<xsl:value-of select="@name"/><xsl:if test="@type='entity'">.KeyString</xsl:if>);
+              <xsl:if test="position()!=last()">
+                result.Append('|');
+              </xsl:if>
             </xsl:for-each>
             return result.ToString();
           </xsl:otherwise>
@@ -168,49 +125,37 @@
     /// &lt;summary&gt;
     /// A user readable distinct identifying string
     /// &lt;/summary&gt;
-    public override string UserIdentifier
-    {
-    get {
-    StringBuilder result = new StringBuilder();
-    <xsl:choose>
-      <xsl:when test="property[@distinct='user']">
-        <xsl:for-each select="property[@distinct='user']">
-          <xsl:choose>
-            <xsl:when test="@type='entity'">
-              <!-- TODO: this is dangerous and could potentially give rise to 
-                      infinite loops; find a way of stopping it running away! -->
-              result.Append( <xsl:value-of select="concat( @name, '.UserIdentifier')"/>);
-            </xsl:when>
-            <xsl:otherwise>
-              result.Append(<xsl:value-of select="concat( '_', @name)"/>);
-            </xsl:otherwise>
-          </xsl:choose>
-          <xsl:choose>
-            <xsl:when test="position() = last()"/>
-            <xsl:otherwise>
-              result.Append( ", ");
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:for-each>
-      </xsl:when>
-      <xsl:otherwise>
-        result.AppendFormat( "<xsl:value-of select="@name"/>#{0}", <xsl:call-template name="list-properties"/>);
-      </xsl:otherwise>
-    </xsl:choose>
+    public override string UserIdentifier {
+      get {
+        StringBuilder result = new StringBuilder();
+        <xsl:choose>
+          <xsl:when test="a:key/a:property">
+            <xsl:for-each select="a:key/a:property">
+              result.Append(<xsl:value-of select="@name"/><xsl:if test="@type='entity'">.UserIdentifier</xsl:if>);
+              <xsl:if test="position() != last()">
+                result.Append( ", ");
+              </xsl:if>
+            </xsl:for-each>
+          </xsl:when>
+          <xsl:otherwise>
+            result.AppendFormat( "<xsl:value-of select="@name"/>#{0}", <xsl:call-template name="list-properties"/>);
+          </xsl:otherwise>
+        </xsl:choose>
 
-    return result.ToString();
-    }
+        return result.ToString();
+      }
     }
 
-    <xsl:apply-templates select="property"/>
+    <xsl:apply-templates select="a:key/a:property|a:property|a:set"/>
     }
     }
 
 
   </xsl:template>
 
+  <!-- Creates a comma-separated list of all the properties passed in, or all the key properties by default. -->
   <xsl:template name="list-properties">
-    <xsl:param name="props" select="property[@distinct='system']"/>
+    <xsl:param name="props" select="a:key/a:property"/>
     <xsl:if test="count($props)!=0">
       <xsl:value-of select="$props[1]/@name"/>
       <xsl:if test="count($props)!=1">, </xsl:if>
@@ -220,49 +165,26 @@
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="property[@concrete='false']">
+  <xsl:template match="a:property[@concrete='false']">
     <!-- generate nothing for non-concrete properties -->
   </xsl:template>
 
-  <xsl:template match="property">
+  <xsl:template match="a:property">
     // auto generating iv/property pair for slot with name <xsl:value-of select="@name"/>
-    <xsl:apply-templates select="help"/>
-
-    <xsl:variable name="defined-type">
-      <xsl:choose>
-        <xsl:when test="@type='defined'">
-          <xsl:variable name="definition">
-            <xsl:value-of select="@definition"/>
-          </xsl:variable>
-          <xsl:value-of select="/application/definition[@name=$definition]/@type"/>
-        </xsl:when>
-      </xsl:choose>
-    </xsl:variable>
+    <xsl:apply-templates select="a:help"/>
 
     <xsl:variable name="type-nullable">
       <xsl:choose>
-        <xsl:when test="@type='defined'">
+        <xsl:when test="@type='link' or @type='list' or @type='entity'">true</xsl:when>
+        <xsl:otherwise>
           <xsl:call-template name="type-nullable">
-            <xsl:with-param name="typename" select="$defined-type"/>
           </xsl:call-template>
-        </xsl:when>
-        <xsl:when test="@type!='link' and @type!='list' and @type!='entity'">
-          <xsl:call-template name="type-nullable">
-            <xsl:with-param name="typename" select="@type"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>true</xsl:otherwise>
+        </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
 
     <xsl:variable name="type">
       <xsl:choose>
-        <xsl:when test="@type='defined'">
-          <!-- Find the right definition, then map its type onto a C# type -->
-          <xsl:call-template name="type-declarator">
-            <xsl:with-param name="typename" select="$defined-type"/>
-          </xsl:call-template>
-        </xsl:when>
         <xsl:when test="@type = 'link'">
           ICollection&lt;<xsl:value-of select="@entity"/>&gt;
         </xsl:when>
@@ -274,8 +196,7 @@
         </xsl:when>
         <xsl:otherwise>
           <xsl:call-template name="type-declarator">
-            <xsl:with-param name="typename" select="@type"/>
-            <xsl:with-param name="nullable" select="@required!='true'"/>
+            <xsl:with-param name="nullable" select="@not-null!='true'"/>
           </xsl:call-template>
         </xsl:otherwise>
       </xsl:choose>
@@ -296,14 +217,11 @@
     </xsl:variable>
 
     <xsl:variable name="validationpattern">
-      <xsl:choose>
-        <xsl:when test="@type='defined'">
-          <xsl:variable name="definition">
-            <xsl:value-of select="@definition"/>
-          </xsl:variable>
-          <xsl:value-of select="/application/definition[@name=$definition]/@pattern"/>
-        </xsl:when>
-      </xsl:choose>
+      <xsl:if test="not(@type='link' or @type='list' or @type='entity')">
+        <xsl:call-template name="type-attr">
+          <xsl:with-param name="attr" select="'pattern'" />
+        </xsl:call-template>
+      </xsl:if>
     </xsl:variable>
     <xsl:if test="string-length( $validationpattern) &gt; 0">
       private Regex <xsl:value-of select="@name"/>Validator = new Regex( "<xsl:value-of select="$validationpattern"/>");
@@ -315,7 +233,7 @@
     {
     get { return _<xsl:value-of select="@name"/>; }
     set {
-    <xsl:if test="@required='true' and $type-nullable='true'">
+    <xsl:if test="@not-null='true' and $type-nullable='true'">
       if ( value == null)
       {
       throw new DataRequiredException( <xsl:choose>
@@ -329,15 +247,16 @@
       );
       }
     </xsl:if>
-    <xsl:if test="@type='defined'">
-      <xsl:variable name="definition">
-        <xsl:value-of select="@definition"/>
-      </xsl:variable>
+    <xsl:if test="not(@type='link' or @type='list' or @type='entity')">
       <xsl:variable name="maximum">
-        <xsl:value-of select="/application/definition[@name=$definition]/@maximum"/>
+        <xsl:call-template name="type-attr">
+          <xsl:with-param name="attr" select="'maximum'" />
+        </xsl:call-template>
       </xsl:variable>
       <xsl:variable name="minimum">
-        <xsl:value-of select="/application/definition[@name=$definition]/@minimum"/>
+        <xsl:call-template name="type-attr">
+          <xsl:with-param name="attr" select="'minimum'" />
+        </xsl:call-template>
       </xsl:variable>
       <xsl:if test="string-length( $maximum) &gt; 0">
         if ( value &gt; <xsl:value-of select="$maximum"/>)
@@ -370,63 +289,60 @@
 
   </xsl:template>
 
+  <xsl:template match="a:set[a:many-to-many]">
+    // auto generating for set with name <xsl:value-of select="@name"/>, having many-to-many child
+    private ICollection&lt;<xsl:value-of 
+            select="a:many-to-many/@entity"/>&gt;<xsl:text> </xsl:text>_<xsl:value-of select="@name"/>;
+
+    public virtual ICollection&lt;<xsl:value-of select="a:many-to-many/@entity"/>&gt; <xsl:value-of select="@name"/>
+    {
+    get { return _<xsl:value-of select="@name"/>; }
+    set { _<xsl:value-of select="@name"/> = value; }
+    }
+
+  </xsl:template>
+
+  <xsl:template match="a:set[a:one-to-many]">
+    // auto generating for set with name <xsl:value-of select="@name"/>, having one-to-many child
+    private ICollection&lt;<xsl:value-of 
+            select="a:one-to-many/@entity"/>&gt;<xsl:text> </xsl:text>_<xsl:value-of select="@name"/>;
+
+    public virtual ICollection&lt;<xsl:value-of select="a:one-to-many/@entity"/>&gt; <xsl:value-of select="@name"/>
+    {
+    get { return _<xsl:value-of select="@name"/>; }
+    set { _<xsl:value-of select="@name"/> = value; }
+    }
+
+  </xsl:template>
+
+
+
+
   <xsl:template name="type-declarator">
-    <xsl:param name="typename"/>
     <xsl:param name="nullable" select="false()"/>
-    <xsl:variable name="override-type" select="document('types.xml',/application)/types/type[@name=$typename]"/>
-    <xsl:variable name="type0">
-      <xsl:choose>
-        <xsl:when test="$override-type">
-          <xsl:copy-of select="$override-type"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:copy-of select="document('types.xml')/types/type[@name=$typename]"/>
-        </xsl:otherwise>
-      </xsl:choose>
+    <xsl:call-template name="type-attr">
+      <xsl:with-param name="attr" select="'dotnet'"/>
+    </xsl:call-template>
+    <xsl:variable name="kind">
+      <xsl:call-template name="type-attr">
+        <xsl:with-param name="attr" select="'dotnet-kind'"/>
+      </xsl:call-template>
     </xsl:variable>
-    <xsl:variable name="type" select="msxsl:node-set($type0)/type"/>
-    <xsl:choose>
-      <xsl:when test="$type">
-        <xsl:value-of select="$type/@dotnet" />
-        <xsl:if test="$nullable and $type/@dotnet-kind='value'">?</xsl:if>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:message terminate="yes">
-          Error! <xsl:value-of select="$typename"/> not found.
-        </xsl:message>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:if test="$nullable and $kind='value'">?</xsl:if>
   </xsl:template>
 
   <xsl:template name="type-nullable">
-    <xsl:param name="typename"/>
-    <xsl:variable name="override-type" select="document('types.xml',/application)/types/type[@name=$typename]"/>
-    <xsl:variable name="type0">
-      <xsl:choose>
-        <xsl:when test="$override-type">
-          <xsl:copy-of select="$override-type"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:copy-of select="document('types.xml')/types/type[@name=$typename]"/>
-        </xsl:otherwise>
-      </xsl:choose>
+    <xsl:variable name="kind">
+      <xsl:call-template name="type-attr">
+        <xsl:with-param name="attr" select="'dotnet-kind'"/>
+      </xsl:call-template>
     </xsl:variable>
-    <xsl:variable name="type" select="msxsl:node-set($type0)/type"/>
-    <xsl:choose>
-      <xsl:when test="$type">
-        <xsl:if test="$type/@dotnet-kind!='value'">true</xsl:if>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:message terminate="yes">
-          Error! <xsl:value-of select="$typename"/> not found.
-        </xsl:message>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:if test="$kind!='value'">true</xsl:if>
   </xsl:template>
-
+  
 
   <xsl:template match="help">
-    <xsl:if test="@locale=$locale">
+    <xsl:if test="@lang=$lang">
       <!-- might conceivably be more than one line -->
       <xsl:text>
         /* </xsl:text><xsl:apply-templates/> */
@@ -434,7 +350,7 @@
   </xsl:template>
 
   <xsl:template match="ifmissing">
-    <xsl:if test="@locale=$locale">
+    <xsl:if test="@lang=$lang">
                   "<xsl:value-of select="normalize-space(.)"/>"
     </xsl:if>
   </xsl:template>

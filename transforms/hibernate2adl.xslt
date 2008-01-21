@@ -13,7 +13,7 @@
       is not sufficiently rich.
       
       $Author: af $
-      $Revision: 1.2 $
+      $Revision: 1.1 $
   -->
 
   <xsl:output indent="yes" method="xml" encoding="utf-8" 
@@ -34,9 +34,14 @@
           <xsl:with-param name="full" select="@name"/>
         </xsl:call-template>
       </xsl:attribute>
+      <xsl:if test="@table">
+        <xsl:attribute name="table">
+          <xsl:value-of select="@table"/>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:apply-templates/>
       <form name="edit" properties="listed">
-        <xsl:for-each select="h:property|h:composite-id/*">
+        <xsl:for-each select="h:property|h:composite-id/*|h:many-to-one">
           <field>
             <xsl:attribute name="property">
               <xsl:value-of select="@name"/>
@@ -58,6 +63,27 @@
     </entity>
   </xsl:template>
 
+  <xsl:template match="h:id">
+    <key name="primary">
+      <property distinct="system" required="true">
+        <xsl:attribute name="name">
+          <xsl:value-of select="@name"/>
+        </xsl:attribute>
+        <xsl:attribute name="type">
+          <xsl:call-template name="type-attr">
+            <xsl:with-param name="t" select="@type" />
+          </xsl:call-template>
+        </xsl:attribute>
+      </property>
+    </key>
+  </xsl:template>
+
+  <xsl:template match="h:composite-id">
+    <key name="primary">
+      <xsl:apply-templates select="*"/>
+    </key>
+  </xsl:template>
+
   <xsl:template match="h:property|h:key-property">
     <property>
       <xsl:attribute name="name">
@@ -70,7 +96,6 @@
       </xsl:attribute>
       <xsl:choose>
         <xsl:when test="contains(name(..),'composite-id')">
-          <xsl:attribute name="distinct">system</xsl:attribute>
           <xsl:attribute name="required">true</xsl:attribute>
         </xsl:when>
         <xsl:otherwise>
@@ -82,19 +107,6 @@
           </xsl:attribute>
         </xsl:otherwise>
       </xsl:choose>
-    </property>
-  </xsl:template>
-
-  <xsl:template match="h:id">
-    <property distinct="system" required="true">
-      <xsl:attribute name="name">
-        <xsl:value-of select="@name"/>
-      </xsl:attribute>
-      <xsl:attribute name="type">
-        <xsl:call-template name="type-attr">
-          <xsl:with-param name="t" select="@type" />
-        </xsl:call-template>
-      </xsl:attribute>
     </property>
   </xsl:template>
 
@@ -139,7 +151,6 @@
 
       <xsl:choose>
         <xsl:when test="contains(name(..),'composite-id')">
-          <xsl:attribute name="distinct">system</xsl:attribute>
           <xsl:attribute name="required">true</xsl:attribute>
         </xsl:when>
         <xsl:otherwise>
