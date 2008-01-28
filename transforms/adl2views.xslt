@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: af $
-    $Revision: 1.1 $
-    $Date: 2008-01-21 16:38:31 $
+    $Revision: 1.2 $
+    $Date: 2008-01-28 15:07:14 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -35,7 +35,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.1 $', 11)"/>
+                select="substring( '$Revision: 1.2 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -752,7 +752,7 @@
                   <xsl:when test="$definedtype='integer'">validate-digits</xsl:when>
                   <xsl:when test="$definedtype='real'">validate-number</xsl:when>
                   <xsl:when test="$definedtype='money'">validate-number</xsl:when>
-                  <xsl:when test="$definedtype='date'">date-field validate-date</xsl:when>
+                  <xsl:when test="$definedtype='date'">date validate-date</xsl:when>
                 </xsl:choose>
               </xsl:attribute>
               <xsl:attribute name="id">
@@ -832,7 +832,7 @@
             ${FormHelper.CheckboxField( "instance.<xsl:value-of select="@name"/>")}
           </xsl:when>
           <xsl:when test="@type='date'">
-            <xsl:variable name="class"><xsl:if test="@required='true'">required </xsl:if>date-field validate-date</xsl:variable>
+            <xsl:variable name="class"><xsl:if test="@required='true'">required </xsl:if>date validate-date</xsl:variable>
             ${FormHelper.TextField( "instance.<xsl:value-of select="@name"/>", "%{class='<xsl:value-of select="$class"/>' size='10' maxlength='10'}")}
           </xsl:when>
           <xsl:otherwise>
