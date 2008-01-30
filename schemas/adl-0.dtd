@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.3 $
+        $Revision: 1.4 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -259,6 +259,16 @@
   concrete    %Boolean;       #IMPLIED
   column      CDATA           #IMPLIED
   unsaved-value CDATA         #IMPLIED>
+
+<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
+property[@type='list']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+<!ELEMENT one-to-many (documentation?)>
+<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
+property[@type='link']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+<!ELEMENT many-to-many (documentation?)>
+<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
+property[@type='entity']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+<!ELEMENT many-to-one (documentation?)>
 
 <!-- 
 	one of an explicit list of optional values a property may have 
