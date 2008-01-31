@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.4 $
+        $Revision: 1.5 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -45,6 +45,22 @@
 	all:			select, insert, update, delete
 -->
 <!ENTITY % Permissions "none|read|insert|noedit|edit|all" >
+
+
+<!--
+  actions which should be cascaded to dependent objects. All these values except
+  'manual' are taken from Hibernate and should be passed through the adl2hibernate 
+  mapping transparently. Relevent only for properties with type='entity', type='link'
+  and type='list'
+  
+  all :       cascade delete, save and update
+  all-delete-orphan : see hibernate documentation; relates to transient objects only
+  delete :    cascade delete actions, but not save and update
+  manual :    cascading will be handled in manually managed code, code to
+              handle cascading should not be generated
+  save-update : cascade save and update actions, but not delete.
+-->
+<!ENTITY % CascadeActions "all|all-delete-orphan|delete|manual|save-update">
 
 <!-- 
 	data types which can be used in a typedef to provide validation - 
@@ -116,13 +132,15 @@
   version:  the version number of this application
   assembly: C# implementation detail, should not be here
   namespace:  C# implementation detail, should not be here
+  xmlns:    XML namespace, in case required
 -->
-<!ELEMENT application ( documentation?, content?, type*, typedef*,  group*, entity*)>
+<!ELEMENT application ( documentation?, content?, typedef*,  group*, entity*)>
 <!ATTLIST application 
 	name 		  CDATA 						#REQUIRED
   assembly  CDATA             #IMPLIED
   namespace CDATA             #IMPLIED
-	version 	CDATA 						#IMPLIED>
+	version 	CDATA 						#IMPLIED
+  xmlns     CDATA             #IMPLIED>
 
 <!-- 
 	the definition of a defined type. At this stage a defined type is either
@@ -134,7 +152,8 @@
 	and/or server side at database layer.
 
   name:     the name of this typedef
-  type:     the simple type on which this defined type is based
+  type:     the simple type on which this defined type is based; must be
+            present unless in-implementation children are supplied
   size:     the data size of this defined type
   pattern:  a regular expression which values for this type must match
   minimum:  the minimum value for this type (if base type is scalar)
@@ -144,7 +163,7 @@
 
 <!ATTLIST typedef 
 	name 		  CDATA 						#REQUIRED
-	type 		  (%DefinableDataTypes;) 		#REQUIRED
+	type 		  (%DefinableDataTypes;) 		#IMPLIED
 	size 		  CDATA 						#IMPLIED
 	pattern 	CDATA 						#IMPLIED
 	minimum 	CDATA 						#IMPLIED
@@ -157,12 +176,14 @@
   
   target:     the target language
   value:      the type to use in that target language
+  kind:       OK, I confess I don't understand this, but Andrew needs it... 
 -->
 <!ELEMENT in-implementation (documentation?)>
 
 <!ATTLIST in-implementation
       target  CDATA           #REQUIRED
-      value   CDATA           #REQUIRED>
+      value   CDATA           #REQUIRED
+      kind    CDATA           #IMPLIED>
 
 <!-- 
   a group of people with similar permissions to one another 
@@ -204,6 +225,8 @@
   there restrictions?
 -->
 <!ELEMENT documentation (#PCDATA)>
+<!ATTLIST documentation
+  xmlns     CDATA             #IMPLIED>
 
 
 <!-- an explicit primary key, possibly compound -->
@@ -236,7 +259,9 @@
   concrete:   if set to 'false', this property is not stored in the 
               database but must be computed (manually written code must
               be provided to support this)
-              
+  cascade:    what action(s) on the parent entity should be cascaded to
+              entitie(s) linked on this property. Valid only if type='entity',
+              type='link' or type='list'.
   column:     name of the column in a SQL database table in which this property
               is stored. TODO: Think about this.
   unsaved-value:
@@ -256,19 +281,120 @@
   farkey      CDATA           #IMPLIED
  	required 	  %Boolean; 			#IMPLIED
 	size 		    CDATA 					#IMPLIED
-  concrete    %Boolean;       #IMPLIED
   column      CDATA           #IMPLIED
-  unsaved-value CDATA         #IMPLIED>
+  concrete    %Boolean;       #IMPLIED
+  cascade     (%CascadeActions;)  #IMPLIED>
 
 <!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
 property[@type='list']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+<!--
+  a property whose value is a set of entities
+  
+	name:			  the name of this property.
+	entity:			if type='entity', the name of the entity this property is 
+					    a foreign key link to.
+              if type='list', the name of the entity that has a foreign 
+              key link to this entity
+  farkey:     if type='list', the name of farside key in the listed 
+              entity
+	required:		whether this propery is required (i.e. 'not null').
+  concrete:   if set to 'false', this property is not stored in the 
+              database but must be computed (manually written code must
+              be provided to support this)
+  cascade:    what action(s) on the parent entity should be cascaded to
+              entitie(s) linked on this property. Valid only if type='entity',
+              type='link' or type='list'.
+  column:     name of the column in a SQL database table in which this property
+              is stored. TODO: Think about this.
+  unsaved-value:
+              of a property whose persistent value is set on first being 
+              committed to persistent store, the value which it holds before
+              it has been committed
+-->
 <!ELEMENT one-to-many (documentation?)>
+<!ATTLIST one-to-many 
+	name 		    CDATA 					#REQUIRED
+	distinct 	  (none|all|user|system) 	#IMPLIED
+	entity 		  CDATA 					#IMPLIED
+  farkey      CDATA           #IMPLIED
+ 	required 	  %Boolean; 			#IMPLIED
+  concrete    %Boolean;       #IMPLIED
+  cascade     (%CascadeActions;)  #IMPLIED
+  column      CDATA           #IMPLIED
+  unsaved-value CDATA         #IMPLIED>
 <!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
 property[@type='link']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+<!--
+  a pseudo-property whose value is a set of entities
+  TODO: maybe should have an optional attribute for the name of the linking table
+  
+	name:			  the name of this property.
+	entity:			if type='entity', the name of the entity this property is 
+					    a foreign key link to.
+              if type='list', the name of the entity that has a foreign 
+              key link to this entity
+  farkey:     if type='list', the name of farside key in the listed 
+              entity
+	required:		whether this propery is required (i.e. 'not null').
+  concrete:   if set to 'false', this property is not stored in the 
+              database but must be computed (manually written code must
+              be provided to support this)
+  cascade:    what action(s) on the parent entity should be cascaded to
+              entitie(s) linked on this property. Valid only if type='entity',
+              type='link' or type='list'.
+  column:     name of the column in a SQL database table in which this property
+              is stored. TODO: Think about this.
+  unsaved-value:
+              of a property whose persistent value is set on first being 
+              committed to persistent store, the value which it holds before
+              it has been committed
+-->
 <!ELEMENT many-to-many (documentation?)>
+<!ATTLIST many-to-many 
+	name 		    CDATA 					#REQUIRED
+	distinct 	  (none|all|user|system) 	#IMPLIED
+	entity 		  CDATA 					#IMPLIED
+  farkey      CDATA           #IMPLIED
+ 	required 	  %Boolean; 			#IMPLIED
+  concrete    %Boolean;       #IMPLIED
+  cascade     (%CascadeActions;)  #IMPLIED
+  column      CDATA           #IMPLIED
+  unsaved-value CDATA         #IMPLIED>
 <!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
-property[@type='entity']. TODO: Not complete, not yet strictly convinced it's the right solution -->
+property[@type='entity']. TODO: Not complete, not yet strictly convinced it's the right solution.
+-->
+<!--
+  a property whose value is an entity
+  TODO: should this have an attribute 'default'?
+  
+	name:			  the name of this property.
+	entity:			the name of the entity this property is 
+					    a foreign key link to.
+	required:		whether this propery is required (i.e. 'not null').
+  concrete:   if set to 'false', this property is not stored in the 
+              database but must be computed (manually written code must
+              be provided to support this)
+  cascade:    what action(s) on the parent entity should be cascaded to
+              entitie(s) linked on this property. Valid only if type='entity',
+              type='link' or type='list'.
+  column:     name of the column in a SQL database table in which this property
+              is stored. TODO: Think about this.
+  unsaved-value:
+              of a property whose persistent value is set on first being 
+              committed to persistent store, the value which it holds before
+              it has been committed
+-->
 <!ELEMENT many-to-one (documentation?)>
+<!ATTLIST many-to-one 
+	name 		    CDATA 					#REQUIRED
+	distinct 	  (none|all|user|system) 	#IMPLIED
+	entity 		  CDATA 					#IMPLIED
+  farkey      CDATA           #IMPLIED
+ 	required 	  %Boolean; 			#IMPLIED
+  concrete    %Boolean;       #IMPLIED
+  cascade     (%CascadeActions;)  #IMPLIED
+  column      CDATA           #IMPLIED
+  unsaved-value CDATA         #IMPLIED>
 
 <!-- 
 	one of an explicit list of optional values a property may have 
@@ -330,7 +456,8 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 -->
 <!ELEMENT help (#PCDATA)>
 <!ATTLIST help
-	locale		  %Locale;				#REQUIRED >
+	locale		  %Locale;				#REQUIRED
+  xmlns     CDATA             #IMPLIED >
 
 <!--
   helpful text to be shown if a property value is missing, typically when 
@@ -341,7 +468,8 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 -->
 <!ELEMENT ifmissing (#PCDATA)>
 <!ATTLIST ifmissing
-  locale      %Locale;        #REQUIRED>
+  locale      %Locale;        #REQUIRED
+  xmlns     CDATA             #IMPLIED>
 
 <!-- a form through which an entity may be added or edited -->
 <!ELEMENT form (documentation?, ( %PageStuff;)*)>
@@ -417,6 +545,8 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	(usually HTML)
 -->
 <!ELEMENT head (#PCDATA) >
+<!ATTLIST head
+  xmlns     CDATA             #IMPLIED>
 
 
 <!-- 
@@ -425,7 +555,8 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	namespace (usually HTML)
 -->
 <!ELEMENT top (#PCDATA) >
-
+<!ATTLIST top
+  xmlns     CDATA             #IMPLIED>
 
 <!-- 
 	content to place at the foot of the body of the generated document; 
@@ -433,6 +564,8 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	namespace (usually HTML)
 -->
 <!ELEMENT foot (#PCDATA) >
+<!ATTLIST foot
+  xmlns     CDATA             #IMPLIED>
 
 
 
