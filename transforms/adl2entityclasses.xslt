@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: af $
-    $Revision: 1.1 $
-    $Date: 2008-01-21 16:38:31 $
+    $Revision: 1.2 $
+    $Date: 2008-01-31 12:34:21 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -48,7 +48,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.1 $', 11)"/>
+                  select="substring( '$Revision: 1.2 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -76,7 +76,7 @@
     using System.Text;
     using System.Text.RegularExpressions;
     using Cygnet.Entities;
-    using Cygnet.Entities.Exceptions;
+    using Cygnet.Exceptions;
     using Iesi.Collections.Generic;
 
     /// &lt;summary&gt;
@@ -237,7 +237,7 @@
       if ( value == null)
       {
       throw new DataRequiredException( <xsl:choose>
-        <xsl:when test="ifmissing[@locale=$locale]">
+        <xsl:when test="ifmissing[@locale=$lang]">
           <xsl:apply-templates select="ifmissing"/>
         </xsl:when>
         <xsl:otherwise>

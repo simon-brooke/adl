@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: af $
-    $Revision: 1.1 $
-    $Date: 2008-01-21 16:38:31 $
+    $Revision: 1.2 $
+    $Date: 2008-01-31 12:34:21 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -50,7 +50,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.1 $', 11)"/>
+                    select="substring( '$Revision: 1.2 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -87,7 +87,7 @@ using NHibernate;
 using NHibernate.Expression;
 using Castle.MonoRail.Framework;
 using Cygnet.Entities;
-using Cygnet.Entities.Exceptions;
+using Cygnet.Exceptions;
 using Iesi.Collections.Generic;
 using <xsl:value-of select="$entityns" />; 
 
