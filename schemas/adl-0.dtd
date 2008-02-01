@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.5 $
+        $Revision: 1.6 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -130,8 +130,8 @@
   
   name:     the name of this application
   version:  the version number of this application
-  assembly: C# implementation detail, should not be here
-  namespace:  C# implementation detail, should not be here
+  assembly: C# implementation detail, DEPRECATED: should not be here
+  namespace:  C# implementation detail, DEPRECATED: should not be here
   xmlns:    XML namespace, in case required
 -->
 <!ELEMENT application ( documentation?, content?, typedef*,  group*, entity*)>
@@ -207,12 +207,12 @@
   natural-key:  if present, the name of a property of this entity which forms
                 a natural primary key [NOTE: Only partly implemented. NOTE: much of
                 the present implementation assumes all primary keys will be 
-                integers. This needs to be fixed!] TODO: remove; replace with the
+                integers. This needs to be fixed!] DEPRECATED: remove; replace with the
                 'key' element, below.
   table:        the name of the table in which this entity is stored. TODO: more thought
 -->
-<!ELEMENT entity ( documentation?, content?, 
-      (property | key | one-to-many | many-to-many | many-to-one)*,
+<!ELEMENT entity ( documentation?, content?, key?,
+      (property | one-to-many | many-to-many | many-to-one)*,
       permission*, (form | page | list)*)>
 <!ATTLIST entity 
     name      CDATA           #REQUIRED
@@ -360,6 +360,7 @@ property[@type='link']. TODO: Not complete, not yet strictly convinced it's the 
   cascade     (%CascadeActions;)  #IMPLIED
   column      CDATA           #IMPLIED
   unsaved-value CDATA         #IMPLIED>
+
 <!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
 property[@type='entity']. TODO: Not complete, not yet strictly convinced it's the right solution.
 -->
