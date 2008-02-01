@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.6 $
+        $Revision: 1.7 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -82,8 +82,15 @@
 					    char(1)		  java.sql.Types.CHAR
 	text:			  text or		  java.sql.Types.LONGVARCHAR 
 					    memo		    java.sql.Types.CLOB
+              
+  Also, a hack, which may not belong here:
+              
+  serial:     An integer whose value is automatically assigned by the database. Given 
+              that Canonical ADL requires that every key must be specified, we
+              need a way of distinguishing those which are system generated from
+              those which aren't. This may not be the right way to do it!
 -->
-<!ENTITY % SimpleDataTypes "%DefinableDataTypes;|boolean|text" >
+<!ENTITY % SimpleDataTypes "%DefinableDataTypes;|boolean|text|serial" >
 
 <!-- 
 	data types which are more complex than SimpleDataTypes...

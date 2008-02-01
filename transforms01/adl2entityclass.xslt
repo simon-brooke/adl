@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>  
   <!--
-    C1873 SRU Hospitality
+    Application Description Language framework
     adl2entityclass.xsl
     
     (c) 2007 Cygnet Solutions Ltd
@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-01-31 17:06:35 $
+    $Revision: 1.2 $
+    $Date: 2008-02-01 18:25:38 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -47,7 +47,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.1 $', 11)"/>
+                  select="substring( '$Revision: 1.2 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 

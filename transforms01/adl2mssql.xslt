@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0" 
+  xmlns="http://cygnets.co.uk/schemas/adl-1.2" 
+  xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <!--
       C1873 SRU Hospitality
       adl2mssql.xsl
@@ -9,16 +12,17 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.1 $
+      $Revision: 1.2 $
   -->
     
-    <xsl:output indent="no" encoding="utf-8" method="text"/>
+  <xsl:output indent="no" encoding="utf-8" method="text"/>
+  <xsl:include href="base-type-include.xslt"/>
     
-    <xsl:template match="application"> 
+  <xsl:template match="adl:application"> 
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.1 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.2 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -27,23 +31,23 @@
         -------------------------------------------------------------------------------------------------
         --    authentication roles
         -------------------------------------------------------------------------------------------------
-        <xsl:apply-templates select="group"/>
+        <xsl:apply-templates select="adl:group"/>
 
         -------------------------------------------------------------------------------------------------
         --    tables, views and permissions
         -------------------------------------------------------------------------------------------------
-        <xsl:apply-templates select="entity" mode="table"/>
+        <xsl:apply-templates select="adl:entity" mode="table"/>
 
         -------------------------------------------------------------------------------------------------
         --    referential integrity constraints
         -------------------------------------------------------------------------------------------------
-      <xsl:for-each select="entity">
+      <xsl:for-each select="adl:entity">
         <xsl:variable name="nearside" select="@name"/>
         <xsl:for-each select="property[@type='entity']">
           <xsl:variable name="farside" select="@entity"/>
           <xsl:variable name="keyfield" select="@name"/>
           <xsl:choose>
-            <xsl:when test="//entity[@name=$farside]/property[@farkey=$keyfield and @entity=$nearside]">
+            <xsl:when test="//adl:entity[@name=$farside]/adl:property[@farkey=$keyfield and @entity=$nearside]">
               <!-- there's a 'list' property pointing the other way; let it do the heavy hauling -->
             </xsl:when>
             <xsl:otherwise>
@@ -55,7 +59,7 @@
             </xsl:otherwise>
           </xsl:choose>
         </xsl:for-each>
-        <xsl:for-each select="property[@type='list']">
+        <xsl:for-each select="adl:property[@type='list']">
           <xsl:variable name="farkey">
             <xsl:choose>
               <xsl:when test="@farkey">
@@ -87,7 +91,7 @@
         -------------------------------------------------------------------------------------------------
     </xsl:template>
     
-    <xsl:template match="group">
+    <xsl:template match="adl:group">
         execute sp_addrole @rolename = '<xsl:value-of select="@name"/>' 
         
         GO
@@ -108,22 +112,35 @@
     </xsl:template>
 
 
-  <xsl:template match="entity" mode="table">
+  <xsl:template match="adl:entity" mode="table">
     <xsl:variable name="table" select="@name"/>
+      <!-- xsl:choose>
+        <xsl:when test="@table">
+          <xsl:value-of select="@table"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="@name"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable -->
 
         -------------------------------------------------------------------------------------------------
         --    primary table <xsl:value-of select="@name"/>
         -------------------------------------------------------------------------------------------------
         CREATE TABLE  "<xsl:value-of select="@name"/>"
         (
-    <xsl:apply-templates select="property[@type!='link']"/>
-    <xsl:value-of select="@name"/>Id INT IDENTITY( 1, 1) PRIMARY KEY
+          <xsl:for-each select="adl:key/adl:property">
+            <xsl:apply-templates select="."/><xsl:text> PRIMARY KEY,</xsl:text>
+          </xsl:for-each>
+          <xsl:for-each select="adl:property[@type!='link' and @type != 'list']">
+            <xsl:apply-templates select="."/><xsl:if test="position() != last()">,</xsl:if>
+          </xsl:for-each>
         )
 
         GO
 
         ----  permissions  ------------------------------------------------------------------------------
-    <xsl:for-each select="permission">
+    <xsl:for-each select="adl:permission">
         <xsl:call-template name="permission">
           <xsl:with-param name="table" select="$table"/>
         </xsl:call-template>
@@ -132,7 +149,7 @@
       <xsl:if test="property[@type='link']">
         ----  link tables  ------------------------------------------------------------------------------
       </xsl:if>
-      <xsl:for-each select="property[@type='link']">
+      <xsl:for-each select="adl:property[@type='link']">
         <xsl:call-template name="linktable">
           <xsl:with-param name="nearside" select="$table"/>
         </xsl:call-template>
@@ -342,21 +359,58 @@
       </xsl:if>
     </xsl:template>
 
-  <xsl:template match="property[@type='list']">
+  <xsl:template match="adl:property[@type='list']">
         -- Suppressing output of property <xsl:value-of select="@name"/>,
         -- as it is the 'one' end of a one-to-many relationship
   </xsl:template>
 
-  <xsl:template match="property[@type='entity']">
-            "<xsl:value-of select="@name"/>" INT<xsl:if 
-            test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+  <xsl:template match="adl:property[@type='serial']">
+            <xsl:value-of select="@name"/><xsl:text> INT IDENTITY( 1, 1)</xsl:text>
   </xsl:template>
 
-    <xsl:template match="property[@type='defined']">
-        <xsl:variable name="name"><xsl:value-of select="@definition"/></xsl:variable>
-        <xsl:variable name="definitiontype"><xsl:value-of select="/application/definition[@name=$name]/@type"/></xsl:variable>
+  <!-- the grand unified property handler, using the sql-type template to 
+  generate the correct types for each field -->
+  <xsl:template match="adl:property">
+    <xsl:variable name="type">
+      <xsl:call-template name="sql-type">
+        <xsl:with-param name="property" select="."/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="base-type">
+      <xsl:call-template name="base-type">
+        <xsl:with-param name="property" select="."/>
+      </xsl:call-template>
+    </xsl:variable>
+          "<xsl:value-of select="@name"/>" <xsl:value-of select="normalize-space( $type)"/><xsl:if
+            test="string(@default)"> DEFAULT <xsl:choose>
+              <xsl:when test="$base-type = 'integer' or $base-type = 'real' or $base-type = 'money'">
+                <xsl:value-of select="@default"/>
+              </xsl:when>
+              <xsl:otherwise>'<xsl:value-of select="@default"/>'</xsl:otherwise>
+            </xsl:choose>
+    </xsl:if><xsl:if
+                test="@required='true'"> NOT NULL</xsl:if>
+
+  </xsl:template>
+  
+  <!-- properties of type 'entity' are supposed to be being handled by the 
+  grand unified property handler. Unfortunately it gets them wrong and I'm not 
+  sure why. So temporarily this special case template fixes the problem. TODO: 
+  work out what's wrong with the grand unified version -->
+  <xsl:template match="adl:property[@type='entity']">
+    <xsl:variable name="type">
+      <xsl:call-template name="sql-type">
+        <xsl:with-param name="property" select="."/>
+      </xsl:call-template>
+    </xsl:variable>
+          "<xsl:value-of select="@name"/>" <xsl:value-of select="$type"/><xsl:if 
+            test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
+                test="@required='true'"> NOT NULL</xsl:if>
+  </xsl:template>
+
+    <!-- xsl:template match="adl:property[@type='defined']">
+        <xsl:variable name="name"><xsl:value-of select="@typedef"/></xsl:variable>
+        <xsl:variable name="definitiontype"><xsl:value-of select="//adl:typedef[@name=$name]/@type"/></xsl:variable>
             "<xsl:value-of select="@name"/>"<xsl:text> </xsl:text><xsl:choose>
             <xsl:when test="$definitiontype='string'">VARCHAR( <xsl:value-of 
                 select="/application/definition[@name=$name]/@size"/>)</xsl:when>
@@ -365,56 +419,91 @@
             <xsl:otherwise><xsl:value-of select="$definitiontype"/></xsl:otherwise>
         </xsl:choose><xsl:if 
         test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-            test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+            test="@required='true'"> NOT NULL</xsl:if>
     </xsl:template>
 
 
-    <xsl:template match="property[@type='boolean']">
-            -- SQL Server doesn't have proper booleans!
+    <xsl:template match="adl:property[@type='boolean']">
             "<xsl:value-of select="@name"/>" BIT<xsl:choose>
               <xsl:when test="@default='true'"> DEFAULT 1</xsl:when>
               <xsl:when test="@default='false'"> DEFAULT 0</xsl:when>
-            </xsl:choose><xsl:if test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+            </xsl:choose><xsl:if test="@required='true'"> NOT NULL</xsl:if>
     </xsl:template>
 
 
-    <xsl:template match="property[@type='string']">
+    <xsl:template match="adl:property[@type='string']">
             "<xsl:value-of select="@name"/>" VARCHAR( <xsl:value-of select="@size"/>)<xsl:if 
                 test="string(@default)"> DEFAULT '<xsl:value-of select="@default"/>'</xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+                    test="@required='true'"> NOT NULL</xsl:if>
     </xsl:template>
 
-    <xsl:template match="property[@type='date' or @type = 'time']">
+    <xsl:template match="adl:property[@type='date' or @type = 'time']">
             "<xsl:value-of select="@name"/>" DATETIME<xsl:if
                 test="string(@default)"> DEFAULT <xsl:value-of select="@default"/>
               </xsl:if><xsl:if
-                test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+                test="@required='true'"> NOT NULL</xsl:if>
     </xsl:template>
 
 
-  <xsl:template match="property[@type='integer']">
+  <xsl:template match="adl:property[@type='integer']">
             "<xsl:value-of select="@name"/>" INT<xsl:if 
                 test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                  test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+                  test="@required='true'"> NOT NULL</xsl:if>
   </xsl:template>
     
-  <xsl:template match="property[@type='real']">
+  <xsl:template match="adl:property[@type='real']">
             "<xsl:value-of select="@name"/>" DOUBLE PRECISION<xsl:if 
                 test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+                    test="@required='true'"> NOT NULL</xsl:if>
   </xsl:template>
     
-  <xsl:template match="property">
+  <xsl:template match="adl:property">
             "<xsl:value-of select="@name"/>" <xsl:text> </xsl:text><xsl:value-of select="@type"/><xsl:if 
                 test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>,<xsl:text>
-            </xsl:text>
+                    test="@required='true'"> NOT NULL</xsl:if>
+  </xsl:template -->
+
+  <!-- return the SQL type of the property which is passed as a parameter -->
+  <xsl:template name="sql-type">
+    <xsl:param name="property"/>
+    <xsl:variable name="base-type">
+      <xsl:call-template name="base-type">
+        <xsl:with-param name="property" select="$property"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:variable name="base-size">
+      <xsl:call-template name="base-size">
+        <xsl:with-param name="property" select="$property"/>
+      </xsl:call-template>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="$base-type = 'entity'">
+        <xsl:variable name="entity" select="@entity"/>
+        <xsl:call-template name="sql-type">
+          <xsl:with-param name="property" 
+                          select="//adl:entity[@name=$entity]/adl:key/adl:property[position()=1]"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:when test="$base-type = 'link'">
+        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
+      </xsl:when>
+      <xsl:when test="$base-type = 'list'">
+        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
+      </xsl:when>
+      <xsl:when test="$base-type = 'date'">DATETIME</xsl:when>
+      <xsl:when test="$base-type = 'time'">DATETIME</xsl:when>
+      <!-- TODO: if the type was 'defined' then the size should probably come from the typedef -->
+      <xsl:when test="$base-type = 'string'">VARCHAR( <xsl:value-of select="$base-size"/>)</xsl:when>
+      <xsl:when test="$base-type = 'text'">TEXT</xsl:when>
+      <xsl:when test="$base-type = 'boolean'">BIT</xsl:when>
+      <xsl:when test="$base-type = 'timestamp'">TIMESTAMP</xsl:when>
+      <xsl:when test="$base-type = 'integer'">INT</xsl:when>
+      <xsl:when test="$base-type = 'real'">DOUBLE PRECISION</xsl:when>
+      <xsl:when test="$base-type = 'money'">DECIMAL</xsl:when>
+      <xsl:when test="$base-type = 'serial'">INT IDENTITY( 1, 1)</xsl:when>
+      <xsl:otherwise>[sql:unknown? [<xsl:value-of select="$base-type"/>]]</xsl:otherwise>
+    </xsl:choose>
+
   </xsl:template>
 
 
