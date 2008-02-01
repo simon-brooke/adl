@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
   <!--
-    C1873 SRU Hospitality
+    Application Description Language framework
     adl2controllerclasses.xsl
     
     (c) 2007 Cygnet Solutions Ltd
     
     Transform ADL into (partial) controller classes
     
-    $Author: af $
-    $Revision: 1.2 $
-    $Date: 2008-01-31 12:34:21 $
+    $Author: sb $
+    $Revision: 1.3 $
+    $Date: 2008-02-01 21:47:15 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -50,7 +50,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.2 $', 11)"/>
+                    select="substring( '$Revision: 1.3 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 

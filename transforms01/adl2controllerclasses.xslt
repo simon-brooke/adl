@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
   <!--
-    C1873 SRU Hospitality
+    Application Description Language framework
     adl2controllerclasses.xsl
     
     (c) 2007 Cygnet Solutions Ltd
@@ -9,16 +9,22 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-01-31 17:06:35 $
+    $Revision: 1.2 $
+    $Date: 2008-02-01 21:47:15 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
-  <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-    <xsl:output encoding="UTF-8" method="text"/>
+<xsl:stylesheet version="1.0"
+  xmlns="http://cygnets.co.uk/schemas/adl-1.2" 
+  xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-    <!-- The locale for which these controllers are generated 
+  <xsl:include href="csharp-type-include.xslt"/>
+
+  <xsl:output encoding="UTF-8" method="text"/>
+
+  <!-- The locale for which these controllers are generated 
       TODO: Controllers should NOT be locale specific. Instead, the
       controller should render views and generate messages based on the 
       client's locale. However, there may still need to be a concept of a
@@ -30,18 +36,21 @@
     <xsl:param name="controllerns" select="Unset"/>
     <!-- The C# namespace used by the entities for this project -->
     <xsl:param name="entityns" select="Unset"/>
-    
-    <xsl:template match="application">
-      <xsl:apply-templates select="entity"/>
+    <!-- Whether to authenticate at application or at database layer. 
+    If not 'Application', then 'Database'. -->
+    <xsl:param name="authentication-layer" select="Application"/>  
+  
+    <xsl:template match="adl:application">
+      <xsl:apply-templates select="adl:entity"/>
     </xsl:template>
 
-    <xsl:template match="entity">
+    <xsl:template match="adl:entity">
       <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.1 $', 11)"/>
+                    select="substring( '$Revision: 1.2 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -79,15 +88,14 @@ using System.Web.UI.WebControls;
 using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 using Castle.MonoRail.Framework.Helpers;
+using Cygnet.Exceptions;
 using Cygnet.Web.Helpers;
 using Cygnet.Web.Controllers;
 using NHibernate;
 using NHibernate.Expression;
 using Castle.MonoRail.Framework;
-using Cygnet.Exceptions;
 using Iesi.Collections.Generic;
-using SRU.Hospitality.Helpers;
-using SRU.Hospitality.Entities;
+using <xsl:value-of select="$entityns"/>;
 
 namespace <xsl:value-of select="$controllerns"/> {
 
@@ -110,9 +118,9 @@ namespace <xsl:value-of select="$controllerns"/> {
       private void Store()
       {
         ISession hibernator = 
-          NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
-        List&lt;string&gt; messages = new List&lt;string&gt;();
+          NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                              Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
+          List&lt;string&gt; messages = new List&lt;string&gt;();
       
         <xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/> record;
         
@@ -138,9 +146,9 @@ namespace <xsl:value-of select="$controllerns"/> {
         {
           /* it's existing, retrieve it */
           record =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="@name"/>))
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
               .Add(Expression.Eq("<xsl:value-of select="$key"/>", Int32.Parse(id)))
-              .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/>&gt;();
+              .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
         }
 
         if ( record != null)
@@ -155,11 +163,11 @@ namespace <xsl:value-of select="$controllerns"/> {
              * special - BindObjectInstance /should/ do it all. Unfortunately it sometimes 
              * doesn't, and I haven't yet characterised why not. TODO: Fix this! */
             record.<xsl:value-of select="@name"/> = 
-              hibernator.CreateCriteria(typeof(<xsl:value-of select="@entity"/>))
+              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @entity)"/>))
                 .Add(Expression.Eq("<xsl:call-template name="primary-key">
                   <xsl:with-param name="entityname" select="@entity"/>
-                </xsl:call-template>", Int32.Parse(Form["<xsl:value-of select="concat( 'instance.', @name)"/>"])))
-                .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="@entity"/>&gt;();
+                </xsl:call-template>", Int32.Parse(Form["<xsl:value-of select="concat( $entityns, '.', @entity)"/>"])))
+                .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @entity)"/>&gt;();
       </xsl:for-each>
           
       <xsl:for-each select="property[@type='link']">  
@@ -258,9 +266,11 @@ namespace <xsl:value-of select="$controllerns"/> {
           }
 
           PropertyBag["messages"] = messages;
+          PropertyBag["instance"] = record;    
+      <xsl:if test="$authentication-layer = 'Database'">   
           PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
-          PropertyBag["instance"] = record;
-
+      </xsl:if>
+      
       <xsl:call-template name="menus">
         <xsl:with-param name="entity" select="."/>
       </xsl:call-template>
@@ -279,26 +289,26 @@ namespace <xsl:value-of select="$controllerns"/> {
       public void Delete()
       {
         ISession hibernator = 
-            NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
+            NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                                Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
         string id = Params["<xsl:value-of select="concat( 'instance.', $key)"/>"];
         string reallydelete = Params["reallydelete"];
         
         if ( "true".Equals( reallydelete))
         { 
-          <xsl:value-of select="@name"/> record =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="@name"/>))
+          <xsl:value-of select="concat($entityns, '.', @name)"/> record =
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
               .Add(Expression.Eq("<xsl:value-of select="$key"/>", Int32.Parse(id)))
-              .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/>&gt;();
+              .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
 
           if ( record != null)
           {
             record.BeforeDeleteHook( hibernator);
 
             hibernator.Delete( 
-              hibernator.CreateCriteria(typeof(<xsl:value-of select="@name"/>))
+              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
                 .Add(Expression.Eq("<xsl:value-of select="$key"/>", Int32.Parse(id)))
-                .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/>&gt;());
+                .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;());
 
             hibernator.Flush();
           }
@@ -339,14 +349,16 @@ namespace <xsl:value-of select="$controllerns"/> {
       public void InternalShowList( String view)
       {
         ISession hibernator = 
-          NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
+          NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                              Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
         IList&lt;<xsl:value-of select="@name"/>&gt; instances = 
-          hibernator.CreateCriteria(typeof(<xsl:value-of select="@name"/>))<xsl:for-each select="property[@distinct='user']">
+          hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))<xsl:for-each select="property[@distinct='user']">
             <xsl:value-of select="concat( '.AddOrder( new Order( &#34;', @name, '&#34;, true))')"/>
-          </xsl:for-each>.List&lt;<xsl:value-of select="@name"/>&gt;();
+          </xsl:for-each>.List&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
 
+        <xsl:if test="$authentication-layer = 'Database'">
         PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
+        </xsl:if>
         PropertyBag["instances"] =
         PaginationHelper.CreatePagination( this, instances, 25);
 
@@ -413,15 +425,17 @@ namespace <xsl:value-of select="$controllerns"/> {
         if ( command.Equals( "delete"))
         {
           ISession hibernator = 
-            NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
+            NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                                Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
           string id = Form["<xsl:value-of select="concat( 'instance.', $key)"/>"];
 
+      <xsl:if test="$authentication-layer = 'Database'">   
           PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
+      </xsl:if>
           PropertyBag["instance"] = 
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="../@name"/>))
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
               .Add(Expression.Eq("<xsl:value-of select="$key"/>", Int32.Parse(id)))
-              .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="../@name"/>&gt;();
+              .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
           
           RenderViewWithFailover( "maybedelete.vm", "maybedelete.auto.vm");
         }
@@ -442,13 +456,15 @@ namespace <xsl:value-of select="$controllerns"/> {
       public void <xsl:value-of select="@name"/>( )
       {
         ISession hibernator = 
-          NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
+          NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                              Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
       <xsl:call-template name="menus">
         <xsl:with-param name="entity" select=".."/>
       </xsl:call-template>
 
+      <xsl:if test="$authentication-layer = 'Database'">   
         PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
+      </xsl:if>
         RenderViewWithFailover("<xsl:value-of select="concat( @name, '.vm')"/>", "<xsl:value-of select="concat( @name, '.auto.vm')"/>");
       }
 
@@ -460,14 +476,16 @@ namespace <xsl:value-of select="$controllerns"/> {
       public void <xsl:value-of select="@name"/>( Int32 <xsl:value-of select="concat( ../@name, 'Id')"/>)
       {
         ISession hibernator = 
-          NHibernateHelper.GetCurrentSession( Session[ NHibernateHelper.USERTOKEN], 
-                                              Session[NHibernateHelper.PASSTOKEN]);
-        <xsl:value-of select="$entityns"/>.<xsl:value-of select="../@name"/> record =
-          hibernator.CreateCriteria(typeof(<xsl:value-of select="../@name"/>))
+          NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                              Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
+        <xsl:value-of select="concat($entityns, '.', @name)"/> record =
+          hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
             .Add(Expression.Eq("<xsl:value-of select="concat( ../@name, 'Id')"/>", <xsl:value-of select="../@name"/>Id))
-            .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="../@name"/>&gt;();
+            .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
 
+      <xsl:if test="$authentication-layer = 'Database'">   
         PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
+      </xsl:if>
         PropertyBag["instance"] = record;
 
       <xsl:call-template name="menus">
@@ -519,9 +537,9 @@ namespace <xsl:value-of select="$controllerns"/> {
       <xsl:variable name="ename" select="$property/@entity"/>
       <xsl:variable name="entity" select="//entity[@name=$ename]"/>
           PropertyBag["<xsl:value-of select="concat('all_', $property/@name)"/>"] =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="$property/@entity"/>))<xsl:for-each select="$entity/property[@distinct='user']">
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>))<xsl:for-each select="$entity/property[@distinct='user']">
               <xsl:value-of select="concat('.AddOrder( new Order( &#34;', @name, '&#34;, true))')"/>
-            </xsl:for-each>.List&lt;<xsl:value-of select="$property/@entity"/>&gt;();
+            </xsl:for-each>.List&lt;<xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>&gt;();
     </xsl:template>
 
     <xsl:template name="primary-key">

@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-02-01 18:25:38 $
+    $Revision: 1.3 $
+    $Date: 2008-02-01 21:47:15 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -19,7 +19,10 @@
   xmlns:exsl="http://exslt.org/common"
   xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:msxsl="urn:schemas-microsoft-com:xslt">
-      <xsl:output encoding="UTF-8" method="text"/>
+
+  <xsl:include href="csharp-type-include.xslt"/>
+
+  <xsl:output encoding="UTF-8" method="text"/>
 
   <!-- The locale for which these entities are generated 
       TODO: Entities should NOT be locale specific. Instead, the
@@ -47,7 +50,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.2 $', 11)"/>
+                  select="substring( '$Revision: 1.3 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -310,6 +313,7 @@
         <!-- when required is 'true' null is not permitted anyway; otherwise... -->
         <xsl:when test="$base-type='entity'"/>
         <xsl:when test="$base-type='string'"/>
+        <xsl:when test="$base-type='text'"/>
         <!-- entities and strings are always nullable, don't need decoration -->
         <xsl:when test="$base-type='list'"/>
         <xsl:when test="$base-type='link'"/>
@@ -352,7 +356,7 @@
         private Regex <xsl:value-of select="@name"/>Validator = new Regex( "<xsl:value-of select="$validationpattern"/>");
     </xsl:if>
 
-        private <xsl:value-of select="$csharp-type"/><xsl:value-of select="normalize-space( $nullable-decoration)"/> _<xsl:value-of select="@name"/> <xsl:value-of select="$initialiser"/>;
+        private <xsl:value-of select="normalize-space( $csharp-type)"/><xsl:value-of select="normalize-space( $nullable-decoration)"/> _<xsl:value-of select="@name"/> <xsl:value-of select="normalize-space( $initialiser)"/>;
 
         /// &lt;summary&gt;
         /// <xsl:choose>
@@ -363,7 +367,7 @@
         </xsl:choose><xsl:if test="help[@locale=$locale]">:
         /// <xsl:value-of select="normalize-space( help[@locale=$locale])"/></xsl:if>
         /// &lt;/summary&gt;
-        public virtual <xsl:value-of select="$csharp-type"/><xsl:value-of select="normalize-space( $nullable-decoration)"/><xsl:text> </xsl:text> <xsl:value-of select="@name"/>
+        public virtual <xsl:value-of select="normalize-space( $csharp-type)"/><xsl:value-of select="normalize-space( $nullable-decoration)"/><xsl:text> </xsl:text> <xsl:value-of select="@name"/>
         {
           get { return _<xsl:value-of select="@name"/>; }
           set {
@@ -454,57 +458,6 @@
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
-  </xsl:template>
-
-  <!-- return the base ADL type of the property which is passed as a parameter -->
-  <xsl:template name="base-type">
-    <xsl:param name="property"/>
-    <xsl:choose>
-      <xsl:when test="$property/@type='defined'">
-        <xsl:variable name="definition">
-          <xsl:value-of select="$property/@typedef"/>
-        </xsl:variable>
-        <xsl:message terminate="no">
-          Looking for definition of '<xsl:value-of select="$definition"/>';
-          Found to be defined as type '<xsl:value-of select="/adl:application/adl:typedef[@name=$definition]/@type"/>'
-        </xsl:message>
-        <xsl:value-of select="/adl:application/adl:typedef[@name=$definition]/@type"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$property/@type"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <!-- return the C# type of the property which is passed as a parameter -->
-  <xsl:template name="csharp-type">
-    <xsl:param name="property"/>
-    <xsl:variable name="base-type">
-      <xsl:call-template name="base-type">
-        <xsl:with-param name="property" select="$property"/>
-      </xsl:call-template>
-    </xsl:variable>
-    <xsl:choose>
-      <xsl:when test="$base-type = 'link'">
-        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
-      </xsl:when>
-      <xsl:when test="$base-type = 'list'">
-        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
-      </xsl:when>
-      <xsl:when test="$base-type = 'date'">DateTime</xsl:when>
-      <xsl:when test="$base-type = 'time'">DateTime</xsl:when>
-      <xsl:when test="$base-type = 'string'">String</xsl:when>
-      <xsl:when test="$base-type = 'text'">String</xsl:when>
-      <xsl:when test="$base-type = 'boolean'">bool</xsl:when>
-      <xsl:when test="$base-type = 'timestamp'">DateTime</xsl:when>
-      <xsl:when test="$base-type = 'integer'">int</xsl:when>
-      <xsl:when test="$base-type = 'real'">double</xsl:when>
-      <xsl:when test="$base-type = 'money'">Decimal</xsl:when>
-      <xsl:when test="$base-type = 'entity'">
-        <xsl:value-of select="$property/@entity"/>
-      </xsl:when>
-      <xsl:otherwise>[unknown?]</xsl:otherwise>
-    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>
