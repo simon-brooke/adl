@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.2 $
+      $Revision: 1.3 $
   -->
     
   <xsl:output indent="no" encoding="utf-8" method="text"/>
@@ -22,7 +22,7 @@
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.2 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.3 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -34,12 +34,17 @@
         <xsl:apply-templates select="adl:group"/>
 
         -------------------------------------------------------------------------------------------------
-        --    tables, views and permissions
+        --    primary tables, views and permissions
         -------------------------------------------------------------------------------------------------
         <xsl:apply-templates select="adl:entity" mode="table"/>
 
         -------------------------------------------------------------------------------------------------
-        --    referential integrity constraints
+        --    link tables  
+        -------------------------------------------------------------------------------------------------
+        <xsl:apply-templates select="adl:entity" mode="links"/>
+
+        -------------------------------------------------------------------------------------------------
+        --    primary referential integrity constraints
         -------------------------------------------------------------------------------------------------
       <xsl:for-each select="adl:entity">
         <xsl:variable name="nearside" select="@name"/>
@@ -129,12 +134,10 @@
         -------------------------------------------------------------------------------------------------
         CREATE TABLE  "<xsl:value-of select="@name"/>"
         (
-          <xsl:for-each select="adl:key/adl:property">
-            <xsl:apply-templates select="."/><xsl:text> PRIMARY KEY,</xsl:text>
-          </xsl:for-each>
-          <xsl:for-each select="adl:property[@type!='link' and @type != 'list']">
+          <xsl:for-each select="descendant::adl:property[@type!='link' and @type != 'list']">
             <xsl:apply-templates select="."/><xsl:if test="position() != last()">,</xsl:if>
           </xsl:for-each>
+          <xsl:apply-templates select="adl:key"/>
         )
 
         GO
@@ -145,43 +148,52 @@
           <xsl:with-param name="table" select="$table"/>
         </xsl:call-template>
       </xsl:for-each>
+    
+  </xsl:template>
 
-      <xsl:if test="property[@type='link']">
-        ----  link tables  ------------------------------------------------------------------------------
-      </xsl:if>
-      <xsl:for-each select="adl:property[@type='link']">
-        <xsl:call-template name="linktable">
-          <xsl:with-param name="nearside" select="$table"/>
-        </xsl:call-template>
-      </xsl:for-each>
+  <xsl:template match="adl:key">
+    <xsl:if test="adl:property">
+          , 
+          PRIMARY KEY( <xsl:for-each select="adl:property">"<xsl:value-of select="@name"/>"<xsl:if test="position() != last()">, </xsl:if></xsl:for-each>)
+    </xsl:if>
+  </xsl:template>
 
-    </xsl:template>
-     
-    <xsl:template name="distinctfield">
-        <xsl:param name="table"/>
-        <xsl:param name="alias"/>
-        <!-- 
+  <xsl:template name="distinctfield">
+    <xsl:param name="table"/>
+    <xsl:param name="alias"/>
+    <!-- 
             print the names of the distinguishing fields in this table,
             concatenating into a single string. 
         -->
-        <xsl:for-each select="/application/entity[@name=$table]">
-            <xsl:for-each select="property[@distinct='user' or @distinct='all']">
-                <xsl:choose>
-                    <xsl:when test="@type='entity'">
-                        <xsl:call-template name="distinctfield">
-                            <xsl:with-param name="table" select="@entity"/>
-                            <xsl:with-param name="alias" select="concat( $alias, '_', @name)"></xsl:with-param>
-                        </xsl:call-template>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        "<xsl:value-of select="$alias"/>"."<xsl:value-of 
+    <xsl:for-each select="/application/entity[@name=$table]">
+      <xsl:for-each select="property[@distinct='user' or @distinct='all']">
+        <xsl:choose>
+          <xsl:when test="@type='entity'">
+            <xsl:call-template name="distinctfield">
+              <xsl:with-param name="table" select="@entity"/>
+              <xsl:with-param name="alias" select="concat( $alias, '_', @name)"></xsl:with-param>
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:otherwise>
+            "<xsl:value-of select="$alias"/>"."<xsl:value-of
                         select="@name"/>"<xsl:if test="position() != last()"> + ' ' + </xsl:if>
-                    </xsl:otherwise>
-                </xsl:choose>
-                
-            </xsl:for-each>
-        </xsl:for-each>
-    </xsl:template>
+          </xsl:otherwise>
+        </xsl:choose>
+
+      </xsl:for-each>
+    </xsl:for-each>
+  </xsl:template>
+
+  <!-- fix up linking tables. Donoe after all primary tables have been created, 
+  because otherwise some links may fail -->
+  <xsl:template match="adl:entity" mode="links">
+    <xsl:variable name="table" select="@name"/>
+    <xsl:for-each select="adl:property[@type='link']">
+      <xsl:call-template name="linktable">
+        <xsl:with-param name="nearside" select="$table"/>
+      </xsl:call-template>
+    </xsl:for-each>
+  </xsl:template>
 
   <xsl:template name="permission">
     <xsl:param name="table"/>
@@ -292,7 +304,6 @@
           </xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
-        -- Responsibility = '<xsl:value-of select="$myresponsibility"/>'
       <xsl:choose>
         <xsl:when test="$myresponsibility='true'">
           <!-- create a linking table -->
@@ -368,6 +379,11 @@
             <xsl:value-of select="@name"/><xsl:text> INT IDENTITY( 1, 1)</xsl:text>
   </xsl:template>
 
+  <xsl:template match="adl:generator[@action='native']">
+    IDENTITY( 1, 1)
+  </xsl:template>
+  <xsl:template match="adl:generator"/>
+
   <!-- the grand unified property handler, using the sql-type template to 
   generate the correct types for each field -->
   <xsl:template match="adl:property">
@@ -381,15 +397,19 @@
         <xsl:with-param name="property" select="."/>
       </xsl:call-template>
     </xsl:variable>
-          "<xsl:value-of select="@name"/>" <xsl:value-of select="normalize-space( $type)"/><xsl:if
+    <xsl:variable name="generator">
+      <xsl:apply-templates select="adl:generator"/>
+    </xsl:variable>
+          "<xsl:value-of select="@name"/>" <xsl:value-of 
+                select="concat( normalize-space( $type), ' ', normalize-space( $generator))"/><xsl:if
+                test="@required='true'"> NOT NULL</xsl:if><xsl:if
             test="string(@default)"> DEFAULT <xsl:choose>
               <xsl:when test="$base-type = 'integer' or $base-type = 'real' or $base-type = 'money'">
                 <xsl:value-of select="@default"/>
               </xsl:when>
               <xsl:otherwise>'<xsl:value-of select="@default"/>'</xsl:otherwise>
             </xsl:choose>
-    </xsl:if><xsl:if
-                test="@required='true'"> NOT NULL</xsl:if>
+    </xsl:if>
 
   </xsl:template>
   
@@ -408,60 +428,6 @@
                 test="@required='true'"> NOT NULL</xsl:if>
   </xsl:template>
 
-    <!-- xsl:template match="adl:property[@type='defined']">
-        <xsl:variable name="name"><xsl:value-of select="@typedef"/></xsl:variable>
-        <xsl:variable name="definitiontype"><xsl:value-of select="//adl:typedef[@name=$name]/@type"/></xsl:variable>
-            "<xsl:value-of select="@name"/>"<xsl:text> </xsl:text><xsl:choose>
-            <xsl:when test="$definitiontype='string'">VARCHAR( <xsl:value-of 
-                select="/application/definition[@name=$name]/@size"/>)</xsl:when>
-            <xsl:when test="$definitiontype='integer'">INT</xsl:when>
-            <xsl:when test="$definitiontype='real'">DOUBLE PRECISION</xsl:when>
-            <xsl:otherwise><xsl:value-of select="$definitiontype"/></xsl:otherwise>
-        </xsl:choose><xsl:if 
-        test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-            test="@required='true'"> NOT NULL</xsl:if>
-    </xsl:template>
-
-
-    <xsl:template match="adl:property[@type='boolean']">
-            "<xsl:value-of select="@name"/>" BIT<xsl:choose>
-              <xsl:when test="@default='true'"> DEFAULT 1</xsl:when>
-              <xsl:when test="@default='false'"> DEFAULT 0</xsl:when>
-            </xsl:choose><xsl:if test="@required='true'"> NOT NULL</xsl:if>
-    </xsl:template>
-
-
-    <xsl:template match="adl:property[@type='string']">
-            "<xsl:value-of select="@name"/>" VARCHAR( <xsl:value-of select="@size"/>)<xsl:if 
-                test="string(@default)"> DEFAULT '<xsl:value-of select="@default"/>'</xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>
-    </xsl:template>
-
-    <xsl:template match="adl:property[@type='date' or @type = 'time']">
-            "<xsl:value-of select="@name"/>" DATETIME<xsl:if
-                test="string(@default)"> DEFAULT <xsl:value-of select="@default"/>
-              </xsl:if><xsl:if
-                test="@required='true'"> NOT NULL</xsl:if>
-    </xsl:template>
-
-
-  <xsl:template match="adl:property[@type='integer']">
-            "<xsl:value-of select="@name"/>" INT<xsl:if 
-                test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                  test="@required='true'"> NOT NULL</xsl:if>
-  </xsl:template>
-    
-  <xsl:template match="adl:property[@type='real']">
-            "<xsl:value-of select="@name"/>" DOUBLE PRECISION<xsl:if 
-                test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>
-  </xsl:template>
-    
-  <xsl:template match="adl:property">
-            "<xsl:value-of select="@name"/>" <xsl:text> </xsl:text><xsl:value-of select="@type"/><xsl:if 
-                test="string(@default)"> DEFAULT <xsl:value-of select="@default"/></xsl:if><xsl:if 
-                    test="@required='true'"> NOT NULL</xsl:if>
-  </xsl:template -->
 
   <!-- return the SQL type of the property which is passed as a parameter -->
   <xsl:template name="sql-type">
