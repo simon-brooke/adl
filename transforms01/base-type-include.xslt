@@ -10,8 +10,8 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-02-01 18:25:38 $
+    $Revision: 1.2 $
+    $Date: 2008-02-04 15:53:32 $
   -->
 
 <xsl:stylesheet version="1.0"
@@ -29,10 +29,6 @@
         <xsl:variable name="definition">
           <xsl:value-of select="$property/@typedef"/>
         </xsl:variable>
-        <xsl:message terminate="no">
-          Looking for definition of '<xsl:value-of select="$definition"/>';
-          Found to be defined as type '<xsl:value-of select="/adl:application/adl:typedef[@name=$definition]/@type"/>'
-        </xsl:message>
         <xsl:value-of select="/adl:application/adl:typedef[@name=$definition]/@type"/>
       </xsl:when>
       <xsl:when test="$property/@type='serial'">integer</xsl:when>
