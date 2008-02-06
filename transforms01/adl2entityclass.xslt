@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-02-01 21:47:15 $
+    $Revision: 1.4 $
+    $Date: 2008-02-06 17:24:53 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -41,6 +41,9 @@
     <xsl:apply-templates select="adl:entity"/>
   </xsl:template>
 
+  <!-- Don't bother generating anything for foreign entities -->
+  <xsl:template match="adl:entity[@foreign='true']"/>
+
   <xsl:template match="adl:entity">
     <xsl:message terminate="no">Matched entity with name <xsl:value-of select="@name"/>
   </xsl:message>
@@ -50,7 +53,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.3 $', 11)"/>
+                  select="substring( '$Revision: 1.4 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -108,7 +111,7 @@
         /* natural primary key exists - not generating abstract key */
           </xsl:when>
           <xsl:when test="adl:key">
-        /* composite promary key exists - not generating abstract key */
+        /* primary key exists - not generating abstract key */
         
         /// &lt;summary&gt;
         /// Auto-generated constructor; initialises each of the slots within 

@@ -9,8 +9,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-01-31 17:06:35 $
+    $Revision: 1.2 $
+    $Date: 2008-02-06 17:24:53 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -31,7 +31,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.1 $', 11)"/>
+                select="substring( '$Revision: 1.2 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -44,6 +44,9 @@
       <xsl:comment> [ cut here: next file 'tail.txt' ] </xsl:comment>
     </output>
   </xsl:template>
+
+  <xsl:template match="entity[@foreign='true']"/>
+  <!-- Don't bother generating anything for foreign entities -->
 
   <xsl:template match="entity">
     <xsl:apply-templates select="form"/>
