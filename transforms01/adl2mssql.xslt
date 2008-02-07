@@ -12,10 +12,10 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.4 $
+      $Revision: 1.5 $
   -->
     
-  <xsl:output indent="no" encoding="utf-8" method="text"/>
+  <xsl:output indent="no" encoding="UTF-8" method="text"/>
   <xsl:include href="base-type-include.xslt"/>
 
   <!-- 
@@ -31,7 +31,7 @@
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.4 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.5 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -469,7 +469,6 @@
   </xsl:template>
 
   <xsl:template name="primary-key-name">
-    <!-- return the name of the primary key of the entity with this name -->
     <xsl:param name="entityname"/>
     <xsl:choose>
       <xsl:when test="//adl:entity[@name=$entityname]/@natural-key">
@@ -522,17 +521,31 @@
     </xsl:variable>
     <xsl:choose>
       <xsl:when test="$base-type = 'entity'">
-        <xsl:variable name="entity" select="@entity"/>
-        <xsl:call-template name="sql-type">
-          <xsl:with-param name="property" 
-                          select="//adl:entity[@name=$entity]/adl:key/adl:property[position()=1]"/>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:when test="$base-type = 'link'">
-        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
-      </xsl:when>
-      <xsl:when test="$base-type = 'list'">
-        ICollection&lt;<xsl:value-of select="@entity"/>&gt;
+        <xsl:variable name="entity" select="$property/@entity"/>
+        <xsl:choose>
+          <xsl:when test="//adl:entity[@name=$entity]">
+            <xsl:choose>
+              <xsl:when test="//adl:entity[@name=$entity]/adl:key/adl:property">
+                <xsl:call-template name="sql-type">
+                  <xsl:with-param name="property"
+                                  select="//adl:entity[@name=$entity]/adl:key/adl:property[position()=1]"/>
+                </xsl:call-template>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:message terminate="yes">
+                  ADL: ERROR: property '<xsl:value-of select="$property/@name"/>' refers to
+                  entity '<xsl:value-of select="$property/@entity"/>', but this entity has not key.
+                </xsl:message>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:message terminate="yes">
+              ADL: ERROR: property '<xsl:value-of select="$property/@name"/>' refers to 
+              entity '<xsl:value-of select="$property/@entity"/>', but no such entity exists.
+            </xsl:message>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:when>
       <xsl:when test="$base-type = 'date'">DATETIME</xsl:when>
       <xsl:when test="$base-type = 'time'">DATETIME</xsl:when>

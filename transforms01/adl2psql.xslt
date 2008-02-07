@@ -31,7 +31,7 @@
     <!--
         JACQUARD 2 APPLICATION DESCRIPTION LANGUAGE FRAMEWORK
         
-        $Revision: 1.1 $
+        $Revision: 1.2 $
         
         NOTES:
         
@@ -48,13 +48,13 @@
         two removes (i.e. the 'distinguish' mechanism in ADL
     -->
     
-    <xsl:output indent="no" encoding="utf-8" method="text"/>
+    <xsl:output indent="no" encoding="UTF-8" method="text"/>
     
     <xsl:template match="application"> 
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for PostgreSQL [7|8] using adl2psql.xsl $Revision: 1.1 $
+        --    Generated for PostgreSQL [7|8] using adl2psql.xsl $Revision: 1.2 $
         --
         --    Code generator (c) 2006 Simon Brooke [simon@weft.co.uk]
         --    http://www.weft.co.uk/library/jacquard/

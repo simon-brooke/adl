@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
     Application Description Language framework
     base-type-include.xslt
@@ -10,8 +10,8 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-02-04 15:53:32 $
+    $Revision: 1.3 $
+    $Date: 2008-02-07 16:35:00 $
   -->
 
 <xsl:stylesheet version="1.0"
