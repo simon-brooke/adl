@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-02-01 21:47:15 $
+    $Revision: 1.4 $
+    $Date: 2008-02-08 10:46:43 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -44,13 +44,13 @@
       <!-- Ignore entities without a simple (non-composite) key. -->
     </xsl:template>
     
-    <xsl:template match="a:entity">
+    <xsl:template match="a:entity[form|page|list]">
       <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.3 $', 11)"/>
+                    select="substring( '$Revision: 1.4 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
