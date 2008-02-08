@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.6 $
+      $Revision: 1.7 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -31,7 +31,7 @@
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.6 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.7 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -113,8 +113,11 @@
     <xsl:variable name="nearside" select="@name"/>
     <xsl:for-each select="descendant::adl:property[@type='entity']">
       <xsl:variable name="farside" select="@entity"/>
-      <xsl:variable name="keyfield" select="@name"/>
-
+      <xsl:variable name="keyfield">
+        <xsl:call-template name="property-column-name">
+          <xsl:with-param name="property" select="."/>
+        </xsl:call-template>
+      </xsl:variable>
       <xsl:choose>
         <xsl:when test="//adl:entity[@name=$farside]//adl:property[@farkey=$keyfield and @entity=$nearside]">
           <!-- there's a 'list' property pointing the other way; let it do the heavy hauling -->
@@ -192,7 +195,9 @@
   <xsl:template match="adl:key">
     <xsl:if test="adl:property">
           , 
-          PRIMARY KEY( <xsl:for-each select="adl:property">"<xsl:value-of select="@name"/>"<xsl:if test="position() != last()">, </xsl:if></xsl:for-each>)
+          PRIMARY KEY( <xsl:for-each select="adl:property">"<xsl:call-template name="property-column-name">
+            <xsl:with-param name="property" select="."/>
+          </xsl:call-template>"<xsl:if test="position() != last()">, </xsl:if></xsl:for-each>)
     </xsl:if>
   </xsl:template>
 
@@ -245,47 +250,36 @@
       <xsl:when test="@permission='read'">
         GRANT SELECT ON "<xsl:value-of
                 select="$table"/>" TO <xsl:value-of select="@group"/>
-
-        GO
       </xsl:when>
       <xsl:when test="@permission='insert'">
         GRANT INSERT ON "<xsl:value-of
                 select="$table"/>" TO <xsl:value-of select="@group"/>
-
-        GO
       </xsl:when>
       <xsl:when test="@permission='noedit'">
         GRANT SELECT, INSERT ON "<xsl:value-of
                 select="$table"/>" TO <xsl:value-of select="@group"/>
-
-        GO
       </xsl:when>
       <xsl:when test="@permission='edit'">
         GRANT SELECT, INSERT, UPDATE ON "<xsl:value-of
                 select="$table"/>" TO <xsl:value-of select="@group"/>
-
-        GO
       </xsl:when>
       <xsl:when test="@permission='all'">
         GRANT SELECT, INSERT, UPDATE, DELETE ON "<xsl:value-of
                 select="$table"/>" TO <xsl:value-of select="@group"/>
-
-        GO
       </xsl:when>
       <xsl:otherwise>
         REVOKE ALL ON "<xsl:value-of
                 select="$table"/>" FROM <xsl:value-of select="@group"/>
-
-        GO
       </xsl:otherwise>
     </xsl:choose>
     <xsl:text>
-            
+        GO
+        
     </xsl:text>
   </xsl:template>
 
   <!-- expects to be called in the context of an entity; probably should make this explicit. 
-    TODO: refactor. -->
+    TODO: this is a mess; refactor. -->
   <xsl:template name="linktable">
         <xsl:param name="nearside"/>
       <!-- This is tricky. For any many-to-many relationship between two 
@@ -307,7 +301,8 @@
           <xsl:with-param name="node2" select="@entity"/>
         </xsl:call-template>
       </xsl:variable>
-      <xsl:variable name="farentity" select="//adl:entity[@name=$farside]"/>
+      <xsl:variable name="farentityname" select="@entity"/>
+      <xsl:variable name="farentity" select="//adl:entity[@name=$farentityname]"/>
       
 
       <xsl:variable name="myresponsibility">
@@ -358,8 +353,12 @@
         -------------------------------------------------------------------------------------------------
         CREATE TABLE "<xsl:value-of select="$linktablename"/>"
         (
-          "<xsl:value-of select="$nearside"/>Id" INT NOT NULL,
-          "<xsl:value-of select="$farside"/>Id" INT NOT NULL,
+          "<xsl:value-of select="$nearside"/>Id" <xsl:call-template name="sql-type">
+            <xsl:with-param name="property" select="//adl:entity[@name=$nearside]/adl:key/adl:property[position()=1]"/>
+          </xsl:call-template> NOT NULL,
+          "<xsl:value-of select="$farside"/>Id" <xsl:call-template name="sql-type">
+          <xsl:with-param name="property" select="$farentity/adl:key/adl:property[position()=1]"/>
+          </xsl:call-template> NOT NULL
         )
 
         GO
@@ -407,7 +406,7 @@
           </xsl:variable>
           <xsl:variable name="fartable">
             <xsl:call-template name="tablename">
-              <xsl:with-param name="entityname" select="$farside"/>
+              <xsl:with-param name="entityname" select="$farentityname"/>
             </xsl:call-template>
           </xsl:variable>
 
@@ -455,15 +454,6 @@
         -- as it is the 'one' end of a one-to-many relationship
   </xsl:template>
 
-  <xsl:template match="adl:property[@type='serial']">
-            <xsl:call-template name="property-name">
-      <xsl:with-param name="property" select="."/>
-    </xsl:call-template><xsl:text> INT IDENTITY( 1, 1)</xsl:text>
-    <xsl:message terminate="no">
-      ADL: WARNING: type='serial' is deprecated; add a generator with type='native' instead
-    </xsl:message>
-  </xsl:template>
-
   <xsl:template match="adl:generator[@action='native']">
     IDENTITY( 1, 1)
   </xsl:template>
@@ -473,7 +463,7 @@
   generate the correct types for each field -->
   <xsl:template match="adl:property">
     <xsl:variable name="column">
-      <xsl:call-template name="property-name">
+      <xsl:call-template name="property-column-name">
         <xsl:with-param name="property" select="."/>
       </xsl:call-template>
     </xsl:variable>
@@ -509,7 +499,7 @@
   work out what's wrong with the grand unified version -->
   <xsl:template match="adl:property[@type='entity']">
     <xsl:variable name="column">
-      <xsl:call-template name="property-name">
+      <xsl:call-template name="property-column-name">
         <xsl:with-param name="property" select="."/>
       </xsl:call-template>
     </xsl:variable>
@@ -525,7 +515,7 @@
 
 
   <!-- consistent, repeatable way of getting the column name for a given property -->
-  <xsl:template name="property-name">
+  <xsl:template name="property-column-name">
     <xsl:param name="property"/>
     <xsl:choose>
       <xsl:when test="$property/@column">
@@ -603,7 +593,7 @@
               <xsl:otherwise>
                 <xsl:message terminate="yes">
                   ADL: ERROR: property '<xsl:value-of select="$property/@name"/>' refers to
-                  entity '<xsl:value-of select="$property/@entity"/>', but this entity has not key.
+                  entity '<xsl:value-of select="$property/@entity"/>', but this entity has no key.
                 </xsl:message>
               </xsl:otherwise>
             </xsl:choose>
@@ -626,7 +616,6 @@
       <xsl:when test="$base-type = 'integer'">INT</xsl:when>
       <xsl:when test="$base-type = 'real'">DOUBLE PRECISION</xsl:when>
       <xsl:when test="$base-type = 'money'">DECIMAL</xsl:when>
-      <xsl:when test="$base-type = 'serial'">INT IDENTITY( 1, 1)</xsl:when>
       <xsl:otherwise>[sql:unknown? [<xsl:value-of select="$base-type"/>]]</xsl:otherwise>
     </xsl:choose>
 
