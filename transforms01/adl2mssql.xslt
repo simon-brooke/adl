@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.5 $
+      $Revision: 1.6 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -31,7 +31,7 @@
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.5 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.6 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -40,104 +40,130 @@
         -------------------------------------------------------------------------------------------------
         --    authentication roles
         -------------------------------------------------------------------------------------------------
-        <xsl:apply-templates select="adl:group"/>
+    <xsl:apply-templates select="adl:group"/>
 
         -------------------------------------------------------------------------------------------------
         --    primary tables, views and permissions
         -------------------------------------------------------------------------------------------------
-        <xsl:apply-templates select="adl:entity" mode="table"/>
+    <xsl:apply-templates select="adl:entity" mode="table"/>
 
         -------------------------------------------------------------------------------------------------
         --    link tables  
         -------------------------------------------------------------------------------------------------
-        <xsl:apply-templates select="adl:entity" mode="links"/>
+    <xsl:apply-templates select="adl:entity" mode="links"/>
 
         -------------------------------------------------------------------------------------------------
         --    primary referential integrity constraints
         -------------------------------------------------------------------------------------------------
-      <xsl:for-each select="adl:entity[ not(@foreign='true')]">
-        <xsl:variable name="nearside" select="@name"/>
-        <xsl:for-each select="property[@type='entity']">
-          <xsl:variable name="farside" select="@entity"/>
-          <xsl:variable name="keyfield" select="@name"/>
-          <xsl:choose>
-            <xsl:when test="//adl:entity[@name=$farside]/adl:property[@farkey=$keyfield and @entity=$nearside]">
-              <!-- there's a 'list' property pointing the other way; let it do the heavy hauling -->
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:call-template name="foreignkey">
-                <xsl:with-param name="nearside" select="$nearside"/>
-                <xsl:with-param name="farside" select="$farside"/>
-                <xsl:with-param name="keyfield" select="$keyfield"/>
-              </xsl:call-template>
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:for-each>
-        <xsl:for-each select="adl:property[@type='list']">
-          <xsl:variable name="farkey">
-            <xsl:choose>
-              <xsl:when test="@farkey">
-                <xsl:value-of select="@farkey"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="../@name"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:variable>
-          <xsl:call-template name="foreignkey">
-            <xsl:with-param name="nearside" select="@entity"/>
-            <xsl:with-param name="farside" select="../@name"/>
-            <xsl:with-param name="keyfield" select="$farkey"/>
-            <xsl:with-param name="ondelete">
-              <xsl:choose>
-                <xsl:when test="@cascade='all'">CASCADE</xsl:when>
-                <xsl:when test="@cascade='all-delete-orphan'">CASCADE</xsl:when>
-                <xsl:when test="@cascade='delete'">CASCADE</xsl:when>
-                <xsl:otherwise>NO ACTION</xsl:otherwise>
-              </xsl:choose>
-            </xsl:with-param>
-          </xsl:call-template>
-        </xsl:for-each>
-      </xsl:for-each>
+    <xsl:apply-templates select="adl:entity" mode="refinteg"/>
       
         -------------------------------------------------------------------------------------------------
         --    end of file
         -------------------------------------------------------------------------------------------------
-    </xsl:template>
+  </xsl:template>
     
-    <xsl:template match="adl:group">
+  <xsl:template match="adl:group">
         execute sp_addrole @rolename = '<xsl:value-of select="@name"/>' 
         
         GO
-    </xsl:template>
+  </xsl:template>
+
+  <!-- return the table name for the entity with this entity name -->
+  <xsl:template name="tablename">
+    <xsl:param name="entityname"/>
+    <xsl:choose>
+      <xsl:when test="//adl:entity[@name=$entityname]/@table">
+        <xsl:value-of select="//adl:entity[@name=$entityname]/@table"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$entityname"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+  
+  <!-- generate a foreign key referential integrity check -->
+  <xsl:template name="foreignkey">
+    <xsl:param name="nearside"/>
+    <xsl:param name="farside"/>
+    <xsl:param name="keyfield"/>
+    <xsl:param name="ondelete" select="'NO ACTION'"/>
+
+    <xsl:variable name="neartable">
+      <xsl:call-template name="tablename">
+        <xsl:with-param name="entityname" select="$nearside"/>
+      </xsl:call-template>
+    </xsl:variable>
     
-    <!-- generate a foreign key referential integrity check -->
-    <xsl:template name="foreignkey">
-      <xsl:param name="nearside"/>
-      <xsl:param name="farside"/>
-      <xsl:param name="keyfield"/>
-      <xsl:param name="ondelete" select="'NO ACTION'"/>
-        <!-- set up referential integrity constraints for primary tables -->
-        ALTER TABLE "<xsl:value-of select="$nearside"/>"
+    <xsl:variable name="fartable">
+      <xsl:call-template name="tablename">
+        <xsl:with-param name="entityname" select="$farside"/>
+      </xsl:call-template>
+    </xsl:variable>
+    
+    <!-- set up referential integrity constraints for primary tables -->
+        ALTER TABLE "<xsl:value-of select="$neartable"/>"
             ADD FOREIGN KEY ( "<xsl:value-of select="$keyfield"/>") 
-            REFERENCES "<xsl:value-of select="$farside"/>" ON DELETE <xsl:value-of select="$ondelete"/>
+            REFERENCES "<xsl:value-of select="$fartable"/>" ON DELETE <xsl:value-of select="$ondelete"/>
             
         GO
-    </xsl:template>
+  </xsl:template>
 
+  <!-- generate referential integrity constraints -->
+  <xsl:template match="adl:entity" mode="refinteg">
+    <xsl:variable name="nearside" select="@name"/>
+    <xsl:for-each select="descendant::adl:property[@type='entity']">
+      <xsl:variable name="farside" select="@entity"/>
+      <xsl:variable name="keyfield" select="@name"/>
+
+      <xsl:choose>
+        <xsl:when test="//adl:entity[@name=$farside]//adl:property[@farkey=$keyfield and @entity=$nearside]">
+          <!-- there's a 'list' property pointing the other way; let it do the heavy hauling -->
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="foreignkey">
+            <xsl:with-param name="nearside" select="$nearside"/>
+            <xsl:with-param name="farside" select="$farside"/>
+            <xsl:with-param name="keyfield" select="$keyfield"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:for-each>
+    <xsl:for-each select="descendant::adl:property[@type='list']">
+      <xsl:variable name="farkey">
+        <xsl:choose>
+          <xsl:when test="@farkey">
+            <xsl:value-of select="@farkey"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="../@name"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:call-template name="foreignkey">
+        <xsl:with-param name="nearside" select="@entity"/>
+        <xsl:with-param name="farside" select="../@name"/>
+        <xsl:with-param name="keyfield" select="$farkey"/>
+        <xsl:with-param name="ondelete">
+          <xsl:choose>
+            <xsl:when test="@cascade='all'">CASCADE</xsl:when>
+            <xsl:when test="@cascade='all-delete-orphan'">CASCADE</xsl:when>
+            <xsl:when test="@cascade='delete'">CASCADE</xsl:when>
+            <xsl:otherwise>NO ACTION</xsl:otherwise>
+          </xsl:choose>
+        </xsl:with-param>
+      </xsl:call-template>
+    </xsl:for-each>
+  </xsl:template>
+  
+  
   <!-- don't generate foreign tables - although we will generate ref integ constraints for them -->
   <xsl:template match="adl:entity[@foreign='true']" mode="table"/> 
 
   <xsl:template match="adl:entity" mode="table">
     <xsl:variable name="table">
-      <xsl:choose>
-        <xsl:when test="@table">
-          <xsl:value-of select="@table"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="@name"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:call-template name="tablename">
+        <xsl:with-param name="entityname" select="@name"/>
+      </xsl:call-template>
     </xsl:variable>
 
         -------------------------------------------------------------------------------------------------
@@ -145,21 +171,22 @@
         -------------------------------------------------------------------------------------------------
         CREATE TABLE  "<xsl:value-of select="$table"/>"
         (
-          <xsl:for-each select="descendant::adl:property[@type!='link' and @type != 'list']">
-            <xsl:apply-templates select="."/><xsl:if test="position() != last()">,</xsl:if>
-          </xsl:for-each>
-          <xsl:apply-templates select="adl:key"/>
+    <xsl:for-each select="descendant::adl:property[@type!='link' and @type != 'list']">
+      <xsl:apply-templates select="."/>
+      <xsl:if test="position() != last()">,</xsl:if>
+    </xsl:for-each>
+    <xsl:apply-templates select="adl:key"/>
         )
 
         GO
 
         ----  permissions  ------------------------------------------------------------------------------
     <xsl:for-each select="adl:permission">
-        <xsl:call-template name="permission">
-          <xsl:with-param name="table" select="$table"/>
-        </xsl:call-template>
-      </xsl:for-each>
-    
+      <xsl:call-template name="permission">
+        <xsl:with-param name="entity" select="ancestor::adl:entity"/>
+      </xsl:call-template>
+    </xsl:for-each>
+
   </xsl:template>
 
   <xsl:template match="adl:key">
@@ -198,17 +225,22 @@
   <!-- fix up linking tables. Donoe after all primary tables have been created, 
   because otherwise some links may fail -->
   <xsl:template match="adl:entity" mode="links">
-    <xsl:variable name="table" select="@name"/>
+    <xsl:variable name="entityname" select="@name"/>
     <xsl:for-each select="adl:property[@type='link']">
       <xsl:call-template name="linktable">
-        <xsl:with-param name="nearside" select="$table"/>
+        <xsl:with-param name="nearside" select="$entityname"/>
       </xsl:call-template>
     </xsl:for-each>
   </xsl:template>
 
   <xsl:template name="permission">
-    <xsl:param name="table"/>
+    <xsl:param name="entity"/>
     <!-- decode the permissions for a table -->
+    <xsl:variable name="table">
+      <xsl:call-template name="tablename">
+        <xsl:with-param name="entityname" select="$entity/@name"/>
+      </xsl:call-template>
+    </xsl:variable>
     <xsl:choose>
       <xsl:when test="@permission='read'">
         GRANT SELECT ON "<xsl:value-of
@@ -252,7 +284,8 @@
     </xsl:text>
   </xsl:template>
 
-
+  <!-- expects to be called in the context of an entity; probably should make this explicit. 
+    TODO: refactor. -->
   <xsl:template name="linktable">
         <xsl:param name="nearside"/>
       <!-- This is tricky. For any many-to-many relationship between two 
@@ -274,15 +307,8 @@
           <xsl:with-param name="node2" select="@entity"/>
         </xsl:call-template>
       </xsl:variable>
-      <xsl:variable name="farentity" select="/application/entity[@name=$farside]"/>
+      <xsl:variable name="farentity" select="//adl:entity[@name=$farside]"/>
       
-      <!-- Problems with responsibility for generating link tables:
-           @entity = <xsl:value-of select="@entity"/>
-           $nearside = <xsl:value-of select="$nearside"/>
-           $farside = <xsl:value-of select="$farside"/>
-           $farentity = <xsl:value-of select="count( $farentity/property)"/>
-           farlink = <xsl:value-of select="$farentity/property[@type='link' and @entity=$nearside]/@name"/>
-           comparison = '<xsl:value-of select="$comparison"/>' -->
 
       <xsl:variable name="myresponsibility">
         <xsl:choose>
@@ -298,14 +324,22 @@
           <xsl:when test="$comparison = 1">
             <xsl:choose>
               <!-- the far side is doing it... -->
-              <xsl:when test="$farentity/property[@type='link' and @entity=$nearside]">false</xsl:when>
+              <xsl:when test="$farentity/adl:property[@type='link' and @entity=$nearside]">false</xsl:when>
               <xsl:otherwise>true</xsl:otherwise>
             </xsl:choose>
           </xsl:when>
           <xsl:otherwise>false</xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
-      <xsl:variable name="tablename">
+      <!-- Problems with responsibility for generating link tables: -->
+        -- Problems with responsibility for generating link tables:
+        -- @entity = <xsl:value-of select="@entity"/>
+        -- $nearside = <xsl:value-of select="$nearside"/>
+        -- $farside = <xsl:value-of select="$farside"/>
+        -- farlink = <xsl:value-of select="$farentity/adl:property[@type='link' and @entity=$nearside]/@name"/>
+        -- comparison = '<xsl:value-of select="$comparison"/>' 
+        -- my responsibility = <xsl:value-of select="$myresponsibility"/>
+      <xsl:variable name="linktablename">
         <xsl:choose>
           <xsl:when test="$comparison =-1">
             <xsl:value-of select="concat( 'LN_', $nearside, '_', @entity)"/>
@@ -322,7 +356,7 @@
         -------------------------------------------------------------------------------------------------
         --    link table joining <xsl:value-of select="$nearside"/> with <xsl:value-of select="@entity"/>
         -------------------------------------------------------------------------------------------------
-        CREATE TABLE "<xsl:value-of select="$tablename"/>"
+        CREATE TABLE "<xsl:value-of select="$linktablename"/>"
         (
           "<xsl:value-of select="$nearside"/>Id" INT NOT NULL,
           "<xsl:value-of select="$farside"/>Id" INT NOT NULL,
@@ -333,40 +367,75 @@
             
           </xsl:text>
         ----  permissions  ------------------------------------------------------------------------------
-          <xsl:for-each select="../permission">
-            <xsl:call-template name="permission">
-              <xsl:with-param name="table" select="$tablename"/>
-            </xsl:call-template>
+        <!-- only two levels of permission really matter for a link table. If you can read both of the 
+        parent tables, then you can read the link table. If you can edit either of the parent tables, 
+        then you need full CRUD permissions on the link table. -->
+        <xsl:for-each select="//adl:group">
+          <xsl:variable name="groupname" select="@name"/>
+            <xsl:choose>
+              <xsl:when test="//adl:entity[@name=$nearside]/adl:permission[@group=$groupname and @permission='all']">
+        GRANT SELECT,INSERT,UPDATE,DELETE ON <xsl:value-of select="$linktablename"/> TO <xsl:value-of select="$groupname"/> 
+              </xsl:when>
+              <xsl:when test="//adl:entity[@name=$nearside]/adl:permission[@group=$groupname and @permission='edit']">
+        GRANT SELECT,INSERT,UPDATE,DELETE ON <xsl:value-of select="$linktablename"/> TO <xsl:value-of select="$groupname"/>
+              </xsl:when>
+              <xsl:when test="//adl:entity[@name=$farside]/adl:permission[@group=$groupname and @permission='all']">
+        GRANT SELECT,INSERT,UPDATE,DELETE ON <xsl:value-of select="$linktablename"/> TO <xsl:value-of select="$groupname"/>
+              </xsl:when>
+              <xsl:when test="//adl:entity[@name=$farside]/adl:permission[@group=$groupname and @permission='edit']">
+        GRANT SELECT,INSERT,UPDATE,DELETE ON <xsl:value-of select="$linktablename"/> TO <xsl:value-of select="$groupname"/>
+              </xsl:when>
+              <xsl:when test="//adl:entity[@name=$nearside]/adl:permission[@group=$groupname and @permission='none']">
+        REVOKE ALL ON <xsl:value-of select="$linktablename"/> FROM <xsl:value-of select="$groupname"/>
+              </xsl:when>
+              <xsl:when test="//adl:entity[@name=$farside]/adl:permission[@group=$groupname and @permission='none']">
+        REVOKE ALL ON <xsl:value-of select="$linktablename"/> FROM <xsl:value-of select="$groupname"/>
+              </xsl:when>
+              <xsl:otherwise>
+        GRANT SELECT ON <xsl:value-of select="$linktablename"/> TO <xsl:value-of select="$groupname"/>
+              </xsl:otherwise>
+            </xsl:choose>
+        GO
           </xsl:for-each>
-          <xsl:text>
-            
-          </xsl:text>
+          
         ----  referential integrity  --------------------------------------------------------------------
+        
+          <xsl:variable name="neartable">
+            <xsl:call-template name="tablename">
+              <xsl:with-param name="entityname" select="$nearside"/>
+            </xsl:call-template>
+          </xsl:variable>
+          <xsl:variable name="fartable">
+            <xsl:call-template name="tablename">
+              <xsl:with-param name="entityname" select="$farside"/>
+            </xsl:call-template>
+          </xsl:variable>
+
           <xsl:choose>
             <xsl:when test="$nearside=@entity">
               <xsl:call-template name="foreignkey">
-                <xsl:with-param name="nearside" select="$tablename"/>
-                <xsl:with-param name="farside" select="$nearside"/>
+                <xsl:with-param name="nearside" select="$linktablename"/>
+                <xsl:with-param name="farside" select="$neartable"/>
                 <xsl:with-param name="keyfield" select="concat( $nearside, 'Id')"/>
                 <xsl:with-param name="ondelete" select="'NO ACTION'"/>
               </xsl:call-template>
               <xsl:call-template name="foreignkey">
-                <xsl:with-param name="nearside" select="$tablename"/>
-                <xsl:with-param name="farside" select="$nearside"/>
+                <xsl:with-param name="nearside" select="$linktablename"/>
+                <xsl:with-param name="farside" select="$fartable"/>
                 <xsl:with-param name="keyfield" select="concat( $farside, 'Id')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
             </xsl:when>
             <xsl:otherwise>
               <xsl:call-template name="foreignkey">
-                <xsl:with-param name="nearside" select="$tablename"/>
-                <xsl:with-param name="farside" select="$nearside"/>
+                <xsl:with-param name="nearside" select="$linktablename"/>
+                <xsl:with-param name="farside" select="$neartable"/>
                 <xsl:with-param name="keyfield" select="concat( $nearside, 'Id')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
               <xsl:call-template name="foreignkey">
-                <xsl:with-param name="nearside" select="$tablename"/>
-                <xsl:with-param name="farside" select="@entity"/>
+                <xsl:with-param name="nearside" select="$linktablename"/>
+                <xsl:with-param name="farside" select="$fartable"/>
                 <xsl:with-param name="keyfield" select="concat( @entity, 'Id')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
@@ -374,7 +443,7 @@
           </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-        -- Suppressing generation of <xsl:value-of select="$tablename"/>, as it is not my responsibility
+        -- Suppressing generation of <xsl:value-of select="$linktablename"/>, as it is not my responsibility
         </xsl:otherwise>
       </xsl:choose>
       <xsl:if test="myresponsibility='true'">
