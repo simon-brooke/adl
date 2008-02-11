@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.5 $
-    $Date: 2008-02-11 16:13:17 $
+    $Revision: 1.6 $
+    $Date: 2008-02-11 16:21:32 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -62,7 +62,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.5 $', 11)"/>
+                    select="substring( '$Revision: 1.6 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -71,6 +71,17 @@
           <xsl:with-param name="entity" select="."/>
         </xsl:call-template>
       </xsl:variable>
+      <xsl:variable name="keytype">
+        <xsl:choose>
+          <xsl:when test="adl:key/adl:property">
+            <xsl:call-template name="primary-key-csharp-type">
+              <xsl:with-param name="entity" select="."/>
+            </xsl:call-template>
+          </xsl:when>
+          <xsl:otherwise>[no primary key]</xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
 
       /* ---- [ cut here: next file '<xsl:value-of select="@name"/>Controller.auto.cs'] ---------------- */
 
@@ -163,7 +174,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         <!-- TODO: this does not correctly handle entities with composite primary keys -->
           record =
             hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id)
+              .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:value-of select="$keytype"/>)id)))
               .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
         }
 
@@ -337,9 +348,7 @@ namespace <xsl:value-of select="$controllerns"/> {
 
             hibernator.Delete( 
               hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
-                .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:call-template name="primary-key-csharp-type">
-                  <xsl:with-param name="entity" select="."/>
-                </xsl:call-template>)id)))
+                .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:value-of select="$keytype"/>)id)))
                 .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;());
 
             hibernator.Flush();
@@ -581,6 +590,11 @@ namespace <xsl:value-of select="$controllerns"/> {
 
   <xsl:template name="primary-key-csharp-type">
     <xsl:param name="entity"/>
+    <xsl:if test="not( $entity)">
+      <xsl:message terminate="yes">
+        No entity?
+      </xsl:message>
+    </xsl:if>
     <xsl:if test="not($entity/adl:key/adl:property)">
       <xsl:message terminate="yes">
         ADL: ERROR: entity '<xsl:value-of select="$entity/@name"/>' has no primary key.
