@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2008-02-11 15:35:42 $
+    $Revision: 1.5 $
+    $Date: 2008-02-11 16:13:17 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -62,7 +62,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.4 $', 11)"/>
+                    select="substring( '$Revision: 1.5 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -160,12 +160,10 @@ namespace <xsl:value-of select="$controllerns"/> {
         else
         {
           /* it's existing, retrieve it */
-        <!-- TODO: this does not corectly handle entities with composite primary keys -->
+        <!-- TODO: this does not correctly handle entities with composite primary keys -->
           record =
             hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:call-template name="primary-key-csharp-type">
-                <xsl:with-param name="entity" select="."/>
-              </xsl:call-template>)))
+              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id)
               .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
         }
 
