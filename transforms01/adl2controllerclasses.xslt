@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.6 $
-    $Date: 2008-02-11 16:21:32 $
+    $Revision: 1.7 $
+    $Date: 2008-02-13 09:52:42 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -62,7 +62,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.6 $', 11)"/>
+                    select="substring( '$Revision: 1.7 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -174,7 +174,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         <!-- TODO: this does not correctly handle entities with composite primary keys -->
           record =
             hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:value-of select="$keytype"/>)id)))
+              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
               .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
         }
 
@@ -190,9 +190,12 @@ namespace <xsl:value-of select="$controllerns"/> {
              * special - BindObjectInstance /should/ do it all. Unfortunately it sometimes 
              * doesn't, and I haven't yet characterised why not. */
              <!-- TODO: Fix this! -->
-              <xsl:variable name="linkkeytype">
+              <xsl:variable name="entityname" select="@entity"/>
+              
+              // The broken bit: Entity name is <xsl:value-of select="$entityname"/>
+            <!-- <xsl:variable name="linkkeytype">
                 <xsl:call-template name="primary-key-csharp-type">
-                  <xsl:with-param name="entity" select="//entity[@name=@entity]"/>
+                  <xsl:with-param name="entity" select="//entity[@name=$entityname]"/>
                 </xsl:call-template>
               </xsl:variable>
             record.<xsl:value-of select="@name"/> = 
@@ -201,9 +204,10 @@ namespace <xsl:value-of select="$controllerns"/> {
                   <xsl:with-param name="entity" select="//entity[@name=@entity]"/>
                 </xsl:call-template>", ((<xsl:value-of select="$linkkeytype"/>)Form["<xsl:value-of select="concat( $entityns, '.', @entity)"/>"])))
                 .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @entity)"/>&gt;();
-            </xsl:for-each>
-          
-            <xsl:for-each select="property[@type='link']">  
+            -->
+            </xsl:for-each> 
+
+                <xsl:for-each select="property[@type='link']">  
             /* to update a link table which has no other data than the near and far keys, it is
              * sufficient to smash the existing values and create new ones. It's also a lot easier! */
         
@@ -266,9 +270,7 @@ namespace <xsl:value-of select="$controllerns"/> {
                 <xsl:variable name="entityname" select="@entity"/>
                 <xsl:value-of select="@entity"/> item = 
                   hibernator.CreateCriteria(typeof(<xsl:value-of select="@entity"/>))
-                    .Add(Expression.Eq("<xsl:value-of select="@entity"/>Id", ((<xsl:call-template name="primary-key-csharp-type">
-                      <xsl:with-param name="entity" select="//adl:entity[@name=$entityname]"/> 
-                    </xsl:call-template>)index)))
+                    .Add(Expression.Eq("<xsl:value-of select="@entity"/>Id", index))
                     .UniqueResult&lt;<xsl:value-of select="$entityns"/>.<xsl:value-of select="@entity"/>&gt;();
               
                 if ( ! record.<xsl:value-of select="@name"/>.Contains( item))
@@ -337,9 +339,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         { 
           <xsl:value-of select="concat($entityns, '.', @name)"/> record =
             hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:call-template name="primary-key-csharp-type">
-                <xsl:with-param name="entity" select="."/>
-              </xsl:call-template>)))
+              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
               .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
 
           if ( record != null)
@@ -348,7 +348,7 @@ namespace <xsl:value-of select="$controllerns"/> {
 
             hibernator.Delete( 
               hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
-                .Add(Expression.Eq("<xsl:value-of select="$key"/>", ((<xsl:value-of select="$keytype"/>)id)))
+                .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
                 .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;());
 
             hibernator.Flush();
@@ -392,7 +392,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         ISession hibernator = 
           NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
                                               Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
-        IList&lt;<xsl:value-of select="@name"/>&gt; instances = 
+        IList&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt; instances = 
           hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))<xsl:for-each select="property[@distinct='user']">
             <xsl:value-of select="concat( '.AddOrder( new Order( &#34;', @name, '&#34;, true))')"/>
           </xsl:for-each>.List&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
@@ -515,7 +515,7 @@ namespace <xsl:value-of select="$controllerns"/> {
       /// &lt;/summary&gt;
       /// &lt;param name="<xsl:value-of select="concat( ../@name, 'Id')"/>"&gt;the key value of the record to show&lt;/param&gt;
       [AccessibleThrough(Verb.Get)]
-      public void <xsl:value-of select="@name"/>( <xsl:value-of select="$keytype"/> <xsl:value-of select="concat( ../@name, 'Id')"/>)
+      public void <xsl:value-of select="@name"/>( <xsl:value-of select="concat($keytype, ' ', ../@name, 'Id')"/>)
       {
         ISession hibernator = 
           NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
@@ -601,9 +601,7 @@ namespace <xsl:value-of select="$controllerns"/> {
       </xsl:message>
     </xsl:if>
     <xsl:call-template name="csharp-type">
-      <xsl:with-param name="property">
-        <xsl:value-of select="$entity/adl:key/adl:property[ position() = 1]"/>
-      </xsl:with-param>
+      <xsl:with-param name="property" select="$entity/adl:key/adl:property[ position() = 1]"/>
     </xsl:call-template>
   </xsl:template>
   
@@ -645,4 +643,4 @@ namespace <xsl:value-of select="$controllerns"/> {
         </xsl:otherwise>
       </xsl:choose>
     </xsl:template>
-  </xsl:stylesheet>
+ </xsl:stylesheet>

@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.7 $
+      $Revision: 1.8 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -26,16 +26,21 @@
       Name_Id - the name of the auto generated primary key is the name of the entity followed by '_Id'  
     -->
   <xsl:param name="abstract-key-name-convention" select="Id"/>
+  <xsl:param name="database"/>
 
   <xsl:template match="adl:application"> 
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.7 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.8 $
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
         -------------------------------------------------------------------------------------------------
+
+    <xsl:if test="string-length( $database) &gt; 0">
+      use <xsl:value-of select="$database"/>;
+    </xsl:if>
 
         -------------------------------------------------------------------------------------------------
         --    authentication roles
