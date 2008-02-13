@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.9 $
+        $Revision: 1.10 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -142,15 +142,11 @@
   
   name:     the name of this application
   version:  the version number of this application
-  assembly: C# implementation detail, DEPRECATED: should not be here
-  namespace:  C# implementation detail, DEPRECATED: should not be here
   xmlns:    XML namespace, in case required
 -->
 <!ELEMENT application ( documentation?, content?, typedef*,  group*, entity*)>
 <!ATTLIST application 
 	name 		  CDATA 						#REQUIRED
-  assembly  CDATA             #IMPLIED
-  namespace CDATA             #IMPLIED
 	version 	CDATA 						#IMPLIED
   xmlns     CDATA             #IMPLIED>
 
@@ -270,7 +266,9 @@
               if type='list', the name of the entity that has a foreign 
               key link to this entity
   farkey:     if type='list', the name of farside key in the listed 
-              entity
+              entity; if type='entity' and the farside field to join to 
+              is not the farside primary key, then the name of that
+              farside field
 	required:		whether this propery is required (i.e. 'not null').
 	size: 			fieldwidth of the property if specified.
   concrete:   if set to 'false', this property is not stored in the 

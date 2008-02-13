@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2008-02-06 17:24:53 $
+    $Revision: 1.5 $
+    $Date: 2008-02-13 15:56:31 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -45,15 +45,13 @@
   <xsl:template match="adl:entity[@foreign='true']"/>
 
   <xsl:template match="adl:entity">
-    <xsl:message terminate="no">Matched entity with name <xsl:value-of select="@name"/>
-  </xsl:message>
     <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.4 $', 11)"/>
+                  select="substring( '$Revision: 1.5 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -337,11 +335,11 @@
           </xsl:choose>
         </xsl:when>
         <xsl:when test="normalize-space( $nullable-decoration) = '?'"> = null</xsl:when>
-        <xsl:when test="$base-type = 'boolean'"> = false</xsl:when>
+        <xsl:when test="$base-type = 'Boolean'"> = false</xsl:when>
         <xsl:when test="$base-type = 'int'"> = 0</xsl:when>
         <xsl:when test="$csharp-type = 'Decimal'"> = 0.0M</xsl:when>
         <xsl:when test="$base-type = 'real'"> = 0.0</xsl:when>
-        <xsl:when test="$base-type='string'"> = null</xsl:when>
+        <xsl:when test="$base-type='String'"> = null</xsl:when>
       </xsl:choose>
     </xsl:variable>
 
@@ -426,6 +424,29 @@
             _<xsl:value-of select="@name"/> = value;
           }
         }
+
+    <xsl:if test="parent::adl:key and @type='entity'">
+        /* generate primitive value getter/setter for key property of type entity (experimental) */
+      <xsl:variable name="csharp-base-type">
+        <xsl:call-template name="csharp-base-type">
+          <xsl:with-param name="property" select="."/>
+        </xsl:call-template>
+      </xsl:variable>
+        private <xsl:value-of select="concat( $csharp-base-type, ' _', @name, '_Value')"/> <xsl:choose>
+        <xsl:when test="$csharp-base-type = 'Boolean'"> = false</xsl:when>
+        <xsl:when test="$csharp-base-type = 'int'"> = 0</xsl:when>
+        <xsl:when test="$csharp-base-type = 'Decimal'"> = 0.0M</xsl:when>
+        <xsl:when test="$csharp-base-type = 'real'"> = 0.0</xsl:when>
+        <xsl:when test="$csharp-base-type='String'"> = null</xsl:when>
+          <xsl:otherwise>[unknown? <xsl:value-of select="$csharp-base-type"/>]
+        </xsl:otherwise>
+      </xsl:choose>;
+
+        public virtual <xsl:value-of select="concat( $csharp-base-type, ' ', @name, '_Value')"/> {
+          get { return <xsl:value-of select="concat( '_', @name, '_Value')"/>; }
+          set { <xsl:value-of select="concat( '_', @name, '_Value')"/> = value; }
+        }
+    </xsl:if>
 
   </xsl:template>
 
