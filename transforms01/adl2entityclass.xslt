@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.5 $
-    $Date: 2008-02-13 15:56:31 $
+    $Revision: 1.6 $
+    $Date: 2008-02-20 12:09:53 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -51,7 +51,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.5 $', 11)"/>
+                  select="substring( '$Revision: 1.6 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -59,7 +59,7 @@
 
     //-------------------------------------------------------------
     //
-    //  Application Description Framework
+    //  Application Description Language framework
     //  <xsl:value-of select="@name"/>.auto.cs
     //
     //  (c)2007 Cygnet Solutions Ltd

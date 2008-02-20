@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <!--
-    C1873 SRU Hospitality
+    Application Description Language framework
     adl2views.xsl
     
     (c) 2007 Cygnet Solutions Ltd
@@ -9,8 +9,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-02-06 17:24:53 $
+    $Revision: 1.3 $
+    $Date: 2008-02-20 12:09:53 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -31,7 +31,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.2 $', 11)"/>
+                select="substring( '$Revision: 1.3 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -66,7 +66,7 @@
           Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
           generated from ADL.
 
-          Generated using adl2views.xsl <xsl:value-of select="$transform-revision"/>
+          Generated using adl2views.xslt <xsl:value-of select="$transform-revision"/>
         </xsl:comment>
         ${Ajax.InstallScripts()}
         ${FormHelper.InstallScripts()}
@@ -144,6 +144,8 @@
       <head>
         <xsl:call-template name="head"/>
         <xsl:comment>
+          Application Description Language framework
+
           Auto generated Velocity form for <xsl:value-of select="ancestor::entity/@name"/>,
           generated from ADL.
 

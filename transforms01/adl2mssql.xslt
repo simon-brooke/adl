@@ -4,7 +4,7 @@
   xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <!--
-      C1873 SRU Hospitality
+      Application Description Language framework
       adl2mssql.xsl
       
       (c) 2007 Cygnet Solutions Ltd
@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.8 $
+      $Revision: 1.9 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -31,8 +31,10 @@
   <xsl:template match="adl:application"> 
         -------------------------------------------------------------------------------------------------
         --
+        --    Application Description Language framework
+        --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xsl $Revision: 1.8 $
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.9 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
