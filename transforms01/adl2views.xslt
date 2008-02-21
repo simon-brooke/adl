@@ -9,8 +9,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-02-20 12:09:53 $
+    $Revision: 1.4 $
+    $Date: 2008-02-21 12:40:23 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -31,7 +31,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.3 $', 11)"/>
+                select="substring( '$Revision: 1.4 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -153,6 +153,17 @@
         </xsl:comment>
         ${ScriptsHelper.InstallScript( "ShuffleWidget")}
 
+
+        ${Ajax.InstallScripts()}
+        ${FormHelper.InstallScripts()}
+        ${Validation.InstallScripts()}
+        ${Scriptaculous.InstallScripts()}
+        ${DateTime.InstallScripts()}
+
+        ${ScriptsHelper.InstallScript( "Sitewide")}
+        ${ScriptsHelper.InstallScript( "Behaviour")}
+        ${ScriptsHelper.InstallScript( "Epoch")}
+
         <script type='text/javascript' language='JavaScript1.2'>
           var panes = new Array( <xsl:for-each select='fieldgroup'>
             "<xsl:value-of select='@name'/>"<xsl:choose>
@@ -168,23 +179,41 @@
           <xsl:for-each select="../property[@type='link']">
             document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
           </xsl:for-each>
-          var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
+            var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
           <xsl:if test="fieldgroup">
             switchtab( '<xsl:value-of select="fieldgroup[1]/@name"/>');
           </xsl:if>
           }
+          <xsl:for-each select="//definition">
+            <xsl:variable name="errormsg">
+              <xsl:choose>
+                <xsl:when test="help[@locale=$locale]">
+                  <xsl:apply-templates select="help[@locale=$locale]"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  Does not meet the format requirements for <xsl:value-of select="@name"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:variable>
+          Validation.add( '<xsl:value-of select="concat('validate-custom-', @name)"/>',
+            '<xsl:value-of select="normalize-space( $errormsg)"/>',
+            {
+            <xsl:choose>
+              <xsl:when test="@pattern">
+                pattern : new RegExp("<xsl:value-of select="@pattern"/>","gi")<xsl:if test="@size">,
+                maxLength : <xsl:value-of select="@size"/>
+                </xsl:if>                                                                      
+              </xsl:when>
+              <xsl:when test="@minimum">
+                min : <xsl:value-of select="@minimum"/><xsl:if test="@maximum">,
+                max : <xsl:value-of select="@maximum"/>
+                </xsl:if>
+              </xsl:when>
+            </xsl:choose>
+            });
+          </xsl:for-each>
 
         </script>
-
-        ${Ajax.InstallScripts()}
-        ${FormHelper.InstallScripts()}
-        ${Validation.InstallScripts()}
-        ${Scriptaculous.InstallScripts()}
-        ${DateTime.InstallScripts()}
-
-        ${ScriptsHelper.InstallScript( "Sitewide")}
-        ${ScriptsHelper.InstallScript( "Behaviour")}
-        ${ScriptsHelper.InstallScript( "Epoch")}
 
         ${StylesHelper.InstallStylesheet( "Epoch")}
 
@@ -774,6 +803,12 @@
               <xsl:attribute name="class">
                 <xsl:if test="@required='true'">required </xsl:if>
                 <xsl:choose>
+                  <xsl:when test="/application/definition[@name=$definition]/@pattern">
+                    <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
+                  </xsl:when>
+                  <xsl:when test="/application/definition[@name=$definition]/@minimum">
+                    <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
+                  </xsl:when>
                   <xsl:when test="$definedtype='integer'">validate-digits</xsl:when>
                   <xsl:when test="$definedtype='real'">validate-number</xsl:when>
                   <xsl:when test="$definedtype='money'">validate-number</xsl:when>

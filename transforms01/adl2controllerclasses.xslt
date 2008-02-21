@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.8 $
-    $Date: 2008-02-20 12:09:53 $
+    $Revision: 1.9 $
+    $Date: 2008-02-21 12:40:23 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -62,7 +62,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.8 $', 11)"/>
+                    select="substring( '$Revision: 1.9 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -307,6 +307,14 @@ namespace <xsl:value-of select="$controllerns"/> {
             <xsl:if test="$authentication-layer = 'Database'">   
           PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
             </xsl:if>
+        
+          if ( ! AssertNoErrors())
+          {
+            /* the session may be polluted; create a new session */
+            NHibernateHelper.CloseSession();
+            hibernator = NHibernateHelper.GetCurrentSession(Session[ NHibernateHelper.USERTOKEN], 
+                                                            Session[NHibernateHelper.PASSTOKEN]);
+          }
       
             <xsl:call-template name="menus">
               <xsl:with-param name="entity" select="."/>
