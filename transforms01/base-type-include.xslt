@@ -10,8 +10,8 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-02-07 16:35:00 $
+    $Revision: 1.4 $
+    $Date: 2008-02-27 17:38:41 $
   -->
 
 <xsl:stylesheet version="1.0"
@@ -32,6 +32,7 @@
         <xsl:value-of select="/adl:application/adl:typedef[@name=$definition]/@type"/>
       </xsl:when>
       <xsl:when test="$property/@type='serial'">integer</xsl:when>
+      <xsl:when test="$property/@type='message'">integer</xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$property/@type"/>
       </xsl:otherwise>

@@ -10,8 +10,8 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-02-13 09:52:42 $
+    $Revision: 1.4 $
+    $Date: 2008-02-27 17:38:42 $
   -->
 
 <xsl:stylesheet version="1.0"
@@ -62,6 +62,7 @@
       </xsl:call-template>
     </xsl:variable>
     <xsl:choose>
+      <xsl:when test="$property/@type = 'message'">Message</xsl:when>
       <xsl:when test="$base-type = 'link'">
         ICollection&lt;<xsl:value-of select="@entity"/>&gt;
       </xsl:when>

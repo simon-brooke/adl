@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.10 $
+        $Revision: 1.11 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -96,8 +96,16 @@
 -->
 <!ENTITY % ComplexDataTypes "entity|link|list|defined" >
 
+<!--
+  data types which require special handling - which don't simply map onto 
+  common SQL data types
+  geopos :    a latitude/longitude pair (experimental and not yet implemented)
+  image :     a raster image file, in jpeg|gif|png format (experimental, not yet implemented)
+-->
+<!ENTITY % SpecialDataTypes "geopos|image" >
+
 <!-- all data types -->
-<!ENTITY % AllDataTypes "%ComplexDataTypes;|%SimpleDataTypes;" >
+<!ENTITY % AllDataTypes "%ComplexDataTypes;|%SimpleDataTypes;|%SpecialDataTypes;" >
 
 <!-- content, for things like pages (i.e. forms, lists, pages) -->
 <!ENTITY % Content "head|top|foot" >

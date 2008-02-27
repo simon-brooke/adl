@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.6 $
-    $Date: 2008-02-20 12:09:53 $
+    $Revision: 1.7 $
+    $Date: 2008-02-27 17:38:41 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -51,7 +51,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.6 $', 11)"/>
+                  select="substring( '$Revision: 1.7 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -214,6 +214,9 @@
             <xsl:when test="adl:property[@distinct='user']">
               <xsl:for-each select="adl:property[@distinct='user']">
                 <xsl:choose>
+                  <xsl:when test="@type='message'">
+            result.Append( <xsl:value-of select="concat( @name, '.LocalText')"/>);
+                  </xsl:when>
                   <xsl:when test="@type='entity'">
                     <!-- TODO: this is dangerous and could potentially give rise to 
                       infinite loops; find a way of stopping it running away! -->
@@ -221,14 +224,14 @@
                   </xsl:when>
                   <xsl:when test="@type='date'">
                     <!-- if what we've got is just a date, we only want to see the date part of it -->
-            result.Append(<xsl:value-of select="concat( '_', @name)"/>.ToString( "d"));
+            result.Append(<xsl:value-of select="@name"/>.ToString( "d"));
                   </xsl:when>
                   <xsl:when test="@type='time'">
                     <!-- if what we've got is just a time, we only want to see the time part of it -->
-            result.Append(<xsl:value-of select="concat( '_', @name)"/>.ToString( "t"));
+            result.Append(<xsl:value-of select="@name"/>.ToString( "t"));
                   </xsl:when>
                   <xsl:otherwise>
-            result.Append(<xsl:value-of select="concat( '_', @name)"/>);
+            result.Append(<xsl:value-of select="@name"/>);
                   </xsl:otherwise>
                 </xsl:choose>
                 <xsl:choose>
@@ -312,6 +315,7 @@
       <xsl:choose>
         <xsl:when test="@required='true'"/>
         <!-- when required is 'true' null is not permitted anyway; otherwise... -->
+        <xsl:when test="@type='message'"/>
         <xsl:when test="$base-type='entity'"/>
         <xsl:when test="$base-type='string'"/>
         <xsl:when test="$base-type='text'"/>
