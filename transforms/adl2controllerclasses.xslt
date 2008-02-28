@@ -8,9 +8,9 @@
     
     Transform ADL into (partial) controller classes
     
-    $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2008-02-08 10:46:43 $
+    $Author: af $
+    $Revision: 1.5 $
+    $Date: 2008-02-28 14:56:05 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -44,13 +44,13 @@
       <!-- Ignore entities without a simple (non-composite) key. -->
     </xsl:template>
     
-    <xsl:template match="a:entity[form|page|list]">
+    <xsl:template match="a:entity[a:form|a:page|a:list]">
       <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.4 $', 11)"/>
+                    select="substring( '$Revision: 1.5 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -296,7 +296,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         InternalShowList();
         </xsl:when>
         <xsl:otherwise>
-        Redirect( FormsAuthentication.DefaultUrl);
+        RedirectToUrl( FormsAuthentication.DefaultUrl);
         </xsl:otherwise>
       </xsl:choose>
       }
@@ -327,7 +327,7 @@ namespace <xsl:value-of select="$controllerns"/> {
           </xsl:for-each>.List&lt;<xsl:value-of select="@name"/>&gt;();
 
         PropertyBag["instances"] =
-        PaginationHelper.CreatePagination( this, instances, 25);
+        PaginationHelper.CreatePagination( Context, instances, 25);
 
         RenderViewWithFailover(view);
         }
@@ -347,6 +347,8 @@ namespace <xsl:value-of select="$controllerns"/> {
         }
 
     </xsl:template>
+
+  	<xsl:template match="a:entity"/>
 
     <!-- suppress properties otherwise -->
     <xsl:template match="a:property"/>

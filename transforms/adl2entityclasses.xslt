@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: af $
-    $Revision: 1.2 $
-    $Date: 2008-01-31 12:34:21 $
+    $Revision: 1.3 $
+    $Date: 2008-02-28 14:56:05 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -48,7 +48,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.2 $', 11)"/>
+                  select="substring( '$Revision: 1.3 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -146,7 +146,7 @@
       }
     }
 
-    <xsl:apply-templates select="a:key/a:property|a:property|a:set"/>
+    <xsl:apply-templates select="a:key/a:property|a:property|a:set|a:one-to-one"/>
     }
     }
 
@@ -289,6 +289,18 @@
 
   </xsl:template>
 
+  <xsl:template match="a:one-to-one">
+    // auto generating for one-to-one with name <xsl:value-of select="@name"/>
+    private <xsl:value-of select="@class"/><xsl:text> </xsl:text>_<xsl:value-of select="@name"/>;
+
+    public virtual <xsl:value-of select="@class"/><xsl:text> </xsl:text><xsl:value-of select="@name"/>
+    {
+    get { return _<xsl:value-of select="@name"/>; }
+    set { _<xsl:value-of select="@name"/> = value; }
+    }
+	
+  </xsl:template>
+
   <xsl:template match="a:set[a:many-to-many]">
     // auto generating for set with name <xsl:value-of select="@name"/>, having many-to-many child
     private ICollection&lt;<xsl:value-of 
@@ -299,7 +311,7 @@
     get { return _<xsl:value-of select="@name"/>; }
     set { _<xsl:value-of select="@name"/> = value; }
     }
-
+	
   </xsl:template>
 
   <xsl:template match="a:set[a:one-to-many]">
