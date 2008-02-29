@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.9 $
+      $Revision: 1.10 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -34,7 +34,7 @@
         --    Application Description Language framework
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.9 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.10 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -360,10 +360,10 @@
         -------------------------------------------------------------------------------------------------
         CREATE TABLE "<xsl:value-of select="$linktablename"/>"
         (
-          "<xsl:value-of select="$nearside"/>Id" <xsl:call-template name="sql-type">
+          "<xsl:value-of select="concat( $nearside, 'Link')"/>" <xsl:call-template name="sql-type">
             <xsl:with-param name="property" select="//adl:entity[@name=$nearside]/adl:key/adl:property[position()=1]"/>
           </xsl:call-template> NOT NULL,
-          "<xsl:value-of select="$farside"/>Id" <xsl:call-template name="sql-type">
+          "<xsl:value-of select="concat( $farside, 'Link')"/>" <xsl:call-template name="sql-type">
           <xsl:with-param name="property" select="$farentity/adl:key/adl:property[position()=1]"/>
           </xsl:call-template> NOT NULL
         )
@@ -422,13 +422,13 @@
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$neartable"/>
-                <xsl:with-param name="keyfield" select="concat( $nearside, 'Id')"/>
+                <xsl:with-param name="keyfield" select="concat( $nearside, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'NO ACTION'"/>
               </xsl:call-template>
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$fartable"/>
-                <xsl:with-param name="keyfield" select="concat( $farside, 'Id')"/>
+                <xsl:with-param name="keyfield" select="concat( $farside, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
             </xsl:when>

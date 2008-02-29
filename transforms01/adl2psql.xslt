@@ -18,7 +18,7 @@
     <!--
         JACQUARD 2 APPLICATION DESCRIPTION LANGUAGE FRAMEWORK
         
-        $Revision: 1.3 $
+        $Revision: 1.4 $
         
         NOTES:
         
@@ -41,7 +41,7 @@
         -------------------------------------------------------------------------------------------------
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for PostgreSQL [7|8] using adl2psql.xsl $Revision: 1.3 $
+        --    Generated for PostgreSQL [7|8] using adl2psql.xsl $Revision: 1.4 $
         --
         --    Code generator (c) 2006 Simon Brooke [simon@weft.co.uk]
         --    http://www.weft.co.uk/library/jacquard/
@@ -89,7 +89,7 @@
     <xsl:template name="referentialintegrity">
         <xsl:param name="nearside"/>
         <!-- set up referential integrity constraints for primary tables -->
-        ALTER TABLE <xsl:value-of select="$nearside"/> ADD CONSTRAINT ri_<xsl:value-of select="$nearside"/>_<xsl:value-of select="@name"/> 
+        ALTER TABLE <xsl:value-of select="$nearside"/> ADD CONSTRAINT ri_<xsl:value-of select="$nearside"/><xsl:value-of select="concat( '_', @name)"/> 
             FOREIGN KEY ( <xsl:value-of select="@name"/>) REFERENCES <xsl:value-of select="@entity"/> ON DELETE NO ACTION;
     </xsl:template>
 
@@ -127,9 +127,9 @@
             </xsl:call-template>
         </xsl:for-each>
         -------------------------------------------------------------------------------------------------
-        --    convenience view lv_<xsl:value-of select="@name"/> for lists
+        --    convenience view lv<xsl:value-of select="concat( '_', @name)"/> for lists
         -------------------------------------------------------------------------------------------------
-        CREATE VIEW lv_<xsl:value-of select="@name"/> AS
+        CREATE VIEW lv<xsl:value-of select="concat( '_', @name)"/> AS
         SELECT <xsl:for-each select="property[@type!='link']">
             <xsl:choose>
                <xsl:when test="@type='entity'">

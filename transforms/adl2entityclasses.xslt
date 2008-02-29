@@ -7,9 +7,9 @@
     
     Transform ADL into entity classes
     
-    $Author: af $
-    $Revision: 1.3 $
-    $Date: 2008-02-28 14:56:05 $
+    $Author: sb $
+    $Revision: 1.4 $
+    $Date: 2008-02-29 16:28:51 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -48,7 +48,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.3 $', 11)"/>
+                  select="substring( '$Revision: 1.4 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -227,11 +227,11 @@
       private Regex <xsl:value-of select="@name"/>Validator = new Regex( "<xsl:value-of select="$validationpattern"/>");
     </xsl:if>
 
-    private <xsl:value-of select="$type"/> _<xsl:value-of select="@name"/> <xsl:value-of select="$initialiser"/>;
+    private <xsl:value-of select="$type"/> <xsl:value-of select="concat( '_', @name)"/> <xsl:value-of select="$initialiser"/>;
 
     public virtual <xsl:value-of select="$type"/><xsl:text> </xsl:text> <xsl:value-of select="@name"/>
     {
-    get { return _<xsl:value-of select="@name"/>; }
+    get { return <xsl:value-of select="concat( '_', @name)"/>; }
     set {
     <xsl:if test="@not-null='true' and $type-nullable='true'">
       if ( value == null)
@@ -283,7 +283,7 @@
       value = value.Substring( 0, <xsl:value-of select="@size"/>);
       }
     </xsl:if>
-    _<xsl:value-of select="@name"/> = value;
+    <xsl:value-of select="concat( '_', @name)"/> = value;
     }
     }
 
@@ -304,12 +304,12 @@
   <xsl:template match="a:set[a:many-to-many]">
     // auto generating for set with name <xsl:value-of select="@name"/>, having many-to-many child
     private ICollection&lt;<xsl:value-of 
-            select="a:many-to-many/@entity"/>&gt;<xsl:text> </xsl:text>_<xsl:value-of select="@name"/>;
+            select="a:many-to-many/@entity"/>&gt;<xsl:text> </xsl:text><xsl:value-of select="concat( '_', @name)"/>;
 
     public virtual ICollection&lt;<xsl:value-of select="a:many-to-many/@entity"/>&gt; <xsl:value-of select="@name"/>
     {
-    get { return _<xsl:value-of select="@name"/>; }
-    set { _<xsl:value-of select="@name"/> = value; }
+    get { return <xsl:value-of select="concat( '_', @name)"/>; }
+    set { <xsl:value-of select="concat( '_', @name)"/> = value; }
     }
 	
   </xsl:template>
@@ -317,12 +317,12 @@
   <xsl:template match="a:set[a:one-to-many]">
     // auto generating for set with name <xsl:value-of select="@name"/>, having one-to-many child
     private ICollection&lt;<xsl:value-of 
-            select="a:one-to-many/@entity"/>&gt;<xsl:text> </xsl:text>_<xsl:value-of select="@name"/>;
+            select="a:one-to-many/@entity"/>&gt;<xsl:text> </xsl:text><xsl:value-of select="concat( '_', @name)"/>;
 
     public virtual ICollection&lt;<xsl:value-of select="a:one-to-many/@entity"/>&gt; <xsl:value-of select="@name"/>
     {
-    get { return _<xsl:value-of select="@name"/>; }
-    set { _<xsl:value-of select="@name"/> = value; }
+    get { return <xsl:value-of select="concat( '_', @name)"/>; }
+    set { <xsl:value-of select="concat( '_', @name)"/> = value; }
     }
 
   </xsl:template>
@@ -373,7 +373,7 @@
       <xsl:choose>
         <xsl:when test="@concrete='false'"/>
         <xsl:otherwise>
-      _<xsl:value-of select="@name"/> = new HashedSet&lt;<xsl:value-of select="@entity"/>&gt;();
+      <xsl:value-of select="concat( '_', @name)"/> = new HashedSet&lt;<xsl:value-of select="@entity"/>&gt;();
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>
@@ -381,7 +381,7 @@
       <xsl:choose>
         <xsl:when test="@concrete='false'"/>
         <xsl:otherwise>
-      _<xsl:value-of select="@name"/> = new HashedSet&lt;<xsl:value-of select="@entity"/>&gt;();
+      <xsl:value-of select="concat( '_', @name)"/> = new HashedSet&lt;<xsl:value-of select="@entity"/>&gt;();
         </xsl:otherwise>
       </xsl:choose>
     </xsl:for-each>

@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.5 $
-    $Date: 2008-02-27 17:38:41 $
+    $Revision: 1.6 $
+    $Date: 2008-02-29 16:28:51 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -43,7 +43,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.5 $', 11)"/>
+                select="substring( '$Revision: 1.6 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -61,6 +61,23 @@
   <!-- Don't bother generating anything for foreign entities -->
 
   <xsl:template match="adl:entity">
+    <xsl:variable name="keyfield">
+      <xsl:choose>
+        <xsl:when test="$abstract-key-name-convention='Name'">
+          <xsl:value-of select="@name"/>
+        </xsl:when>
+        <xsl:when test="$abstract-key-name-convention = 'NameId'">
+          <xsl:value-of select="concat( @name, 'Id')"/>
+        </xsl:when>
+        <xsl:when test="$abstract-key-name-convention = 'Name_Id'">
+          <xsl:value-of select="concat( @name, '_Id')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="'Id'"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
     <xsl:apply-templates select="adl:form"/>
     <xsl:apply-templates select="adl:list"/>
     <xsl:text>
@@ -100,7 +117,7 @@
             <xsl:otherwise>
               <!-- there isn't a natural primary key; create a hidden widget 
                   for the abstract primary key -->
-              ${FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>Id")}
+              ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyfield"/>")}
             </xsl:otherwise>
           </xsl:choose>
           <table>
@@ -301,7 +318,23 @@
               <xsl:otherwise>
                 <!-- there isn't a natural primary key; create a hidden widget 
                   for the abstract primary key -->
-                ${FormHelper.HiddenField( "instance.<xsl:value-of select="ancestor::adl:entity/@name"/>Id")}
+                <xsl:variable name="keyfield">
+                  <xsl:choose>
+                    <xsl:when test="$abstract-key-name-convention='Name'">
+                      <xsl:value-of select="ancestor::adl:entity/@name"/>
+                    </xsl:when>
+                    <xsl:when test="$abstract-key-name-convention = 'NameId'">
+                      <xsl:value-of select="concat( ancestor::adl:entity/@name, 'Id')"/>
+                    </xsl:when>
+                    <xsl:when test="$abstract-key-name-convention = 'Name_Id'">
+                      <xsl:value-of select="concat( ancestor::adl:entity/@name, '_Id')"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="'Id'"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </xsl:variable>
+                ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyfield"/>")}
               </xsl:otherwise>
             </xsl:choose>
             <xsl:if test="adl:fieldgroup">
@@ -606,21 +639,13 @@
       <xsl:attribute name="class">
         <xsl:value-of select="$oddness"/>
       </xsl:attribute>
-      <td class="label" title="To edit this text, select it">
+      <td class="label">
         ${FormHelper.LabelFor( "instance.<xsl:value-of select="@name"/>", "<xsl:call-template name="showprompt">
           <xsl:with-param name="fallback" select="@name"/>
         </xsl:call-template>")}
       </td>
       <td class="widget" colspan="2">
-        <xsl:variable name="url">
-          $siteRoot/I18nMessage/edit.rails?Message_Id=<xsl:value-of select="concat( '$instance.', @name, '.MessageId')"/>
-        </xsl:variable>
-        <a target="_blank" class="i18nmessage">
-          <xsl:attribute name="href">
-            <xsl:value-of select="normalize-space( $url)"/>
-          </xsl:attribute>
-          <xsl:value-of select="concat( '$instance.', @name, '.LocalText')"/>
-        </a>
+        <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
       </td>
     </tr>    
   </xsl:template>
@@ -1126,13 +1151,16 @@
                             $instance.<xsl:value-of select="@property"/>.ToString( 'd')
                           #end
                         </xsl:when>
+                        <xsl:when test="ancestor::adl:entity/adl:property[@name=$prop]/@type='message'">
+                          $t.Msg( $instance.<xsl:value-of select="$prop"/>)
+                        </xsl:when>
                         <xsl:when test="ancestor::adl:entity/adl:property[@name=$prop]/@type='entity'">
                             #if( $instance.<xsl:value-of select="$prop"/>)
                             $instance.<xsl:value-of select="$prop"/>.UserIdentifier
                             #end
                         </xsl:when>
                         <xsl:otherwise>
-                            $!instance.<xsl:value-of select="@name"/>
+                            $!instance.<xsl:value-of select="$prop"/>
                         </xsl:otherwise>
                       </xsl:choose>
                     </td>
