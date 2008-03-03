@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.8 $
-    $Date: 2008-02-29 16:28:51 $
+    $Revision: 1.9 $
+    $Date: 2008-03-03 17:35:28 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.8 $', 11)"/>
+                  select="substring( '$Revision: 1.9 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -242,23 +242,28 @@
               <xsl:for-each select="adl:property[@distinct='user']">
                 <xsl:choose>
                   <xsl:when test="@type='message'">
-            result.Append( <xsl:value-of select="concat( @name, '.LocalText')"/>);
+            if ( <xsl:value-of select="@name"/> != null)
+              result.Append( <xsl:value-of select="concat( @name, '.LocalText')"/>);
                   </xsl:when>
                   <xsl:when test="@type='entity'">
                     <!-- TODO: this is dangerous and could potentially give rise to 
                       infinite loops; find a way of stopping it running away! -->
-            result.Append( <xsl:value-of select="concat( @name, '.UserIdentifier')"/>);
+            if ( <xsl:value-of select="@name"/> != null)
+              result.Append( <xsl:value-of select="concat( @name, '.UserIdentifier')"/>);
                   </xsl:when>
                   <xsl:when test="@type='date'">
                     <!-- if what we've got is just a date, we only want to see the date part of it -->
-            result.Append(<xsl:value-of select="@name"/>.ToString( "d"));
+            if ( <xsl:value-of select="@name"/> != null)
+              result.Append(<xsl:value-of select="@name"/>.ToString( "d"));
                   </xsl:when>
                   <xsl:when test="@type='time'">
                     <!-- if what we've got is just a time, we only want to see the time part of it -->
-            result.Append(<xsl:value-of select="@name"/>.ToString( "t"));
+            if ( <xsl:value-of select="@name"/> != null)
+              result.Append(<xsl:value-of select="@name"/>.ToString( "t"));
                   </xsl:when>
                   <xsl:otherwise>
-            result.Append(<xsl:value-of select="@name"/>);
+            if ( <xsl:value-of select="@name"/> != null)
+              result.Append(<xsl:value-of select="@name"/>);
                   </xsl:otherwise>
                 </xsl:choose>
                 <xsl:choose>

@@ -13,12 +13,20 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.11 $
+        $Revision: 1.12 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
 <!--  Before we start: some useful definitions									                -->
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+
+<!-- some basic character entities inherited from HTML. Actually we probably ought to 
+import all the HTML4 character entity files, and possibly the HTML4 Strict DTD (so 
+that we can allow HTML block level entities within content elements -->
+<!ENTITY nbsp "&#160;">
+<!ENTITY pound "&#163;">
+<!ENTITY copy "&#169;">
+
 
 <!-- boolean means true or false -->
 <!ENTITY % Boolean "(true|false)" >

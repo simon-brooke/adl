@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<xsl:stylesheet version="1.0"
+  <xsl:stylesheet version="1.0"
   xmlns="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.6 $
-    $Date: 2008-02-29 16:28:51 $
+    $Revision: 1.7 $
+    $Date: 2008-03-03 17:35:28 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -36,6 +36,8 @@
     -->
   <xsl:param name="abstract-key-name-convention" select="Id"/>
 
+  <xsl:param name="generate-site-navigation"/>
+
 
   <!-- what's all this about? the objective is to get the revision number of the 
     transform into the output, /without/ getting that revision number overwritten 
@@ -43,7 +45,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.6 $', 11)"/>
+                select="substring( '$Revision: 1.7 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -86,10 +88,9 @@
     <xsl:text>
     </xsl:text>
     <html>
-      <xsl:comment>
         #set( $title = "<xsl:value-of select="concat( 'Really delete ', @name)"/> $instance.UserIdentifier")
-      </xsl:comment>
       <head>
+        <title>$!title</title>
         <xsl:call-template name="head"/>
         <xsl:comment>
           Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
@@ -171,6 +172,7 @@
         #end
       </xsl:comment>
       <head>
+        <title>$!title</title>
         <xsl:call-template name="head"/>
         <xsl:comment>
           Application Description Language framework
@@ -181,7 +183,6 @@
           Generated using adl2views.xsl <xsl:value-of select="$transform-revision"/>
         </xsl:comment>
         ${ScriptsHelper.InstallScript( "ShuffleWidget")}
-
 
         ${Ajax.InstallScripts()}
         ${FormHelper.InstallScripts()}
@@ -1048,6 +1049,7 @@
     <html>
       <head>
         #set( $title = "<xsl:value-of select="normalize-space( concat( 'List ', $withpluralsuffix))"/>")
+        <title>$!title</title>
         <xsl:call-template name="head"/>
         <xsl:comment>
           Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
@@ -1261,23 +1263,29 @@
                 </tr>
                 #end
               </xsl:otherwise>
-        </xsl:choose>
-      </table>
-      </div>
+            </xsl:choose>
+          </table>
+        </div>
       <xsl:call-template name="foot"/>
     </body>
     </html>
   </xsl:template>
 
   <!-- overall page layout -->
+
+  <xsl:template match="adl:content"/>
   
   <xsl:template name="head">
     <xsl:choose>
       <xsl:when test="adl:head">
-        <xsl:apply-templates select="adl:head/*"/>
+        <xsl:for-each select="adl:head/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:apply-templates select="//adl:content/adl:head/*"/>
+        <xsl:for-each select="//adl:content/adl:head/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -1285,21 +1293,43 @@
   <xsl:template name="top">
     <xsl:choose>
       <xsl:when test="adl:top">
-        <xsl:apply-templates select="adl:top/*"/>
+        <xsl:for-each select="adl:top/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:apply-templates select="//adl:content/adl:top/*"/>
+        <xsl:for-each select="//adl:content/adl:top/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:if test="$generate-site-navigation">
+      <ul class="generatednav">
+        <xsl:for-each select="//adl:entity[adl:list[@name='list']]">
+          <li>
+            <a>
+              <xsl:attribute name="href">
+                <xsl:value-of select="concat( '$siteRoot', '/auto/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+              </xsl:attribute>
+              <xsl:value-of select="@name"/>
+            </a>
+          </li>
+        </xsl:for-each>
+      </ul>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template name="foot">
     <xsl:choose>
       <xsl:when test="adl:foot">
-        <xsl:apply-templates select="adl:foot/*"/>
+        <xsl:for-each select="adl:foot/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:apply-templates select="//adl:content/adl:foot/*"/>
+        <xsl:for-each select="//adl:content/adl:foot/*">
+          <xsl:copy-of select="."/>
+        </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
