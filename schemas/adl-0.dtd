@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.12 $
+        $Revision: 1.13 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -109,8 +109,9 @@ that we can allow HTML block level entities within content elements -->
   common SQL data types
   geopos :    a latitude/longitude pair (experimental and not yet implemented)
   image :     a raster image file, in jpeg|gif|png format (experimental, not yet implemented)
+  message :   an internationalised message, having different translations for different locales
 -->
-<!ENTITY % SpecialDataTypes "geopos|image" >
+<!ENTITY % SpecialDataTypes "geopos|image|message" >
 
 <!-- all data types -->
 <!ENTITY % AllDataTypes "%ComplexDataTypes;|%SimpleDataTypes;|%SpecialDataTypes;" >
@@ -567,7 +568,7 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
               to this list
   -->
 <!ELEMENT auxlist (documentation?, (prompt|%FieldStuff;)*)>
-<!ATTLIST auxlist
+<!ATTLIST auxlist %PageAttrs;
   property    CDATA           #REQUIRED
   onselect    CDATA           #IMPLIED
   canadd      %Boolean;       #IMPLIED>

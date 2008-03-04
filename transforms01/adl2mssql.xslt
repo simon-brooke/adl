@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.10 $
+      $Revision: 1.11 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -34,7 +34,7 @@
         --    Application Description Language framework
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.10 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.11 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -181,7 +181,7 @@
         -------------------------------------------------------------------------------------------------
         CREATE TABLE  "<xsl:value-of select="$table"/>"
         (
-    <xsl:for-each select="descendant::adl:property[@type!='link' and @type != 'list']">
+    <xsl:for-each select="descendant::adl:property[not( @type='link' or @type = 'list' or @concrete='false')]">
       <xsl:apply-templates select="."/>
       <xsl:if test="position() != last()">,</xsl:if>
     </xsl:for-each>
@@ -200,9 +200,9 @@
   </xsl:template>
 
   <xsl:template match="adl:key">
-    <xsl:if test="adl:property">
+    <xsl:if test="adl:property[not( @concrete='false')]">
           , 
-          PRIMARY KEY( <xsl:for-each select="adl:property">"<xsl:call-template name="property-column-name">
+          PRIMARY KEY( <xsl:for-each select="adl:property[not( @concrete='false')]">"<xsl:call-template name="property-column-name">
             <xsl:with-param name="property" select="."/>
           </xsl:call-template>"<xsl:if test="position() != last()">, </xsl:if></xsl:for-each>)
     </xsl:if>
@@ -455,7 +455,7 @@
       <xsl:if test="myresponsibility='true'">
       </xsl:if>
     </xsl:template>
-
+  
   <xsl:template match="adl:property[@type='list']">
         -- Suppressing output of property <xsl:value-of select="@name"/>,
         -- as it is the 'one' end of a one-to-many relationship

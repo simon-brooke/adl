@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.11 $
-    $Date: 2008-03-03 17:35:28 $
+    $Revision: 1.12 $
+    $Date: 2008-03-04 17:30:52 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.11 $', 11)"/>
+                    select="substring( '$Revision: 1.12 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -520,6 +520,62 @@ namespace <xsl:value-of select="$controllerns"/> {
         RenderViewWithFailover("<xsl:value-of select="concat( @name, '.vm')"/>", 
           "<xsl:value-of select="concat( @name, '.auto.vm')"/>");
       }
+      
+    <xsl:if test="ancestor::adl:entity/adl:key/adl:property[@type='entity']">
+        <!-- if there's a key which is an entity, the actual entity can't be passed in. 
+        So what will be passed in is the key value, from which we can find the entity -->
+
+      /// &lt;summary&gt;
+      /// Show the form named <xsl:value-of select="@name"/>, containing the indicated record. As
+      /// the primary key of the record is itself an entity, we need to first fetch that entity
+      /// &lt;/summary&gt;
+      <xsl:for-each select="ancestor::adl:entity/adl:key/adl:property">
+        <xsl:choose>
+          <xsl:when test="@type='entity'">
+      /// &lt;param name="<xsl:value-of select="concat( @name, '_Value')"/>"&gt;the key value of the key value of the record to show&lt;/param&gt;
+          </xsl:when>
+          <xsl:otherwise>
+      /// &lt;param name="<xsl:value-of select="@name"/>"&gt;the key value of the record to show&lt;/param&gt;
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:for-each>
+      [AccessibleThrough(Verb.Get)]
+      public void <xsl:value-of select="@name"/>( <xsl:for-each select="ancestor::adl:entity/adl:key/adl:property">
+        <xsl:choose>
+          <xsl:when test="@type='entity'">
+            <xsl:call-template name="csharp-base-type">
+              <xsl:with-param name="property" select="."/>
+            </xsl:call-template>
+            <xsl:value-of select="concat( ' ', @name, '_Value')"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:call-template name="csharp-base-type">
+              <xsl:with-param name="property" select="."/>
+            </xsl:call-template>
+            <xsl:value-of select="concat( ' ', @name)"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="not( position() = last())">,</xsl:if>
+      </xsl:for-each>) {
+        ISession hibernator = 
+          NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
+                                              Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
+        this.<xsl:value-of select="@name"/>( <xsl:for-each select="ancestor::adl:entity/adl:key/adl:property">
+        <xsl:choose>
+          <xsl:when test="@type='entity'">
+            <xsl:variable name="entity" select="@entity"/> 
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @entity)"/>))
+              .Add( Expression.Eq( "<xsl:value-of select="//adl:entity[@name=$entity]/adl:key/adl:property[position()=1]/@name"/>", <xsl:value-of select="concat( @name, '_Value')"/>))
+              .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @entity)"/>&gt;()
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="concat( ' ', @name)"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="not( position() = last())">,</xsl:if>
+      </xsl:for-each>);
+      }
+    </xsl:if>
 
       /// &lt;summary&gt;
       /// Show the form named <xsl:value-of select="@name"/>, containing the indicated record 
@@ -598,6 +654,10 @@ namespace <xsl:value-of select="$controllerns"/> {
       </xsl:for-each>
 
     </xsl:template>
+
+  <xsl:template match="adl:key">
+    <!-- the key shouldn't be matched directly - at least, not in this implementation -->
+  </xsl:template>
 
     <xsl:template name="menu">
       <xsl:param name="property"/>
