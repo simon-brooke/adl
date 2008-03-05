@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.12 $
-    $Date: 2008-03-04 17:30:52 $
+    $Revision: 1.13 $
+    $Date: 2008-03-05 11:05:12 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.12 $', 11)"/>
+                    select="substring( '$Revision: 1.13 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -172,11 +172,30 @@ namespace <xsl:value-of select="$controllerns"/> {
         else
         {
           /* it's existing, retrieve it */
-        <!-- TODO: this does not correctly handle entities with composite primary keys -->
+          <!-- TODO: this does not correctly handle entities with composite primary keys -->
+          <xsl:choose>
+            <xsl:when test="adl:key/adl:property[position()=1]/@type='entity'">
+              <!-- Maybe TODO: this doesn't work recursively - if an entity has a key which is an entity 
+              and the key of that entity is an entity, you're on your own, mate! -->
+              <xsl:variable name="keyentity" select="adl:key/adl:property[position()=1]/@entity"/>
+          <xsl:value-of select="$keytype"/> eid =
+            hibernator.CreateCriteria( typeof( <xsl:value-of select="$keytype"/>))
+              .Add(Expression.Eq( "<xsl:value-of select="//adl:entity[@name=$keyentity]/adl:key/adl:property[position()=1]/@name"/>", id))
+              .UniqueResult&lt;<xsl:value-of select="$keytype"/>&gt;();
+
           record =
             hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
+              .Add(Expression.Eq("<xsl:value-of select="$key"/>", eid))
               .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
+            </xsl:when>
+            <xsl:otherwise>
+            record =
+              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
+                .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
+                .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
+            </xsl:otherwise>
+          </xsl:choose>
+          
         }
 
         if ( record != null)
@@ -317,7 +336,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         Session[ NHibernateHelper.USERTOKEN],
         Session[NHibernateHelper.PASSTOKEN]
       </xsl:if>);
-      }
+          }
 
       <xsl:call-template name="menus">
               <xsl:with-param name="entity" select="."/>
@@ -673,16 +692,18 @@ namespace <xsl:value-of select="$controllerns"/> {
     <xsl:param name="entity"/>
     <xsl:if test="not( $entity)">
       <xsl:message terminate="yes">
-        No entity?
+        ADL: ERROR: No entity passed to template primary-key-csharp-type
       </xsl:message>
     </xsl:if>
     <xsl:if test="not($entity/adl:key/adl:property)">
-      <xsl:message terminate="yes">
-        ADL: ERROR: entity '<xsl:value-of select="$entity/@name"/>' has no primary key.
+      <xsl:message terminate="no">
+        ADL: WARNING: entity '<xsl:value-of select="$entity/@name"/>' has no primary key.
+        You will have to manually edit <xsl:value-of select="concat( $entity/@name, 'Controller.auto.cs')"/>
       </xsl:message>
     </xsl:if>
     <xsl:call-template name="csharp-type">
       <xsl:with-param name="property" select="$entity/adl:key/adl:property[ position() = 1]"/>
+      <xsl:with-param name="entityns" select="$entityns"/>
     </xsl:call-template>
   </xsl:template>
   
@@ -690,37 +711,21 @@ namespace <xsl:value-of select="$controllerns"/> {
       <!-- return the name of the primary key of the entity with this name -->
       <xsl:param name="entity"/>
       <xsl:choose>
-        <xsl:when test="$entity/@natural-key">
-          <xsl:value-of select="$entity/@natural-key"/>
+        <xsl:when test="$entity/adl:key/adl:property[position()=2]">
+          <xsl:message terminate="no">
+            ADL: WARNING: Entity <xsl:value-of select="$entity/@name"/> has a composite primary key.
+            You will need to manually edit <xsl:value-of select="concat( $entity/@name, 'Controller.auto.cs')"/>
+          </xsl:message>
+          <xsl:value-of select="$entity/adl:key/adl:property[position()=1]/@name"/>
         </xsl:when>
-        <xsl:when test="$entity/key">
-          <xsl:choose>
-            <xsl:when test="count($entity/adl:key/adl:property) &gt; 1">
-              <xsl:message terminate="no">
-                ADL: WARNING: entity '<xsl:value-of select="$entity/@name"/>' has a compound primary key;
-                adl2controllerclasses is not yet clever enough to generate appropriate code.
-              </xsl:message>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="$entity/adl:key/adl:property[position()=1]"/>
-            </xsl:otherwise>
-          </xsl:choose>
+        <xsl:when test="$entity/adl:key/adl:property">
+          <xsl:value-of select="$entity/adl:key/adl:property[position()=1]/@name"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:choose>
-            <xsl:when test="$abstract-key-name-convention='Name'">
-              <xsl:value-of select="@name"/>
-            </xsl:when>
-            <xsl:when test="$abstract-key-name-convention = 'NameId'">
-              <xsl:value-of select="concat( $entity/@name, 'Id')"/>
-            </xsl:when>
-            <xsl:when test="$abstract-key-name-convention = 'Name_Id'">
-              <xsl:value-of select="concat( $entity/@name, '_Id')"/>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="'Id'"/>
-            </xsl:otherwise>
-          </xsl:choose>
+          <xsl:message terminate="no">
+            ADL: WARNING: Entity <xsl:value-of select="$entity/@name"/> has no primary key.
+            You will need to manually edit <xsl:value-of select="concat( $entity/@name, 'Controller.auto.cs')"/>
+          </xsl:message>
         </xsl:otherwise>
       </xsl:choose>
     </xsl:template>

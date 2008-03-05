@@ -10,8 +10,8 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2008-02-27 17:38:42 $
+    $Revision: 1.5 $
+    $Date: 2008-03-05 11:05:12 $
   -->
 
 <xsl:stylesheet version="1.0"
@@ -27,6 +27,7 @@
   of the keyfield of that entity, and so on. -->
   <xsl:template name="csharp-base-type">
     <xsl:param name="property"/>
+    <xsl:param name="entityns"/>
     <xsl:choose>
       <xsl:when test="$property/@type = 'entity'">
         <xsl:variable name="entityname" select="$property/@entity"/>
@@ -36,6 +37,7 @@
             <xsl:call-template name="csharp-base-type">
               <xsl:with-param name="property" 
                               select="//adl:entity[@name=$entityname]/adl:key/adl:property[position()=1]"/>
+              <xsl:with-param name="entityns" select="$entityns"/>
             </xsl:call-template>
           </xsl:when>
           <xsl:otherwise>
@@ -48,6 +50,7 @@
       <xsl:otherwise>
         <xsl:call-template name="csharp-type">
           <xsl:with-param name="property" select="$property"/>
+          <xsl:with-param name="entityns" select="$entityns"/>
         </xsl:call-template>
       </xsl:otherwise>
     </xsl:choose>
@@ -56,6 +59,7 @@
   <!-- return the C# type of the property which is passed as a parameter -->
   <xsl:template name="csharp-type">
     <xsl:param name="property"/>
+    <xsl:param name="entityns"/>
     <xsl:variable name="base-type">
       <xsl:call-template name="base-type">
         <xsl:with-param name="property" select="$property"/>
@@ -79,7 +83,14 @@
       <xsl:when test="$base-type = 'real'">double</xsl:when>
       <xsl:when test="$base-type = 'money'">Decimal</xsl:when>
       <xsl:when test="$base-type = 'entity'">
-        <xsl:value-of select="$property/@entity"/>
+        <xsl:choose>
+          <xsl:when test="$entityns">
+            <xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$property/@entity"/>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:when>
       <xsl:otherwise>[unknown?]</xsl:otherwise>
     </xsl:choose>

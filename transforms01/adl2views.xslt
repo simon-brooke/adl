@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.8 $
-    $Date: 2008-03-04 17:30:52 $
+    $Revision: 1.9 $
+    $Date: 2008-03-05 11:05:12 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -44,7 +44,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.8 $', 11)"/>
+                select="substring( '$Revision: 1.9 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -654,6 +654,7 @@
       </td>
       <td class="widget" colspan="2">
         <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
+        $FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>")
       </td>
     </tr>    
   </xsl:template>
@@ -1108,9 +1109,9 @@
                 <span class="add">
                   <a>
                     <xsl:attribute name="href">
-                      <xsl:value-of select="concat( ../form[position() = 1]/@name, '.rails')"/>
+                      <xsl:value-of select="concat( ancestor::adl:entity/adl:form[position()=1]/@name, '.rails')"/>
                     </xsl:attribute>
-                    Add a new <xsl:value-of select="../@name"/>
+                    Add a new <xsl:value-of select="ancestor::adl:entity/@name"/>
                   </a>
                 </span>
               </xsl:if>
@@ -1164,15 +1165,17 @@
                           #end
                         </xsl:when>
                         <xsl:when test="ancestor::adl:entity//adl:property[@name=$prop]/@type='message'">
+                          #if ( $instance.<xsl:value-of select="$prop"/>)
                           $t.Msg( $instance.<xsl:value-of select="$prop"/>)
+                          #end
                         </xsl:when>
                         <xsl:when test="ancestor::adl:entity//adl:property[@name=$prop]/@type='entity'">
-                            #if( $instance.<xsl:value-of select="$prop"/>)
-                            $instance.<xsl:value-of select="$prop"/>.UserIdentifier
-                            #end
+                          #if( $instance.<xsl:value-of select="$prop"/>)
+                          $instance.<xsl:value-of select="$prop"/>.UserIdentifier
+                          #end
                         </xsl:when>
                         <xsl:otherwise>
-                            $!instance.<xsl:value-of select="$prop"/>
+                          $!instance.<xsl:value-of select="$prop"/>
                         </xsl:otherwise>
                       </xsl:choose>
                     </td>
@@ -1239,19 +1242,29 @@
                 #end
                 <tr class="$oddity">
                   <xsl:for-each select="ancestor::adl:entity//adl:property[@distinct='user']">
-                <td>
-                  <xsl:choose>
-                    <xsl:when test="@type='entity'">
-                      #if( $instance.<xsl:value-of select="@name"/>)
-                      $instance.<xsl:value-of select="@name"/>.UserIdentifier
-                      #end
-                    </xsl:when>
-                    <xsl:otherwise>
-                      $!instance.<xsl:value-of select="@name"/>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </td>
-              </xsl:for-each>
+                    <td>
+                      <xsl:choose>
+                        <xsl:when test="@type = 'date'">
+                          #if ( $instance.<xsl:value-of select="@name"/>)
+                          $instance.<xsl:value-of select="@name"/>.ToString( 'd')
+                          #end
+                        </xsl:when>
+                        <xsl:when test="@type='message'">
+                          #if ( $instance.<xsl:value-of select="@name"/>)
+                          $t.Msg( $instance.<xsl:value-of select="@name"/>)
+                          #end
+                        </xsl:when>
+                        <xsl:when test="@type='entity'">
+                          #if( $instance.<xsl:value-of select="@name"/>)
+                          $instance.<xsl:value-of select="@name"/>.UserIdentifier
+                          #end
+                        </xsl:when>
+                        <xsl:otherwise>
+                          $!instance.<xsl:value-of select="@name"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </td>
+                  </xsl:for-each>
                   <xsl:variable name="keys">
                     <!-- assemble keys in a Velocity-friendly format, then splice it into
                     the HREF below -->

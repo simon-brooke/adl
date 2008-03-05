@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.9 $
-    $Date: 2008-03-03 17:35:28 $
+    $Revision: 1.10 $
+    $Date: 2008-03-05 11:05:12 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.9 $', 11)"/>
+                  select="substring( '$Revision: 1.10 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -301,7 +301,7 @@
                 <xsl:when test="@cascade='all-delete-orphan'"/>
                 <xsl:when test="@cascade='delete'"/>
                 <xsl:otherwise>
-            if ( <xsl:value-of select="concat( ' _', @name)"/>.Count > 0) {
+            if ( <xsl:value-of select="concat( ' _', @name)"/> != null &amp;&amp; <xsl:value-of select="concat( ' _', @name)"/>.Count > 0) {
                 bob.AppendFormat("Cannot delete this <xsl:value-of select="../@name"/> as it has {0} dependent <xsl:value-of select="@name"/>; ", <xsl:value-of select="concat( ' _', @name)"/>.Count);
             }
 
