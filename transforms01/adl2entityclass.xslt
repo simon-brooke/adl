@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.10 $
-    $Date: 2008-03-05 11:05:12 $
+    $Revision: 1.11 $
+    $Date: 2008-03-10 17:01:26 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.10 $', 11)"/>
+                  select="substring( '$Revision: 1.11 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -201,19 +201,6 @@
         /// &lt;/summary&gt;
         public override string KeyString {
           get {
-          <xsl:choose>
-          <xsl:when test="@natural-key">
-            <xsl:variable name="key" select="@natural-key"/>
-            <xsl:choose>
-              <xsl:when test="adl:property[@name=$key]/@type = 'entity'">
-                <xsl:value-of select="concat( 'return ', adl:property[@name=$key]/@entity, '.KeyString;')"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="concat( 'return ', $key, '.ToString();')"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:when>
-          <xsl:when test="adl:key">
               StringBuilder result = new StringBuilder();
             <xsl:for-each select="adl:key/adl:property">
               result.Append(<xsl:value-of select="@name"/><xsl:if test="@type='entity'">.KeyString</xsl:if>);
@@ -222,12 +209,7 @@
               </xsl:if>
             </xsl:for-each>
               return result.ToString();
-          </xsl:when>
-          <xsl:otherwise>
-              <xsl:value-of select="concat( 'return ', @name, 'Id.ToString();')"/>
-          </xsl:otherwise>
-        </xsl:choose> 
-          }
+           }
         }
         
         /// &lt;summary&gt;

@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.13 $
-    $Date: 2008-03-05 11:05:12 $
+    $Revision: 1.14 $
+    $Date: 2008-03-10 17:01:26 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,11 +61,11 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.13 $', 11)"/>
+                    select="substring( '$Revision: 1.14 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
-      <xsl:variable name="key">
+      <!-- xsl:variable name="key">
         <xsl:call-template name="primary-key-name">
           <xsl:with-param name="entity" select="."/>
         </xsl:call-template>
@@ -79,7 +79,7 @@
           </xsl:when>
           <xsl:otherwise>[no primary key]</xsl:otherwise>
         </xsl:choose>
-      </xsl:variable>
+      </xsl:variable -->
 
 
       /* ---- [ cut here: next file '<xsl:value-of select="@name"/>Controller.auto.cs'] ---------------- */
@@ -146,86 +146,115 @@ namespace <xsl:value-of select="$controllerns"/> {
         ISession hibernator = 
           NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
                                               Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
-          List&lt;string&gt; messages = new List&lt;string&gt;();
+        List&lt;string&gt; messages = new List&lt;string&gt;();
+        
+        <xsl:apply-templates select="descendant::adl:property"/>
 
-        <xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/> record;
+        <xsl:call-template name="fetch-instance">
+          <xsl:with-param name="entity" select="."/>
+        </xsl:call-template>
 
-        <xsl:apply-templates select="adl:property"/>
-
-        <!-- TODO: this does not corectly handle entities with composite primary keys -->
-        string id = Form["<xsl:value-of select="concat( 'instance.', $key)"/>"];
-
-        if ( String.IsNullOrEmpty( id))
-        {
-          /* it's new, create persistent object */
-          record = new <xsl:value-of select="$entityns"/>.<xsl:value-of select="@name"/>(<xsl:for-each select="adl:property[@distinct='system']">Form[<xsl:value-of select="concat( 'instance.', @name)"/>]<xsl:choose>
-                <xsl:when test="position() = last()"/>
-                <xsl:otherwise>, </xsl:otherwise>
-              </xsl:choose>
-            </xsl:for-each>);
-
-          /* perform any domain knowledge behaviour on the new record 
+        if ( record == null) {
+          /* it seems to be new, create persistent object */
+          try {
+            record = new <xsl:value-of select="concat($entityns, '.', @name)"/>(<xsl:for-each select="adl:key/adl:property">
+          <xsl:variable name="basetype">
+            <xsl:call-template name="base-type">
+              <xsl:with-param name="property" select="."/>
+            </xsl:call-template>
+          </xsl:variable>
+          <xsl:choose>
+            <xsl:when test="$basetype='integer'">Int32.Parse( Form["<xsl:value-of select="concat( 'instance.', @name)"/>"])</xsl:when>
+            <xsl:when test="$basetype='entity'">
+              <!-- Maybe TODO: this doesn't work recursively - if an entity has a key which is an entity 
+                  and the key of that entity is an entity, you're on your own, mate! -->
+              <xsl:variable name="keyentity" select="@entity"/>
+              <xsl:variable name="keyenttype">
+                <xsl:call-template name="primary-key-csharp-type">
+                  <xsl:with-param name="entity" select="//adl:entity[@name=$keyentity]"/>
+                </xsl:call-template>
+              </xsl:variable>
+                hibernator.CreateCriteria( typeof( <xsl:value-of select="concat( $entityns, '.', $keyentity)"/>))
+                  .Add(Expression.Eq( "<xsl:value-of select="//adl:entity[@name=$keyentity]/adl:key/adl:property[position()=1]/@name"/>",<xsl:choose>
+                <xsl:when test="$keyenttype = 'int'">Int32.Parse( Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"])</xsl:when>
+                <xsl:otherwise>Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"]</xsl:otherwise>
+              </xsl:choose>))
+                  .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', $keyentity)"/>&gt;()</xsl:when>
+            <xsl:otherwise>Form["<xsl:value-of select="concat( 'instance.', @name)"/>"]</xsl:otherwise>
+          </xsl:choose>
+          <xsl:choose>
+            <xsl:when test="position() = last()"/>
+            <xsl:otherwise>, </xsl:otherwise>
+          </xsl:choose>
+        </xsl:for-each>);
+          }
+          catch ( FormatException) {
+            /* failed to parse a number - not wholly unexpected, since it's most likely 
+            that an empty string was passed in */
+            record = new <xsl:value-of select="concat($entityns, '.', @name)"/>();
+          }
+          catch ( NullReferenceException) {
+            /* again, probably more normal than otherwise */
+            record = new <xsl:value-of select="concat($entityns, '.', @name)"/>();
+          }
+          /* perform any domain knowledge behaviour on the new record
            * after instantiation */
           record.AfterCreationHook( hibernator);
           messages.Add( "New <xsl:value-of select="@name"/> record created");
         }
-        else
-        {
-          /* it's existing, retrieve it */
-          <!-- TODO: this does not correctly handle entities with composite primary keys -->
-          <xsl:choose>
-            <xsl:when test="adl:key/adl:property[position()=1]/@type='entity'">
-              <!-- Maybe TODO: this doesn't work recursively - if an entity has a key which is an entity 
-              and the key of that entity is an entity, you're on your own, mate! -->
-              <xsl:variable name="keyentity" select="adl:key/adl:property[position()=1]/@entity"/>
-          <xsl:value-of select="$keytype"/> eid =
-            hibernator.CreateCriteria( typeof( <xsl:value-of select="$keytype"/>))
-              .Add(Expression.Eq( "<xsl:value-of select="//adl:entity[@name=$keyentity]/adl:key/adl:property[position()=1]/@name"/>", id))
-              .UniqueResult&lt;<xsl:value-of select="$keytype"/>&gt;();
 
-          record =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", eid))
-              .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
-            </xsl:when>
-            <xsl:otherwise>
-            record =
-              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @name)"/>))
-                .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
-                .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @name)"/>&gt;();
-            </xsl:otherwise>
-          </xsl:choose>
-          
-        }
-
-        if ( record != null)
-        {
-          try
-          {
+        if ( record != null) {
+          try {
             /* actually update the record */
             BindObjectInstance( record, ParamStore.Form, "instance");
-            
-            <xsl:for-each select="adl:property[@type='entity']">
+
+        <xsl:if test="descendant::adl:property[@type='message']">
+            /* there is at least one slot whose value is an internationalised message; 
+             * if these have yet to be initialised they must be handled specially */
+            Locale locale = GetBestLocaleForUser();
+          <xsl:for-each select="descendant::adl:property[@type='message']">
+            if ( ! String.IsNullOrEmpty( Form["<xsl:value-of select="concat( 'i18n.instance.', @name)"/>"])){
+              /* there's an uninitialised message for this slot */
+              Message mess = record.<xsl:value-of select="@name"/>;
+              if ( mess == null){
+                mess = new Message();
+              }
+              hibernator.Save( mess);
+
+              Translation trans = mess.GetTranslationObject( locale, hibernator);
+              if ( trans == null) {
+                trans = new Translation( mess, locale);
+              }
+              trans.MessageText = Form["<xsl:value-of select="concat( 'i18n.instance.', @name)"/>"];
+              record.<xsl:value-of select="@name"/> = mess;
+              hibernator.Save( trans);
+            }
+          </xsl:for-each>
+        </xsl:if>
+
+        <xsl:for-each select="descendant::adl:property[@type='entity']">
             /* for properties of type 'entity', it should not be necessary to do anything 
              * special - BindObjectInstance /should/ do it all. Unfortunately it sometimes 
              * doesn't, and I haven't yet characterised why not. */
-             <!-- TODO: Fix this! -->
               <xsl:variable name="entityname" select="@entity"/>
-              
-              // The broken bit: Entity name is <xsl:value-of select="$entityname"/>
-            <!-- <xsl:variable name="linkkeytype">
-                <xsl:call-template name="primary-key-csharp-type">
-                  <xsl:with-param name="entity" select="//entity[@name=$entityname]"/>
-                </xsl:call-template>
-              </xsl:variable>
-            record.<xsl:value-of select="@name"/> = 
-              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', @entity)"/>))
-                .Add(Expression.Eq("<xsl:call-template name="primary-key-name">
-                  <xsl:with-param name="entity" select="//entity[@name=@entity]"/>
-                </xsl:call-template>", ((<xsl:value-of select="$linkkeytype"/>)Form["<xsl:value-of select="concat( $entityns, '.', @entity)"/>"])))
-                .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @entity)"/>&gt;();
-            -->
-            </xsl:for-each> 
+              <xsl:choose>
+                <xsl:when test="//adl:entity[@name=$entityname]">
+            if ( ! String.IsNullOrEmpty( Form["<xsl:value-of select="concat( 'instance.', @name)"/>"]))
+            {
+              record.<xsl:value-of select="@name"/> = <xsl:call-template name="fetch-property-instance">
+                <xsl:with-param name="property" select="."/>
+                <xsl:with-param name="valuename" select="concat( 'instance.', @name)"/>
+              </xsl:call-template>;
+            }
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:message terminate="yes">
+                    ADL: ERROR: Could not fix up value of <xsl:value-of select="@name "/>, because no
+                    entity was found called <xsl:value-of select="$entityname"/>
+                  </xsl:message>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:for-each>
 
                 <xsl:for-each select="property[@type='link']">  
             /* to update a link table which has no other data than the near and far keys, it is
@@ -256,7 +285,7 @@ namespace <xsl:value-of select="$controllerns"/> {
             }
             </xsl:for-each>
 
-            <xsl:for-each select="adl:property[@type='list']">
+            <xsl:for-each select="descendant::adl:property[@type='list']">
             /* with a list we cannot just smash the old values! Instead we need to check 
              * each one and exclude it if no longer required */
             if ( Form.GetValues( "<xsl:value-of select="concat( 'instance.', @name)"/>") != null)
@@ -346,7 +375,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         }
         else
         {
-          throw new Exception( String.Format( "No record of type <xsl:value-of select="@name"/> with key value {0} found", id));
+          throw new DataRequiredException( "Record not found");
         }
       }
       </xsl:if>
@@ -356,30 +385,26 @@ namespace <xsl:value-of select="$controllerns"/> {
       /// &lt;summary&gt;
       /// Actually delete the selected record
       /// &lt;/summary&gt;
-      [AccessibleThrough(Verb.Get)]
+      [AccessibleThrough(Verb.Post)]
       public void Delete()
       {
         ISession hibernator = 
             NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
                                                 Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
-        string id = Params["<xsl:value-of select="concat( 'instance.', $key)"/>"];
+
         string reallydelete = Params["reallydelete"];
-        
+
         if ( "true".Equals( reallydelete))
-        { 
-          <xsl:value-of select="concat($entityns, '.', @name)"/> record =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
-              .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;();
+        {
+        <xsl:call-template name="fetch-instance">
+          <xsl:with-param name="entity" select="."/>
+        </xsl:call-template>
 
           if ( record != null)
           {
             record.BeforeDeleteHook( hibernator);
 
-            hibernator.Delete( 
-              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', @name)"/>))
-                .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
-                .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', @name)"/>&gt;());
+            hibernator.Delete( record);
 
             hibernator.Flush();
           }
@@ -461,7 +486,7 @@ namespace <xsl:value-of select="$controllerns"/> {
     </xsl:template>
 
     <xsl:template match="adl:form">
-      <xsl:variable name="key">
+      <!-- xsl:variable name="key">
         <xsl:call-template name="primary-key-name">
           <xsl:with-param name="entity" select="ancestor::adl:entity"/>
         </xsl:call-template>
@@ -470,7 +495,7 @@ namespace <xsl:value-of select="$controllerns"/> {
         <xsl:call-template name="primary-key-csharp-type">
           <xsl:with-param name="entity" select="ancestor::adl:entity"/>
         </xsl:call-template>
-      </xsl:variable>
+      </xsl:variable -->
       /// &lt;summary&gt;
       /// Handle the submission of the form named <xsl:value-of select="@name"/>
       /// &lt;/summary&gt;
@@ -498,15 +523,15 @@ namespace <xsl:value-of select="$controllerns"/> {
           ISession hibernator = 
             NHibernateHelper.GetCurrentSession( <xsl:if test="$authentication-layer = 'Database'">Session[ NHibernateHelper.USERTOKEN], 
                                                 Session[NHibernateHelper.PASSTOKEN]</xsl:if>);
-          string id = Form["<xsl:value-of select="concat( 'instance.', $key)"/>"];
+
+      <xsl:call-template name="fetch-instance">
+        <xsl:with-param name="entity" select="ancestor::adl:entity"/>
+      </xsl:call-template>
 
       <xsl:if test="$authentication-layer = 'Database'">   
           PropertyBag["username"] = Session[ NHibernateHelper.USERTOKEN];
       </xsl:if>
-          PropertyBag["instance"] = 
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat($entityns, '.', ancestor::adl:entity/@name)"/>))
-              .Add(Expression.Eq("<xsl:value-of select="$key"/>", id))
-              .UniqueResult&lt;<xsl:value-of select="concat($entityns, '.', ancestor::adl:entity/@name)"/>&gt;();
+          PropertyBag["instance"] = record;
           
           RenderViewWithFailover( "maybedelete.vm", "maybedelete.auto.vm");
         }
@@ -710,6 +735,11 @@ namespace <xsl:value-of select="$controllerns"/> {
     <xsl:template name="primary-key-name">
       <!-- return the name of the primary key of the entity with this name -->
       <xsl:param name="entity"/>
+      <xsl:if test="not($entity/adl:key)">
+        <xsl:message terminate="yes">
+          ADL: ERROR: No key for entity: <xsl:value-of select="$entity/@name"/>
+        </xsl:message>
+      </xsl:if>
       <xsl:choose>
         <xsl:when test="$entity/adl:key/adl:property[position()=2]">
           <xsl:message terminate="no">
@@ -729,4 +759,84 @@ namespace <xsl:value-of select="$controllerns"/> {
         </xsl:otherwise>
       </xsl:choose>
     </xsl:template>
+
+  <xsl:template name="fetch-property-instance">
+    <!-- the property for which the instance is sought; it is assumed that
+    the property passed has type 'entity' -->
+    <xsl:param name="property"/>
+    <!-- the name of the value in the returned values from which the instance
+    must be resolved -->
+    <xsl:param name="valuename"/>
+    <xsl:if test="not( $property/@type='entity')">
+      <xsl:message terminate="yes">
+        ADL: ERROR: property passed to fetch-property-instance whose type is not 'entity'
+      </xsl:message>
+    </xsl:if>
+              hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>))
+    <xsl:for-each select="//adl:entity[@name=$property/@entity]/adl:key/adl:property">
+                .Add(Expression.Eq("<xsl:value-of select="@name"/>",<xsl:choose>
+        <xsl:when test="@type='entity'"><xsl:call-template name="fetch-property-instance">
+            <!-- recurse -->
+            <xsl:with-param name="property" select="."/>
+            <xsl:with-param name="valuename" select="$valuename"/>
+          </xsl:call-template></xsl:when>
+        <xsl:when test="@type='integer'">Int32.Parse( Form["<xsl:value-of select="$valuename"/>"])</xsl:when>
+        <xsl:otherwise>Form["<xsl:value-of select="$valuename"/>"]</xsl:otherwise>
+      </xsl:choose>))
+    </xsl:for-each>
+                .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', @entity)"/>&gt;()
+  </xsl:template>
+
+  <!-- this is essentially just a macro and doesn't really do anything clever. 
+  It finds the current instance of the entity for which this is the controller, 
+  and returns it as the value of a variable (which must have been previously 
+  declared) called 'record' -->
+  <xsl:template name="fetch-instance">
+    <xsl:param name="entity"/>
+      <xsl:value-of select="concat($entityns, '.', $entity/@name)"/> record = null;  
+
+        /* check whether values for all key slots have been passed in; if so, we're probably dealing with an
+         * existing record */
+        bool allkeys = true;
+    <xsl:for-each select="$entity/adl:key/adl:property">
+        if ( String.IsNullOrEmpty( Form["<xsl:value-of select="concat( 'instance.', @name)"/>"])) {
+          allkeys = false;
+        }
+        else if ( "<xsl:value-of select="concat('$instance.', @name)"/>".Equals( Form["<xsl:value-of select="concat( 'instance.', @name)"/>"])) {
+          /* nasty artefact of NVelocity forms - default 'null value' is dollar followed by fieldname */
+          allkeys = false;
+        }
+    </xsl:for-each>
+
+        if ( allkeys){
+          /* it's (probably) existing, retrieve it */
+
+          record = hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', $entity/@name)"/>))
+    <xsl:for-each select="$entity/adl:key/adl:property">
+      <xsl:variable name="basetype">
+        <xsl:call-template name="base-type">
+          <xsl:with-param name="property" select="."/>
+        </xsl:call-template>
+      </xsl:variable>
+            .Add( Expression.Eq( "<xsl:value-of select="@name"/>", <xsl:choose>
+        <xsl:when test="$basetype='integer'">Int32.Parse( Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"])</xsl:when>
+        <xsl:when test="$basetype='entity'">
+          <!-- Maybe TODO: this doesn't work recursively - if an entity has a key which is an entity 
+                  and the key of that entity is an entity, you're on your own, mate! -->
+          <xsl:variable name="keyentity" select="@entity"/>
+          <xsl:variable name="keyenttype">
+            <xsl:call-template name="primary-key-csharp-type">
+              <xsl:with-param name="entity" select="//adl:entity[@name=$keyentity]"/>
+            </xsl:call-template>
+          </xsl:variable>
+              hibernator.CreateCriteria( typeof( <xsl:value-of select="$keyenttype"/>))
+                .Add(Expression.Eq( "<xsl:value-of select="//adl:entity[@name=$keyentity]/adl:key/adl:property[position()=1]/@name"/>",<xsl:choose>
+            <xsl:when test="$keyenttype = 'int'">Int32.Parse( Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"])</xsl:when>
+            <xsl:otherwise>Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"]</xsl:otherwise></xsl:choose>))
+                .UniqueResult&lt;<xsl:value-of select="$keyenttype"/>&gt;()</xsl:when>
+        <xsl:otherwise>Form[ "<xsl:value-of select="concat( 'instance.', @name)"/>"]</xsl:otherwise></xsl:choose>))
+    </xsl:for-each>
+            .UniqueResult&lt;<xsl:value-of select="concat( $entityns, '.', $entity/@name)"/>&gt;();
+        }
+  </xsl:template>
  </xsl:stylesheet>

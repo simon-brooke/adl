@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.9 $
-    $Date: 2008-03-05 11:05:12 $
+    $Revision: 1.10 $
+    $Date: 2008-03-10 17:01:26 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -44,7 +44,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.9 $', 11)"/>
+                select="substring( '$Revision: 1.10 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -100,19 +100,34 @@
       </head>
       <body>
         <xsl:call-template name="top"/>
-        <form action="delete.rails">
-          <xsl:choose>
-            <xsl:when test="@natural-key">
-              <!-- create a hidden widget for the natural primary key -->
-              ${FormHelper.HiddenField( "instance.<xsl:value-of select="@natural-key"/>")}
-            </xsl:when>
-            <xsl:otherwise>
-              <!-- there isn't a natural primary key; create a hidden widget 
-                  for the abstract primary key -->
-              ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyfield"/>")}
-            </xsl:otherwise>
-          </xsl:choose>
-          <table>
+        <form action="delete.rails" method="post">
+          <xsl:for-each select="adl:key/adl:property">
+            <xsl:choose>
+              <xsl:when test="@type='entity'">
+                <xsl:variable name="entityname" select="@entity"/>
+                <xsl:variable name="entitykeyname" select="//adl:entity[@name=$entityname]/adl:key/adl:property[position()=1]/@name"/>
+                <input type="hidden">
+                  <xsl:attribute name="name">
+                    <xsl:value-of select="concat( 'instance.', @name)"/>
+                  </xsl:attribute>
+                  <xsl:attribute name="value">
+                    <xsl:value-of select="concat('$instance.', @name, '.', $entitykeyname)"/>
+                  </xsl:attribute>
+                </input>
+              </xsl:when>
+              <xsl:otherwise>
+                <input type="hidden">
+                  <xsl:attribute name="name">
+                    <xsl:value-of select="concat( 'instance.', @name)"/>
+                  </xsl:attribute>
+                  <xsl:attribute name="value">
+                    <xsl:value-of select="concat('$instance.', @name)"/>
+                  </xsl:attribute>
+                </input>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:for-each>
+           <table>
             <tr align="left" valign="top" class="actionDangerous">
               <td class="actionDangerous">
                 Really delete?
@@ -290,33 +305,19 @@
             <xsl:attribute name="id">
               <xsl:value-of select="$formname"/>
             </xsl:attribute>
-            <xsl:choose>
-              <xsl:when test="ancestor::adl:entity/@natural-key">
-                <xsl:variable name="keyfield" select="ancestor::adl:entity/@natural-key"/>
-                <xsl:choose>
-                  <xsl:when test="@properties='all'">
-                    <!-- no need to emit a hidden widget for the natural key, as there will be a 
-                      non-hidden one anyway -->
-                  </xsl:when>
-                  <xsl:when test="adl:field[@name=$keyfield]">
-                    <!-- no need to emit a hidden widget for the natural key, as there will be a 
-                      non-hidden one anyway -->
-                  </xsl:when>
-                  <xsl:otherwise>
-                    <!-- create a hidden widget for the natural primary key -->
-                    ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyfield"/>")}
-                  </xsl:otherwise>
-                </xsl:choose>
-              </xsl:when>
-              <xsl:otherwise>
-                <!-- there isn't a natural primary key; create a hidden widget 
-                  for the abstract primary key -->
-                <xsl:variable name="keyfield">
-                  <xsl:value-of select="ancestor::adl:entity/adl:key/adl:property[position()=1]/@name"/>
-                </xsl:variable>
-                ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyfield"/>")}
-              </xsl:otherwise>
-            </xsl:choose>
+            <xsl:variable name="form" select="."/>
+            <xsl:for-each select="ancestor::adl:entity/adl:key/adl:property">
+              <xsl:variable name="keyname" select="@name"/>
+              <xsl:choose>
+                <xsl:when test="$form/adl:field[@property=$keyname]">
+                  <!-- it's already a field of the form - no need to add a hidden one -->
+                </xsl:when>
+                <xsl:otherwise>
+                  <!-- create a hidden widget for the natural primary key -->
+                  ${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyname"/>")}
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:for-each> 
             <xsl:if test="adl:fieldgroup">
               <div id="tabbar">
                 <xsl:for-each select="adl:fieldgroup">
@@ -653,8 +654,16 @@
         </xsl:call-template>")}
       </td>
       <td class="widget" colspan="2">
+        #if( $instance)
         <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
         $FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>")
+        #else
+        <input type="text">
+          <xsl:attribute name="name">
+            <xsl:value-of select="concat('i18n.instance.', @name)"/>
+          </xsl:attribute>
+        </input>
+        #end
       </td>
     </tr>    
   </xsl:template>
@@ -997,7 +1006,17 @@
                 <xsl:otherwise>60</xsl:otherwise>
               </xsl:choose>
             </xsl:variable>
-            ${FormHelper.TextField( "instance.<xsl:value-of select="@name"/>", "%{class='<xsl:value-of select="$class"/>', title='<xsl:value-of select="normalize-space( $if-missing)"/>', size='<xsl:value-of select="$size"/>', maxlength='<xsl:value-of select="@size"/>'}")}
+            <xsl:variable name="maxlength">
+              <xsl:choose>
+                <xsl:when test="@size &gt;= 60">
+                  <xsl:value-of select="@size"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="$size"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:variable>
+            ${FormHelper.TextField( "instance.<xsl:value-of select="@name"/>", "%{class='<xsl:value-of select="$class"/>', title='<xsl:value-of select="normalize-space( $if-missing)"/>', size='<xsl:value-of select="$size"/>', maxlength='<xsl:value-of select="$maxlength"/>'}")}
          </xsl:otherwise>
       </xsl:choose>        
       </td>
