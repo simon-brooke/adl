@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.11 $
-    $Date: 2008-03-10 17:01:26 $
+    $Revision: 1.12 $
+    $Date: 2008-03-12 13:46:10 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.11 $', 11)"/>
+                  select="substring( '$Revision: 1.12 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -220,8 +220,8 @@
           get {
             StringBuilder result = new StringBuilder();
           <xsl:choose>
-            <xsl:when test="adl:property[@distinct='user']">
-              <xsl:for-each select="adl:property[@distinct='user']">
+            <xsl:when test="descendant::adl:property[@distinct='user']">
+              <xsl:for-each select="descendant::adl:property[@distinct='user']">
                 <xsl:choose>
                   <xsl:when test="@type='message'">
             if ( <xsl:value-of select="@name"/> != null)
@@ -297,11 +297,11 @@
             return result;
           }
         }
-    <!-- 'descendant' to catch properties inside keys as well as properties which are direct children -->
-    <xsl:apply-templates select="descendant::adl:property"/>
+        <!-- 'descendant' to catch properties inside keys as well as properties which are direct children -->
+        <xsl:apply-templates select="descendant::adl:property"/>
       }
     }
-
+    /* ---- [ cut here: next file 'junk'] ------------------------- */
 
   </xsl:template>
 

@@ -9,8 +9,8 @@
     Transform ADL into (partial) controller classes
     
     $Author: sb $
-    $Revision: 1.14 $
-    $Date: 2008-03-10 17:01:26 $
+    $Revision: 1.15 $
+    $Date: 2008-03-12 13:46:10 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     with the revision number of the generated file if the generated file is 
     stored to CVS -->
       <xsl:variable name="transform-rev1"
-                    select="substring( '$Revision: 1.14 $', 11)"/>
+                    select="substring( '$Revision: 1.15 $', 11)"/>
       <xsl:variable name="transform-revision"
                     select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -463,6 +463,7 @@ namespace <xsl:value-of select="$controllerns"/> {
       </xsl:if>
   }
 }
+    /* ---- [ cut here: next file 'junk'] ------------------------- */
     </xsl:template>
 
     <xsl:template match="adl:property[@required='true']">
@@ -677,7 +678,8 @@ namespace <xsl:value-of select="$controllerns"/> {
 
     <xsl:template name="menus">
       <xsl:param name="entity"/>
-      <xsl:for-each select="$entity/adl:property[@type='entity']">
+      <xsl:for-each select="$entity//adl:property[@type='entity']"> 
+        <!-- $entity//adl:property because it is possible to have type='entity' in the key -->
           /* produce a list of <xsl:value-of select="@entity"/> to populate the menu for <xsl:value-of select="@name"/> */
         <xsl:call-template name="menu">
           <xsl:with-param name="property" select="."/>
@@ -685,6 +687,7 @@ namespace <xsl:value-of select="$controllerns"/> {
 
       </xsl:for-each>
       <xsl:for-each select="$entity/adl:property[@type='link']">
+        <!-- $entity/adl:property because it is not possible to have type='link' in the key -->
           /* produce a list of <xsl:value-of select="@entity"/> to populate the LHS of the shuffle for <xsl:value-of select="@name"/> */
         <xsl:call-template name="menu">
           <xsl:with-param name="property" select="."/>
@@ -705,10 +708,9 @@ namespace <xsl:value-of select="$controllerns"/> {
 
     <xsl:template name="menu">
       <xsl:param name="property"/>
-      <xsl:variable name="ename" select="$property/@entity"/>
-      <xsl:variable name="entity" select="//adl:entity[@name=$ename]"/>
+      <xsl:variable name="entity" select="//adl:entity[@name=$property/@entity]"/>
           PropertyBag["<xsl:value-of select="concat('all_', $property/@name)"/>"] =
-            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>))<xsl:for-each select="$entity/property[@distinct='user']">
+            hibernator.CreateCriteria(typeof(<xsl:value-of select="concat( $entityns, '.', $entity/@name)"/>))<xsl:for-each select="$entity//adl:property[@distinct='user']">
               <xsl:value-of select="concat('.AddOrder( new Order( &#34;', @name, '&#34;, true))')"/>
             </xsl:for-each>.List&lt;<xsl:value-of select="concat( $entityns, '.', $property/@entity)"/>&gt;();
     </xsl:template>

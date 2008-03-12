@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.10 $
-    $Date: 2008-03-10 17:01:26 $
+    $Revision: 1.11 $
+    $Date: 2008-03-12 13:46:10 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -44,7 +44,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.10 $', 11)"/>
+                select="substring( '$Revision: 1.11 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -89,13 +89,13 @@
 
           Generated using adl2views.xslt <xsl:value-of select="$transform-revision"/>
         </xsl:comment>
+        ${ShuffleWidgetHelper.InstallScripts()}
         ${Ajax.InstallScripts()}
         ${FormHelper.InstallScripts()}
         ${Validation.InstallScripts()}
         ${Scriptaculous.InstallScripts()}
 
         ${ScriptsHelper.InstallScript( "Behaviour")}
-        ${ScriptsHelper.InstallScript( "ShuffleWidget")}
         ${ScriptsHelper.InstallScript( "Sitewide")}
       </head>
       <body>
@@ -270,18 +270,14 @@
       <body onload="performInitialisation()">
         <xsl:call-template name="top"/>
         <div class="content">
-          #if ( $Flash.errors)
-          <div class="warning">
-          <h2>Errors were encountered</h2>
-          
-          <ul>
-            #foreach ($error in $Flash.errors)
-            <li>
-              $error
-            </li>
+          #if ( $errors)
+          #if ( $errors.Count != 0)
+          <ul class="errors">
+            #foreach( $e in $errors)
+            <li>$t.Enc($e)</li>
             #end
           </ul>
-          </div>
+          #end
           #end
           #if ( $messages.Count == 0)
           <!-- if I try to test for $messages.Count &gt; 0,  I get the &gt; copied straight through to 
@@ -783,39 +779,15 @@
     if they are not a member of a group which has write access, the widget should be 
     disabled. I don't have time to implement this now as it is not trivial, but it is 
     important! -->
-    <xsl:variable name="if-missing">
-      <xsl:choose>
-        <xsl:when test="adl:if-missing[@locale = $locale]">
-          <xsl:value-of select="adl:if-missing[@locale = $locale]"/>
-        </xsl:when>
-        <xsl:when test="@required='true'">
-          You must provide a value for <xsl:value-of select="@name"/>
-        </xsl:when>
-        <xsl:when test="@type='defined'">
-          The value for <xsl:value-of select="@name"/> must be <xsl:value-of select="@definition"/>
-        </xsl:when>
-        <xsl:when test="@type='entity'">
-          The value for <xsl:value-of select="@name"/> must be an instance of <xsl:value-of select="@entity"/>
-        </xsl:when>
-        <xsl:otherwise>
-          The value for <xsl:value-of select="@name"/> must be <xsl:value-of select="@type"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
     <!-- TODO: this is a one-database-role permission model, because that's all SRU needs. 
         Different permissions for different database groups is much more complex! Also, this 
         handles permissions on only properties and entities, not on forms. Perhaps we need a 
         Helper class? -->
     <xsl:variable name="permission">
-      <xsl:choose>
-        <xsl:when test="adl:permission">
-          <xsl:value-of select="adl:permission[@group=$permissions-group]/@permission"/>
-        </xsl:when>
-        <xsl:when test="ancestor::adl:entity/adl:permission">
-          <xsl:value-of select="ancestor::adl:entity/adl:permission[@group=$permissions-group]/@permission"/>
-        </xsl:when>
-        <xsl:otherwise>none</xsl:otherwise>
-      </xsl:choose>
+      <xsl:call-template name="property-permission">
+        <xsl:with-param name="property" select="."/>
+        <xsl:with-param name="groupname" select ="$permissions-group"/>
+      </xsl:call-template>
     </xsl:variable>
     <xsl:if test="$permission != 'none'">
     <tr>
@@ -836,188 +808,44 @@
             <xsl:choose>
               <xsl:when test="@type='entity'">
                 <xsl:value-of select="concat('$instance.', @name, '.UserIdentifier')"/>
+                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name, '.KeyString')"/>)}
               </xsl:when>
               <!-- TODO: if @type='list' or 'link', should generate Velocity to generate ul list
                 of UserIdentifiers
               -->
               <xsl:otherwise>
-                <xsl:value-of select="concat('$!instance.', @name)"/>
+                <xsl:value-of select="concat('$instance.', @name)"/>
+                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name)"/>)}
               </xsl:otherwise>
             </xsl:choose>
+          </xsl:when>
+          <xsl:when test="$permission='insert' or $permission='noedit'">
+            #if ($instance.<xsl:value-of select="@name"/>)
+            <xsl:choose>
+              <xsl:when test="@type='entity'">
+                <xsl:value-of select="concat('$instance.', @name, '.UserIdentifier')"/>
+                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name, '.KeyString')"/>)}
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat('$instance.', @name)"/>
+                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name)"/>)}
+              </xsl:otherwise>
+            </xsl:choose>
+            #else
+            <xsl:call-template name="widget">
+              <xsl:with-param name="property" select="."/>
+            </xsl:call-template>
+            #end
           </xsl:when>
           <!-- TODO: if $permission='insert', then you should get an editable widget if there 
           is no current value, else a 'not authorised' message -->
           <!-- TODO: if $permission='noedit', then you should get an editable widget if there 
           is no current value, else just the value -->
-          <!-- TODO: if required='true', then you should not get the firstoption stuff -->
-          <xsl:when test="@type='entity'">
-            <!-- a menu of the appropriate entity -->
-            #if ( $instance)
-              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]', firstoptionvalue='-1', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
-            #else
-              ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]', firstoptionvalue='-1', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
-            #end
-          </xsl:when>
-          <xsl:when test="@type='list'">
-            <!-- a multi-select menu of the appropriate entity -->
-            ${FormHelper.Select( "instance.<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{multiple='multiple', size='8', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
-          </xsl:when>
-          <xsl:when test="@type='defined'">
-            <!-- likely to be hardest of all... -->
-            <xsl:variable name="definition">
-              <xsl:value-of select="@definition"/>
-            </xsl:variable>
-            <xsl:variable name="maximum">
-              <xsl:value-of select="//adl:definition[@name=$definition]/@maximum"/>
-            </xsl:variable>
-            <xsl:variable name="minimum">
-              <xsl:value-of select="//adl:definition[@name=$definition]/@minimum"/>
-            </xsl:variable>
-            <xsl:variable name="validationpattern">
-              <xsl:value-of select="//adl:definition[@name=$definition]/@pattern"/>
-            </xsl:variable>
-            <xsl:variable name="definedtype">
-              <xsl:value-of select="//adl:definition[@name=$definition]/@type"/>
-            </xsl:variable>
-            <xsl:variable name="definedsize">
-              <xsl:value-of select="//adl:definition[@name=$definition]/@size"/>
-            </xsl:variable>
-            <input type="text">
-              <xsl:attribute name="class">
-                <xsl:if test="@required='true'">required </xsl:if>
-                <xsl:choose>
-                  <xsl:when test="//adl:definition[@name=$definition]/@pattern">
-                    <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
-                  </xsl:when>
-                  <xsl:when test="//adl:definition[@name=$definition]/@minimum">
-                    <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
-                  </xsl:when>
-                  <xsl:when test="$definedtype='integer'">validate-digits</xsl:when>
-                  <xsl:when test="$definedtype='real'">validate-number</xsl:when>
-                  <xsl:when test="$definedtype='money'">validate-number</xsl:when>
-                  <xsl:when test="$definedtype='date'">date-field validate-date</xsl:when>
-                </xsl:choose>
-              </xsl:attribute>
-              <xsl:attribute name="id">
-                <xsl:value-of select="concat( 'instance_', @name)"/>
-              </xsl:attribute>
-              <xsl:attribute name="name">
-                <xsl:value-of select="concat( 'instance.', @name)"/>
-              </xsl:attribute>
-              <xsl:choose>
-                <xsl:when test="$definedsize &lt; 60">
-                  <xsl:attribute name="size">
-                    <xsl:value-of select="$definedsize"/>
-                  </xsl:attribute>
-                  <xsl:attribute name="maxlength">
-                    <xsl:value-of select="$definedsize"/>
-                  </xsl:attribute>
-                </xsl:when>
-                <xsl:when test="$definedsize &gt;= 60">
-                  <xsl:attribute name="size">
-                    <xsl:value-of select="60"/>
-                  </xsl:attribute>
-                  <xsl:attribute name="maxlength">
-                    <xsl:value-of select="$definedsize"/>
-                  </xsl:attribute>
-                </xsl:when>
-              </xsl:choose>
-              <xsl:attribute name="value">$!instance.<xsl:value-of select="@name"/></xsl:attribute>
-              <xsl:attribute name="title">
-                <xsl:value-of select="normalize-space( $if-missing)"/>
-              </xsl:attribute>
-            </input>
-            <xsl:if test="string-length( $minimum) &gt; 0 and string-length( $maximum) &gt; 0">
-              <div style="width:200px; height:20px; background: transparent url(../images/slider-images-track-right.png) no-repeat top right;">
-                <xsl:attribute name="id">
-                  <xsl:value-of select="concat( @name, '-track')"/>
-                </xsl:attribute>
-                <div style="position: absolute; width: 5px; height: 20px; background: transparent url(../images/slider-images-track-left.png) no-repeat top left">
-                  <xsl:attribute name="id">
-                    <xsl:value-of select="concat( @name, '-track-left')"/>
-                  </xsl:attribute>
-                </div>
-                <div style="width:19px; height:20px;">
-                  <xsl:attribute name="id">
-                    <xsl:value-of select="concat( @name, '-slider')"/>
-                  </xsl:attribute>
-                  <img src="../images/slider-images-handle.png" alt="" style="float: left;" />
-                </div>
-              </div>
-              <script type="text/javascript" language="javascript">
-                // &lt;![CDATA[
-                new Control.Slider('<xsl:value-of select="@name"/>-slider','<xsl:value-of select="@name"/>-track',{
-                  onSlide:function(v){$('<xsl:value-of select="concat( 'instance_', @name)"/>').value = <xsl:value-of select="$minimum"/>+ Math.floor(v*(<xsl:value-of select="$maximum - $minimum"/>))}
-                })
-                // ]]&gt;
-              </script>
-            </xsl:if>
-            <!-- TODO: generate javascript to do client-side validation -->
-          </xsl:when>
-          <xsl:when test="adl:option">
-            <!-- if a property has options, we definitely want a select widget-->
-            <select>
-              <xsl:attribute name="id">
-                <xsl:value-of select="concat( 'instance_', @name)"/>
-              </xsl:attribute>
-              <xsl:attribute name="name">
-                <xsl:value-of select="concat( 'instance.', @name)"/>
-              </xsl:attribute>
-              <xsl:attribute name="title">
-                <xsl:value-of select="normalize-space( $if-missing)"/>
-              </xsl:attribute>
-              <xsl:apply-templates select="adl:option"/>
-            </select>
-            <script type="text/javascript" language="javascript">
-              // &lt;![CDATA[
-              #set ( <xsl:value-of select="concat( '$', @name, '_sel_opt')"/>="<xsl:value-of select="concat( @name, '-$instance.', @name)"/>")
-                option = document.getElementById( "<xsl:value-of select="concat( '$', @name, '_sel_opt')"/>");
-
-                if ( option != null)
-                {
-                  option.selected = true;
-                }
-              // ]]&gt;
-            </script>
-          </xsl:when>
-          <xsl:when test="@type='boolean'">
-            ${FormHelper.CheckboxField( "instance.<xsl:value-of select="@name"/>")}
-          </xsl:when>
-          <xsl:when test="@type='date'">
-            <xsl:variable name="class"><xsl:if test="@required='true'">required </xsl:if>date-field validate-date</xsl:variable>
-            ${FormHelper.TextField( "instance.<xsl:value-of select="@name"/>", "%{class='<xsl:value-of select="$class"/>', textformat='d', size='10', maxlength='10'}")}
-          </xsl:when>
           <xsl:otherwise>
-            <xsl:variable name="class">
-              <xsl:if test="@required='true'">required </xsl:if><xsl:choose>
-                <xsl:when test="@type='integer'">validate-digits</xsl:when>
-                <xsl:when test="@type='real'">validate-number</xsl:when>
-                <xsl:when test="@type='money'">validate-number</xsl:when>
-              </xsl:choose>
-            </xsl:variable>
-            <xsl:variable name="size">
-              <xsl:choose>
-                <xsl:when test="@size &lt; 60">
-                  <xsl:value-of select="@size"/>
-                </xsl:when>
-                <xsl:when test="@type='integer'">8</xsl:when>
-                <xsl:when test="@type='real'">8</xsl:when>
-                <xsl:when test="@type='money'">8</xsl:when>
-                <xsl:otherwise>60</xsl:otherwise>
-              </xsl:choose>
-            </xsl:variable>
-            <xsl:variable name="maxlength">
-              <xsl:choose>
-                <xsl:when test="@size &gt;= 60">
-                  <xsl:value-of select="@size"/>
-                </xsl:when>
-                <xsl:otherwise>
-                  <xsl:value-of select="$size"/>
-                </xsl:otherwise>
-              </xsl:choose>
-            </xsl:variable>
-            ${FormHelper.TextField( "instance.<xsl:value-of select="@name"/>", "%{class='<xsl:value-of select="$class"/>', title='<xsl:value-of select="normalize-space( $if-missing)"/>', size='<xsl:value-of select="$size"/>', maxlength='<xsl:value-of select="$maxlength"/>'}")}
-         </xsl:otherwise>
+            <xsl:call-template name="widget">
+              <xsl:with-param name="property" select="."/>
+            </xsl:call-template>
+          </xsl:otherwise>
       </xsl:choose>        
       </td>
       <td class="help">
@@ -1026,6 +854,219 @@
     </tr>
     </xsl:if>
   </xsl:template>
+
+    <!-- render an appropriate widget for the indicated property 
+      property: a property element
+    -->
+    <xsl:template name="widget">
+      <xsl:param name="property"/>
+      <xsl:variable name="if-missing">
+        <xsl:choose>
+          <xsl:when test="adl:if-missing[@locale = $locale]">
+            <xsl:value-of select="adl:if-missing[@locale = $locale]"/>
+          </xsl:when>
+          <xsl:when test="$property/@required='true'">
+            You must provide a value for <xsl:value-of select="$property/@name"/>
+          </xsl:when>
+          <xsl:when test="$property/@type='defined'">
+            The value for <xsl:value-of select="$property/@name"/> must be <xsl:value-of select="$property/@definition"/>
+          </xsl:when>
+          <xsl:when test="$property/@type='entity'">
+            The value for <xsl:value-of select="$property/@name"/> must be an instance of <xsl:value-of select="$property/@entity"/>
+          </xsl:when>
+          <xsl:otherwise>
+            The value for <xsl:value-of select="$property/@name"/> must be <xsl:value-of select="$property/@type"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:choose>
+      <xsl:when test="$property/@type='entity'">
+        <!-- a menu of the appropriate entity -->
+        <xsl:choose>
+          <xsl:when test="$property/@required='true'">
+            <!-- if required='true', then you should not get the firstoption stuff -->
+            #if ( $instance)
+            ${FormHelper.Select( "instance.<xsl:value-of select="$property/@name"/>", $instance.<xsl:value-of select="$property/@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+            #else
+            ${FormHelper.Select( "instance.<xsl:value-of select="$property/@name"/>", $<xsl:value-of select="$property/@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+            #end
+          </xsl:when>
+          <xsl:otherwise>
+            #if ( $instance)
+            ${FormHelper.Select( "instance.<xsl:value-of select="$property/@name"/>", $instance.<xsl:value-of select="$property/@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]', firstoptionvalue='-1', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+            #else
+            ${FormHelper.Select( "instance.<xsl:value-of select="$property/@name"/>", $<xsl:value-of select="$property/@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{firstoption='[unset]', firstoptionvalue='-1', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+            #end
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <xsl:when test="$property/@type='list'">
+        <!-- a multi-select menu of the appropriate entity -->
+        ${FormHelper.Select( "instance.<xsl:value-of select="$property/@name"/>", $instance.<xsl:value-of select="$property/@name"/>, <xsl:value-of select="concat( '$all_', @name)"/>, "%{multiple='multiple', size='8', text='UserIdentifier', value='KeyString', title='<xsl:value-of select="normalize-space( $if-missing)"/>'}" )}
+      </xsl:when>
+      <xsl:when test="$property/@type='defined'">
+        <!-- likely to be hardest of all... -->
+        <xsl:variable name="definition">
+          <xsl:value-of select="$property/@definition"/>
+        </xsl:variable>
+        <xsl:variable name="maximum">
+          <xsl:value-of select="//adl:definition[@name=$definition]/@maximum"/>
+        </xsl:variable>
+        <xsl:variable name="minimum">
+          <xsl:value-of select="//adl:definition[@name=$definition]/@minimum"/>
+        </xsl:variable>
+        <xsl:variable name="validationpattern">
+          <xsl:value-of select="//adl:definition[@name=$definition]/@pattern"/>
+        </xsl:variable>
+        <xsl:variable name="definedtype">
+          <xsl:value-of select="//adl:definition[@name=$definition]/@type"/>
+        </xsl:variable>
+        <xsl:variable name="definedsize">
+          <xsl:value-of select="//adl:definition[@name=$definition]/@size"/>
+        </xsl:variable>
+        <input type="text">
+          <xsl:attribute name="class">
+            <xsl:if test="$property/@required='true'">required </xsl:if>
+            <xsl:choose>
+              <xsl:when test="//adl:definition[@name=$definition]/@pattern">
+                <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
+              </xsl:when>
+              <xsl:when test="//adl:definition[@name=$definition]/@minimum">
+                <xsl:value-of select="concat( 'validate-custom-', $definition)"/>
+              </xsl:when>
+              <xsl:when test="$definedtype='integer'">validate-digits</xsl:when>
+              <xsl:when test="$definedtype='real'">validate-number</xsl:when>
+              <xsl:when test="$definedtype='money'">validate-number</xsl:when>
+              <xsl:when test="$definedtype='date'">date-field validate-date</xsl:when>
+            </xsl:choose>
+          </xsl:attribute>
+          <xsl:attribute name="id">
+            <xsl:value-of select="concat( 'instance_', @name)"/>
+          </xsl:attribute>
+          <xsl:attribute name="name">
+            <xsl:value-of select="concat( 'instance.', @name)"/>
+          </xsl:attribute>
+          <xsl:choose>
+            <xsl:when test="$definedsize &lt; 60">
+              <xsl:attribute name="size">
+                <xsl:value-of select="$definedsize"/>
+              </xsl:attribute>
+              <xsl:attribute name="maxlength">
+                <xsl:value-of select="$definedsize"/>
+              </xsl:attribute>
+            </xsl:when>
+            <xsl:when test="$definedsize &gt;= 60">
+              <xsl:attribute name="size">
+                <xsl:value-of select="60"/>
+              </xsl:attribute>
+              <xsl:attribute name="maxlength">
+                <xsl:value-of select="$definedsize"/>
+              </xsl:attribute>
+            </xsl:when>
+          </xsl:choose>
+          <xsl:attribute name="value">
+            $!instance.<xsl:value-of select="$property/@name"/>
+          </xsl:attribute>
+          <xsl:attribute name="title">
+            <xsl:value-of select="normalize-space( $if-missing)"/>
+          </xsl:attribute>
+        </input>
+        <xsl:if test="string-length( $minimum) &gt; 0 and string-length( $maximum) &gt; 0">
+          <div style="width:200px; height:20px; background: transparent url(../images/slider-images-track-right.png) no-repeat top right;">
+            <xsl:attribute name="id">
+              <xsl:value-of select="concat( @name, '-track')"/>
+            </xsl:attribute>
+            <div style="position: absolute; width: 5px; height: 20px; background: transparent url(../images/slider-images-track-left.png) no-repeat top left">
+              <xsl:attribute name="id">
+                <xsl:value-of select="concat( @name, '-track-left')"/>
+              </xsl:attribute>
+            </div>
+            <div style="width:19px; height:20px;">
+              <xsl:attribute name="id">
+                <xsl:value-of select="concat( @name, '-slider')"/>
+              </xsl:attribute>
+              <img src="../images/slider-images-handle.png" alt="" style="float: left;" />
+            </div>
+          </div>
+          <script type="text/javascript" language="javascript">
+            // &lt;![CDATA[
+            new Control.Slider('<xsl:value-of select="$property/@name"/>-slider','<xsl:value-of select="$property/@name"/>-track',{
+            onSlide:function(v){$('<xsl:value-of select="concat( 'instance_', @name)"/>').value = <xsl:value-of select="$minimum"/>+ Math.floor(v*(<xsl:value-of select="$maximum - $minimum"/>))}
+            })
+            // ]]&gt;
+          </script>
+        </xsl:if>
+        <!-- TODO: generate javascript to do client-side validation -->
+      </xsl:when>
+      <xsl:when test="adl:option">
+        <!-- if a property has options, we definitely want a select widget-->
+        <select>
+          <xsl:attribute name="id">
+            <xsl:value-of select="concat( 'instance_', @name)"/>
+          </xsl:attribute>
+          <xsl:attribute name="name">
+            <xsl:value-of select="concat( 'instance.', @name)"/>
+          </xsl:attribute>
+          <xsl:attribute name="title">
+            <xsl:value-of select="normalize-space( $if-missing)"/>
+          </xsl:attribute>
+          <xsl:apply-templates select="adl:option"/>
+        </select>
+        <script type="text/javascript" language="javascript">
+          // &lt;![CDATA[
+          #set ( <xsl:value-of select="concat( '$', @name, '_sel_opt')"/>="<xsl:value-of select="concat( @name, '-$instance.', @name)"/>")
+          option = document.getElementById( "<xsl:value-of select="concat( '$', @name, '_sel_opt')"/>");
+
+          if ( option != null)
+          {
+          option.selected = true;
+          }
+          // ]]&gt;
+        </script>
+      </xsl:when>
+      <xsl:when test="$property/@type='boolean'">
+        ${FormHelper.CheckboxField( "instance.<xsl:value-of select="$property/@name"/>")}
+      </xsl:when>
+      <xsl:when test="$property/@type='date'">
+        <xsl:variable name="class">
+          <xsl:if test="$property/@required='true'">required </xsl:if>date-field validate-date
+        </xsl:variable>
+        ${FormHelper.TextField( "instance.<xsl:value-of select="$property/@name"/>", "%{class='<xsl:value-of select="$class"/>', textformat='d', size='10', maxlength='10'}")}
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="class">
+          <xsl:if test="$property/@required='true'">required </xsl:if>
+          <xsl:choose>
+            <xsl:when test="$property/@type='integer'">validate-digits</xsl:when>
+            <xsl:when test="$property/@type='real'">validate-number</xsl:when>
+            <xsl:when test="$property/@type='money'">validate-number</xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="size">
+          <xsl:choose>
+            <xsl:when test="$property/@size &lt; 60">
+              <xsl:value-of select="$property/@size"/>
+            </xsl:when>
+            <xsl:when test="$property/@type='integer'">8</xsl:when>
+            <xsl:when test="$property/@type='real'">8</xsl:when>
+            <xsl:when test="$property/@type='money'">8</xsl:when>
+            <xsl:otherwise>60</xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="maxlength">
+          <xsl:choose>
+            <xsl:when test="$property/@size &gt;= 60">
+              <xsl:value-of select="$property/@size"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$size"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        ${FormHelper.TextField( "instance.<xsl:value-of select="$property/@name"/>", "%{class='<xsl:value-of select="$class"/>', title='<xsl:value-of select="normalize-space( $if-missing)"/>', size='<xsl:value-of select="$size"/>', maxlength='<xsl:value-of select="$maxlength"/>'}")}
+      </xsl:otherwise>
+      </xsl:choose>
+    </xsl:template>
 
   <xsl:template match="adl:prompt">
     <xsl:value-of select="@prompt"/>
@@ -1409,7 +1450,52 @@
     </xsl:choose>
   </xsl:template>
 
-  <!-- just copy anything we can't match -->
+    <!-- find, as a string, the permission which applies to this property in the context of the named group.
+      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
+      property: a property element
+      groupname: a string, being the name of a group
+    -->
+    <xsl:template name="property-permission">
+      <xsl:param name="property"/>
+      <xsl:param name="groupname" select="public"/>
+      <xsl:choose>
+        <xsl:when test="$property/adl:permission[@group=$groupname]">
+          <xsl:value-of select="$property/adl:permission[@group=$groupname]/@permission"/>
+        </xsl:when>
+        <xsl:when test="$property/ancestor::adl:entity/adl:permission[@group=$groupname]">
+          <xsl:value-of select="$property/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
+        </xsl:when>
+        <xsl:when test="//adl:group[@name=$groupname]/@parent">
+          <xsl:call-template name="property-permission">
+            <xsl:with-param name="property" select="$property"/>
+            <xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
+          </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>none</xsl:otherwise>
+      </xsl:choose>
+    </xsl:template>
+    
+    <!-- find, as a string, the permission which applies to this field in the context of the named group
+      field: a field element
+      groupname: a string, being the name of a group
+    -->
+    <xsl:template name="field-permission">
+      <xsl:param name="field"/>
+      <xsl:param name="groupname"/>
+      <xsl:choose>
+        <xsl:when test="$field/adl:permission[@group=$groupname]">
+          <xsl:value-of select="$field/adl:permission[@group=$groupname]/@permission"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="property-permission">
+            <xsl:with-param name="property" select="$field/ancestor::adl:entity//adl:property[@name=$field/@name]"/>
+            <xsl:with-param name="groupname" select="$groupname"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:template>
+
+    <!-- just copy anything we can't match -->
   <xsl:template match="@* | node()">
     <xsl:copy>
       <xsl:apply-templates select="@* | node()"/>
