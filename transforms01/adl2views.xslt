@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.11 $
-    $Date: 2008-03-12 13:46:10 $
+    $Revision: 1.12 $
+    $Date: 2008-03-19 15:37:48 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -44,7 +44,7 @@
     stored to CVS -->
 
   <xsl:variable name="transform-rev1"
-                select="substring( '$Revision: 1.11 $', 11)"/>
+                select="substring( '$Revision: 1.12 $', 11)"/>
   <xsl:variable name="transform-revision"
                 select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -925,7 +925,7 @@
           <xsl:value-of select="//adl:definition[@name=$definition]/@size"/>
         </xsl:variable>
         <input type="text">
-          <xsl:attribute name="class">
+          <xsl:variable name="cssclass">
             <xsl:if test="$property/@required='true'">required </xsl:if>
             <xsl:choose>
               <xsl:when test="//adl:definition[@name=$definition]/@pattern">
@@ -939,6 +939,9 @@
               <xsl:when test="$definedtype='money'">validate-number</xsl:when>
               <xsl:when test="$definedtype='date'">date-field validate-date</xsl:when>
             </xsl:choose>
+          </xsl:variable>
+          <xsl:attribute name="class">
+            <xsl:value-of select="normalize-space( cssclass)"/>
           </xsl:attribute>
           <xsl:attribute name="id">
             <xsl:value-of select="concat( 'instance_', @name)"/>
@@ -1031,7 +1034,7 @@
         <xsl:variable name="class">
           <xsl:if test="$property/@required='true'">required </xsl:if>date-field validate-date
         </xsl:variable>
-        ${FormHelper.TextField( "instance.<xsl:value-of select="$property/@name"/>", "%{class='<xsl:value-of select="$class"/>', textformat='d', size='10', maxlength='10'}")}
+        ${FormHelper.TextField( "instance.<xsl:value-of select="$property/@name"/>", "%{class='<xsl:value-of select="normalize-space( $class)"/>', textformat='d', size='10', maxlength='10'}")}
       </xsl:when>
       <xsl:otherwise>
         <xsl:variable name="class">

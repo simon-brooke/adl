@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.11 $
+      $Revision: 1.12 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -28,13 +28,80 @@
   <xsl:param name="abstract-key-name-convention" select="Id"/>
   <xsl:param name="database"/>
 
+  <!-- define upper and lower case letters to enable case conversion -->
+  <xsl:variable name="ucase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
+  <xsl:variable name="lcase">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+  <!-- define SQL keywords to police these out of field names -->
+  <xsl:variable name="sqlkeywords-multiline">
+    ADD 	EXCEPT 	PERCENT
+    ALL 	EXEC 	PLAN
+    ALTER 	EXECUTE 	PRECISION
+    AND 	EXISTS 	PRIMARY
+    ANY 	EXIT 	PRINT
+    AS 	FETCH 	PROC
+    ASC 	FILE 	PROCEDURE
+    AUTHORIZATION 	FILLFACTOR 	PUBLIC
+    BACKUP 	FOR 	RAISERROR
+    BEGIN 	FOREIGN 	READ
+    BETWEEN 	FREETEXT 	READTEXT
+    BREAK 	FREETEXTTABLE 	RECONFIGURE
+    BROWSE 	FROM 	REFERENCES
+    BULK 	FULL 	REPLICATION
+    BY 	FUNCTION 	RESTORE
+    CASCADE 	GOTO 	RESTRICT
+    CASE 	GRANT 	RETURN
+    CHECK 	GROUP 	REVOKE
+    CHECKPOINT 	HAVING 	RIGHT
+    CLOSE 	HOLDLOCK 	ROLLBACK
+    CLUSTERED 	IDENTITY 	ROWCOUNT
+    COALESCE 	IDENTITY_INSERT 	ROWGUIDCOL
+    COLLATE 	IDENTITYCOL 	RULE
+    COLUMN 	IF 	SAVE
+    COMMIT 	IN 	SCHEMA
+    COMPUTE 	INDEX 	SELECT
+    CONSTRAINT 	INNER 	SESSION_USER
+    CONTAINS 	INSERT 	SET
+    CONTAINSTABLE 	INTERSECT 	SETUSER
+    CONTINUE 	INTO 	SHUTDOWN
+    CONVERT 	IS 	SOME
+    CREATE 	JOIN 	STATISTICS
+    CROSS 	KEY 	SYSTEM_USER
+    CURRENT 	KILL 	TABLE
+    CURRENT_DATE 	LEFT 	TEXTSIZE
+    CURRENT_TIME 	LIKE 	THEN
+    CURRENT_TIMESTAMP 	LINENO 	TO
+    CURRENT_USER 	LOAD 	TOP
+    CURSOR 	NATIONAL 	TRAN
+    DATABASE 	NOCHECK 	TRANSACTION
+    DBCC 	NONCLUSTERED 	TRIGGER
+    DEALLOCATE 	NOT 	TRUNCATE
+    DECLARE 	NULL 	TSEQUAL
+    DEFAULT 	NULLIF 	UNION
+    DELETE 	OF 	UNIQUE
+    DENY 	OFF 	UPDATE
+    DESC 	OFFSETS 	UPDATETEXT
+    DISK 	ON 	USE
+    DISTINCT 	OPEN 	USER
+    DISTRIBUTED 	OPENDATASOURCE 	VALUES
+    DOUBLE 	OPENQUERY 	VARYING
+    DROP 	OPENROWSET 	VIEW
+    DUMMY 	OPENXML 	WAITFOR
+    DUMP 	OPTION 	WHEN
+    ELSE 	OR 	WHERE
+    END 	ORDER 	WHILE
+    ERRLVL 	OUTER 	WITH
+    ESCAPE 	OVER 	WRITETEXT
+  </xsl:variable>
+  <xsl:variable name="sqlkeywords" select="concat(' ', normalize-space($sqlkeywords-multiline), ' ')"/>
+
+
   <xsl:template match="adl:application"> 
         -------------------------------------------------------------------------------------------------
         --
         --    Application Description Language framework
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.11 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.12 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -523,13 +590,24 @@
 
   <!-- consistent, repeatable way of getting the column name for a given property -->
   <xsl:template name="property-column-name">
+    <!-- a property element -->
     <xsl:param name="property"/>
+    <xsl:variable name="unescaped">
     <xsl:choose>
       <xsl:when test="$property/@column">
         <xsl:value-of select="$property/@column"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$property/@name"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="contains( $sqlkeywords, concat(' ', translate( $unescaped, $lcase, $ucase),' '))">
+        <xsl:value-of select="concat( '[', $unescaped, ']')"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$unescaped"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
