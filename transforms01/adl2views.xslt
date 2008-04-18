@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.13 $
-    $Date: 2008-04-17 15:04:15 $
+    $Revision: 1.14 $
+    $Date: 2008-04-18 09:27:29 $
   -->
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
      Whitespace (or lack of it) is significant! -->
@@ -93,7 +93,7 @@
         Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
       </xsl:comment>
       <xsl:call-template name="maybe-delete">
         <xsl:with-param name="entity" select="."/>
@@ -127,7 +127,7 @@
           Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
           generated from ADL.
 
-          Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+          Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
         </xsl:comment>
         <xsl:call-template name="install-scripts"/>
       </head>
@@ -213,7 +213,7 @@
         Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
       </xsl:comment>
       #capturefor( title)
         #if ( $instance)
@@ -334,7 +334,7 @@
             Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
             generated from ADL.
 
-            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
           </xsl:comment>
           <xsl:call-template name="install-scripts"/>
           <script type='text/javascript' language='JavaScript1.2'>
@@ -430,10 +430,8 @@
         </ul>
         #end
         #end
-        #if ( $messages.Count == 0)
-        <!-- if I try to test for $messages.Count &gt; 0,  I get the &gt; copied straight through to 
-          the output instead of the entity value being substituted(?) -->
-        #else
+        #if( $messages)
+        #if ( $messages.Count != 0)
         <div class="information">
           #foreach ( $message in $messages)
           <p>
@@ -441,6 +439,7 @@
           </p>
           #end
         </div>
+        #end
         #end
         <form method="post" onsubmit="invokeSubmitHandlers( this)">
           <xsl:attribute name="action">
@@ -508,17 +507,21 @@
               <tr align="left" valign="top" class="actionDangerous">
 
                 <td class="actionDangerous" colspan="2">
+                  #if ( $instance)
                   #if ( $instance.NoDeleteReason)
                   [ $instance.NoDeleteReason ]
                   #else
                   To delete this record
                   #end
+                  #end
                 </td>
                 <td class="actionDangerous" style="text-align:right">
+                  #if ( $instance)
                   #if ( $instance.NoDeleteReason)
                   <button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this!</button>
                   #else
                   <button type="submit" name="command" value="delete">Delete this!</button>
+                  #end
                   #end
                 </td>
               </tr>
@@ -624,6 +627,7 @@
             -
           </th>
         </tr>
+        #if ( $instance)
         #foreach( $item in $instance.<xsl:value-of select="@property"/>)
         #if ( $velocityCount % 2 == 0)
         #set( $oddity = "even")
@@ -666,7 +670,8 @@
             </a>
           </td>
         </tr>
-        #end
+        #end <!-- foreach -->
+        #end <!-- if ($instance) -->
       </xsl:when>
       <xsl:otherwise>
         <!-- properties not listed, so therefore presumably all. -->
@@ -685,6 +690,7 @@
           </xsl:for-each>
           <th>-</th>
         </tr>
+        #if ( $instance)
         #foreach( $item in $instance.<xsl:value-of select="@property"/>)
         #if ( $velocityCount % 2 == 0)
         #set( $oddity = "even")
@@ -727,7 +733,8 @@
             </a>
           </td>
         </tr>
-        #end
+        #end <!-- foreach -->
+        #end <!-- if ( $instance)-->
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -800,8 +807,16 @@
       </td>
       <td class="widget" colspan="2">
         #if( $instance)
-        <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
-        $FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>")
+          #if( <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>)
+            <xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
+            $FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>")
+          #else
+        <input type="text">
+          <xsl:attribute name="name">
+            <xsl:value-of select="concat('i18n.instance.', @name)"/>
+          </xsl:attribute>
+        </input>
+          #end
         #else
         <input type="text">
           <xsl:attribute name="name">
@@ -1308,7 +1323,7 @@
             Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
             generated from ADL.
 
-            Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+            Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
           </xsl:comment>
           <xsl:call-template name="install-scripts"/>
         </head>
