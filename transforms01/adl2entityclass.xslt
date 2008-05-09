@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.12 $
-    $Date: 2008-03-12 13:46:10 $
+    $Revision: 1.13 $
+    $Date: 2008-05-09 16:12:12 $
   -->
 
   <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
     stored to CVS -->
 
     <xsl:variable name="transform-rev1"
-                  select="substring( '$Revision: 1.12 $', 11)"/>
+                  select="substring( '$Revision: 1.13 $', 11)"/>
     <xsl:variable name="transform-revision"
                   select="substring( $transform-rev1, 0, string-length( $transform-rev1) - 1)"/>
 
@@ -220,8 +220,8 @@
           get {
             StringBuilder result = new StringBuilder();
           <xsl:choose>
-            <xsl:when test="descendant::adl:property[@distinct='user']">
-              <xsl:for-each select="descendant::adl:property[@distinct='user']">
+            <xsl:when test="descendant::adl:property[@distinct='user' or @distinct='all']">
+              <xsl:for-each select="descendant::adl:property[@distinct='user' or @distinct='all']">
                 <xsl:choose>
                   <xsl:when test="@type='message'">
             if ( <xsl:value-of select="@name"/> != null)
