@@ -12,8 +12,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.16 $
-    $Date: 2008-05-09 16:12:12 $
+    $Revision: 1.17 $
+    $Date: 2008-05-15 16:30:25 $
   -->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -104,7 +104,7 @@
         Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.16 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
       </xsl:comment>
       <xsl:call-template name="maybe-delete">
         <xsl:with-param name="entity" select="."/>
@@ -141,7 +141,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.16 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -227,7 +227,7 @@
         Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.16 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
       </xsl:comment>
       #capturefor( title)
         #if ( $instance)
@@ -351,7 +351,7 @@
             Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
             generated from ADL.
 
-            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.16 $', 10)"/>
+            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
           </xsl:comment>
           <xsl:call-template name="install-scripts"/>
           <script type='text/javascript' language='JavaScript1.2'>
@@ -482,7 +482,9 @@
 						</xsl:when>
 						<xsl:otherwise>
 							<!-- create a hidden widget for the natural primary key -->
+							#if ( $instance)
 							${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyname"/>")}
+							#end
 						</xsl:otherwise>
 					</xsl:choose>
 				</xsl:for-each>
@@ -994,35 +996,45 @@
             <xsl:choose>
               <xsl:when test="@type='entity'">
                 <xsl:value-of select="concat('$instance.', @name, '.UserIdentifier')"/>
-                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name, '.KeyString')"/>)}
+				  #if ( $instance)
+					${FormHelper.HiddenField( "<xsl:value-of select="concat('instance.', @name, '.KeyString')"/>")}
+				  #end
               </xsl:when>
               <!-- TODO: if @type='list' or 'link', should generate Velocity to generate ul list
                 of UserIdentifiers
               -->
               <xsl:otherwise>
                 <xsl:value-of select="concat('$instance.', @name)"/>
-                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name)"/>)}
+				  #if ( $instance)
+					${FormHelper.HiddenField( "<xsl:value-of select="concat('instance.', @name)"/>")}
+				  #end
               </xsl:otherwise>
             </xsl:choose>
           </xsl:when>
           <xsl:when test="$permission='insert' or $permission='noedit'">
+			#if ( $instance)
             #if ($instance.<xsl:value-of select="@name"/>)
             <xsl:choose>
               <xsl:when test="@type='entity'">
                 <xsl:value-of select="concat('$instance.', @name, '.UserIdentifier')"/>
-                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name, '.KeyString')"/>)}
+                ${FormHelper.HiddenField( "<xsl:value-of select="concat('instance.', @name, '.KeyString')"/>")}
               </xsl:when>
               <xsl:otherwise>
                 <xsl:value-of select="concat('$instance.', @name)"/>
-                ${FormHelper.HiddenField( <xsl:value-of select="concat('$instance.', @name)"/>)}
+                ${FormHelper.HiddenField( "<xsl:value-of select="concat('instance.', @name)"/>")}
               </xsl:otherwise>
             </xsl:choose>
             #else
             <xsl:call-template name="widget">
               <xsl:with-param name="property" select="."/>
             </xsl:call-template>
-            #end
-          </xsl:when>
+			#end
+			#else
+			<xsl:call-template name="widget">
+			  <xsl:with-param name="property" select="."/>
+			</xsl:call-template>
+			#end
+		  </xsl:when>
           <!-- TODO: if $permission='insert', then you should get an editable widget if there 
           is no current value, else a 'not authorised' message -->
           <!-- TODO: if $permission='noedit', then you should get an editable widget if there 
@@ -1347,7 +1359,7 @@
             Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
             generated from ADL.
 
-            Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.16 $', 10)"/>
+            Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
           </xsl:comment>
           <xsl:call-template name="install-scripts"/>
         </head>
