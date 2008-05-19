@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.19 $
-    $Date: 2008-05-19 14:49:23 $
+    $Revision: 1.20 $
+    $Date: 2008-05-19 15:25:06 $
 	-->
 	  <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -112,7 +112,7 @@
         Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
       </xsl:comment>
       <xsl:call-template name="maybe-delete">
         <xsl:with-param name="entity" select="."/>
@@ -147,7 +147,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -233,7 +233,7 @@
         Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
         generated from ADL.
 
-        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+        Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
       </xsl:comment>
       #capturefor( title)
         #if ( $instance)
@@ -256,14 +256,15 @@
 
         function performInitialisation()
         {
-        <xsl:for-each select="../property[@type='link']">
+        <xsl:for-each select="../adl:property[@type='link']">
           document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
         </xsl:for-each>
-        var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
         <xsl:if test="fieldgroup">
           switchtab( '<xsl:value-of select="fieldgroup[1]/@name"/>');
         </xsl:if>
         }
+		var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
+
         <xsl:for-each select="//definition">
           <xsl:variable name="errormsg">
             <xsl:choose>
@@ -357,7 +358,7 @@
             Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
             generated from ADL.
 
-            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+            Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
           </xsl:comment>
           <xsl:call-template name="install-scripts"/>
           <script type='text/javascript' language='JavaScript1.2'>
@@ -1157,7 +1158,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
