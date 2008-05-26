@@ -13,15 +13,11 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.21 $
-    $Date: 2008-05-21 13:00:57 $
+    $Revision: 1.22 $
+    $Date: 2008-05-26 14:40:08 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
-
-	<!--
-		TODO: this transform BADLY needs to be refactored! It is /crap/!
-		-->
 
 	<xsl:include href="base-type-include.xslt"/>
 
@@ -30,7 +26,13 @@
 	<!-- The locale for which these views are generated 
       TODO: we need to generate views for each available locale, but this is not
       yet implemented. When it is we will almost certainly still need a 'default locale' -->
-	<xsl:param name="locale" select="en-UK"/>
+	<xsl:param name="locale" select="en-GB"/>
+
+	<!-- bug 1896 : boilerplate text in views should be tailored to the locale of
+		the expected user. Unfortunately I haven't yet worked out how to do
+		conditional includes in XSLT, so this is a step on the way to a solution,
+		not a solution in itself. -->
+	<xsl:include href="i18n-en-GB-include.xslt"/>
 
 	<!-- whether or not to auto-generate site navigation - by default, don't -->
 	<xsl:param name="generate-site-navigation" select="'false'"/>
@@ -112,14 +114,17 @@
 		<xsl:comment> [ cut here: next file '<xsl:value-of select="concat( @name, '/maybedelete.auto.vm')"/>' ] </xsl:comment>
 		<xsl:text>
       </xsl:text>
-		#set( $title = "<xsl:value-of select="concat( 'Really delete ', @name)"/> $instance.UserIdentifier")
+		<xsl:variable name="really-delete">
+			<xsl:call-template name="i18n-really-delete"/>
+		</xsl:variable>
+		#set( $title = "<xsl:value-of select="concat( $really-delete, ' ', @name)"/> $instance.UserIdentifier")
 		<xsl:comment>
 			<xsl:value-of select="$product-version"/>
 
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -146,7 +151,10 @@
 			<xsl:text>
 			</xsl:text>
 			<html>
-				#set( $title = "<xsl:value-of select="concat( 'Really delete ', @name)"/> $instance.UserIdentifier")
+				<xsl:variable name="really-delete">
+					<xsl:call-template name="i18n-really-delete"/>
+				</xsl:variable>
+				#set( $title = "<xsl:value-of select="concat( $really-delete, ' ', @name)"/> $instance.UserIdentifier")
 				<head>
 					<title>$!title</title>
 					<xsl:call-template name="head"/>
@@ -154,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -201,12 +209,16 @@
         <table>
           <tr align="left" valign="top" class="actionDangerous">
             <td class="actionDangerous">
-              Really delete?
-            </td>
+				<xsl:call-template name="i18n-really-delete"/>
+			</td>
             <td class="widget">
               <select name="reallydelete">
-                <option value="false">No, don't delete it</option>
-                <option value="true">Yes, do delete it</option>
+                <option value="false">
+					<xsl:call-template name="i18n-really-delete-no"/>
+				</option>
+                <option value="true">
+					<xsl:call-template name="i18n-really-delete-yes"/>
+				</option>
               </select>
             </td>
             <td class="actionDangerous" style="text-align:right">
@@ -221,15 +233,10 @@
 	<xsl:template match="adl:form" mode="non-empty-layout">
 		<xsl:variable name="formname" select="@name"/>
 		<xsl:variable name="aoran">
+			<xsl:call-template name="i18n-indefinite-article">
+				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
+			</xsl:call-template>
 			<xsl:variable name="initial" select="substring( ancestor::adl:entity/@name, 1, 1)"/>
-			<xsl:choose>
-				<xsl:when test="$initial = 'A'">an</xsl:when>
-				<xsl:when test="$initial = 'E'">an</xsl:when>
-				<xsl:when test="$initial = 'I'">an</xsl:when>
-				<xsl:when test="$initial = 'O'">an</xsl:when>
-				<xsl:when test="$initial = 'U'">an</xsl:when>
-				<xsl:otherwise>a</xsl:otherwise>
-			</xsl:choose>
 		</xsl:variable>
 		<xsl:text>
 		</xsl:text>
@@ -242,13 +249,15 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 		</xsl:comment>
 		#capturefor( title)
 		#if ( $instance)
 		<xsl:value-of select="concat( 'Edit ', ' ', ancestor::adl:entity/@name)"/> $instance.UserIdentifier
 		#else
-		Add a new <xsl:value-of select="ancestor::adl:entity/@name"/>
+		<xsl:call-template name="i18n-add-a-new">
+			<xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
+		</xsl:call-template>
 		#end
 		#end
 		#capturefor( headextras)
@@ -281,7 +290,9 @@
 							<xsl:apply-templates select="adl:help[@locale=$locale]"/>
 						</xsl:when>
 						<xsl:otherwise>
-							Does not meet the format requirements for <xsl:value-of select="@name"/>
+							<xsl:call-template name="i18n-bad-format">
+								<xsl:with-param name="format-name" select="@name"/>
+							</xsl:call-template>
 						</xsl:otherwise>
 					</xsl:choose>
 				</xsl:variable>
@@ -335,15 +346,10 @@
 	<xsl:template match="adl:form" mode="empty-layout">
 		<xsl:variable name="formname" select="@name"/>
 		<xsl:variable name="aoran">
+			<xsl:call-template name="i18n-indefinite-article">
+				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
+			</xsl:call-template>
 			<xsl:variable name="initial" select="substring( ancestor::adl:entity/@name, 1, 1)"/>
-			<xsl:choose>
-				<xsl:when test="$initial = 'A'">an</xsl:when>
-				<xsl:when test="$initial = 'E'">an</xsl:when>
-				<xsl:when test="$initial = 'I'">an</xsl:when>
-				<xsl:when test="$initial = 'O'">an</xsl:when>
-				<xsl:when test="$initial = 'U'">an</xsl:when>
-				<xsl:otherwise>a</xsl:otherwise>
-			</xsl:choose>
 		</xsl:variable>
 		<xsl:text>
 		</xsl:text>
@@ -355,7 +361,9 @@
 				#if ( $instance)
 				#set( $title = "<xsl:value-of select="concat( 'Edit ', ' ', ancestor::adl:entity/@name)"/> $instance.UserIdentifier")
 				#else
-				#set( $title = "Add a new <xsl:value-of select="ancestor::adl:entity/@name"/>")
+				#set( $title = "<xsl:call-template name="i18n-add-a-new">
+					<xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
+				</xsl:call-template>")
 				#end
 			</xsl:comment>
 			<head>
@@ -367,7 +375,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
 				<script type='text/javascript' language='JavaScript1.2'>
@@ -385,7 +393,7 @@
 					<xsl:for-each select="../property[@type='link']">
 						document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
 					</xsl:for-each>
-					var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
+						var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
 					<xsl:if test="fieldgroup">
 						switchtab( '<xsl:value-of select="fieldgroup[1]/@name"/>');
 					</xsl:if>
@@ -397,7 +405,9 @@
 									<xsl:apply-templates select="adl:help[@locale=$locale]"/>
 								</xsl:when>
 								<xsl:otherwise>
-									Does not meet the format requirements for <xsl:value-of select="@name"/>
+									<xsl:call-template name="i18n-bad-format">
+										<xsl:with-param name="format-name" select="@name"/>
+									</xsl:call-template>
 								</xsl:otherwise>
 							</xsl:choose>
 						</xsl:variable>
@@ -542,7 +552,7 @@
 						</xsl:choose>
 						<tr class="actionSafe">
 							<td class="actionSafe" colspan="2">
-								To save this record
+								<xsl:call-template name='i18n-save-prompt'/>
 							</td>
 							<td class="actionSafe" style="text-align:right">
 								<button type="submit" name="command" value="store">Save this!</button>
@@ -555,7 +565,7 @@
 									#if ( $instance.NoDeleteReason)
 										[ $instance.NoDeleteReason ]
 									#else
-										To delete this record
+										<xsl:call-template name="i18n-delete-prompt"/>
 									#end
 								#end
 							</td>
@@ -632,14 +642,6 @@
 				</xsl:otherwise>
 			</xsl:choose>
 		</xsl:variable>
-		<xsl:comment>
-			$listprop = <xsl:value-of select="$listprop"/>;
-			$farent = <xsl:value-of select="$farent"/>;
-			$nearent = <xsl:value-of select="$nearent"/>;
-			$farid = <xsl:value-of select="$farid"/>;
-			$farkey = <xsl:value-of select="$farkey"/>;
-			$nearkey = <xsl:value-of select="$nearkey"/>;
-		</xsl:comment>
 		<xsl:variable name="action" select="concat( '../', $farent, '/', @onselect)"/>
 		<xsl:if test="@canadd='true'">
 			<tr>
@@ -651,7 +653,9 @@
 						<xsl:attribute name="href">
 							<xsl:value-of select="concat( $action, '.rails?', $farkey, '=$instance.', $nearkey)"/>
 						</xsl:attribute>
-						Add a new <xsl:value-of select="$farent"/>
+						<xsl:call-template name="i18n-add-a-new">
+							<xsl:with-param name="entity-name" select="$farent"/>
+						</xsl:call-template>
 					</a>
 				</td>
 			</tr>
@@ -879,16 +883,27 @@
 								<xsl:value-of select="adl:if-missing[@locale = $locale]"/>
 							</xsl:when>
 							<xsl:when test="@required='true'">
-								You must provide a value for <xsl:value-of select="@name"/>
+								<xsl:call-template name="i18n-value-required">
+									<xsl:with-param name="propert-name" select="@name"/>
+								</xsl:call-template>
 							</xsl:when>
 							<xsl:when test="@type='defined'">
-								The value for <xsl:value-of select="@name"/> must be <xsl:value-of select="@definition"/>
+								<xsl:call-template name="i18n-value-defined">
+									<xsl:with-param name="property-name" select="@name"/>
+									<xsl:with-param name="definition-name" select="@typedef"/>
+								</xsl:call-template>
 							</xsl:when>
 							<xsl:when test="@type='entity'">
-								The value for <xsl:value-of select="@name"/> must be an instance of <xsl:value-of select="@entity"/>
+								<xsl:call-template name="i18n-value-entity">
+									<xsl:with-param name="property-name" select="@name"/>
+									<xsl:with-param name="entity-name" select="@entity"/>
+								</xsl:call-template>
 							</xsl:when>
 							<xsl:otherwise>
-								The value for <xsl:value-of select="@name"/> must be <xsl:value-of select="@type"/>
+								<xsl:call-template name="i18n-value-type">
+									<xsl:with-param name="property-name" select="@name"/>
+									<xsl:with-param name="type-name" select="@type"/>
+								</xsl:call-template>
 							</xsl:otherwise>
 						</xsl:choose>
 					</xsl:variable>
@@ -974,19 +989,9 @@
 		<xsl:text>
         </xsl:text>
 		<xsl:variable name="withpluralsuffix">
-			<!-- English-laguage syntactic sugar of entity name -->
-			<xsl:choose>
-				<xsl:when test="../@name='Person'">People</xsl:when>
-				<xsl:when test="starts-with( substring(../@name, string-length(../@name) ), 's')">
-					<xsl:value-of select="../@name"/>es
-				</xsl:when>
-				<xsl:when test="starts-with( substring(../@name, string-length(../@name) ), 'y')">
-					<xsl:value-of select="substring( ../@name, 0, string-length(../@name) )"/>ies
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:value-of select="../@name"/>s
-				</xsl:otherwise>
-			</xsl:choose>
+			<xsl:call-template name="i18n-plural">
+				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
+			</xsl:call-template>
 		</xsl:variable>
 		<xsl:comment>
 			<xsl:value-of select="$product-version"/>
@@ -994,7 +999,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1011,30 +1016,19 @@
 	</xsl:template>
 
 	<!-- layout of a list assuming an empty layout -->
-	  <xsl:template match="adl:list" mode="empty-layout">
-		  <xsl:variable name="action" select="@onselect"/>
-		  <xsl:text>
-      </xsl:text>
-		  <xsl:comment> [ cut here: next file '<xsl:value-of select="concat( ../@name, '/', @name)"/>.auto.vm' ] </xsl:comment>
-		  <xsl:text>
-      </xsl:text>
-		  <xsl:variable name="withpluralsuffix">
-			  <!-- English-laguage syntactic sugar of entity name. TODO (bug 1896): This really /must/ not be here.
-					some means of doing i18n syntactic sugar needs to be spliced in. -->
-			  <xsl:choose>
-				  <xsl:when test="../@name='Person'">People</xsl:when>
-				  <xsl:when test="starts-with( substring(../@name, string-length(../@name) ), 's')">
-					  <xsl:value-of select="../@name"/>es
-				  </xsl:when>
-				  <xsl:when test="starts-with( substring(../@name, string-length(../@name) ), 'y')">
-					  <xsl:value-of select="substring( ../@name, 0, string-length(../@name) )"/>ies
-				  </xsl:when>
-				  <xsl:otherwise>
-					  <xsl:value-of select="../@name"/>s
-				  </xsl:otherwise>
-			  </xsl:choose>
-		  </xsl:variable>
-		  <html>
+		<xsl:template match="adl:list" mode="empty-layout">
+			<xsl:variable name="action" select="@onselect"/>
+			<xsl:text>
+			</xsl:text>
+			<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ../@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
+			<xsl:text>
+			</xsl:text>
+			<xsl:variable name="withpluralsuffix">
+				<xsl:call-template name="i18n-plural">
+					<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<html>
 			  <head>
 				  #set( $title = "<xsl:value-of select="normalize-space( concat( 'List ', $withpluralsuffix))"/>")
 				  <title>$!title</title>
@@ -1044,7 +1038,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1089,7 +1083,9 @@
 							  <xsl:attribute name="href">
 								  <xsl:value-of select="concat( ancestor::adl:entity/adl:form[position()=1]/@name, '.rails')"/>
 							  </xsl:attribute>
-							  Add a new <xsl:value-of select="ancestor::adl:entity/@name"/>
+							  <xsl:call-template name="i18n-add-a-new">
+								  <xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
+							  </xsl:call-template>
 						  </a>
 					  </span>
 				  </xsl:if>
