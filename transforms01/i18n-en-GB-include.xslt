@@ -22,8 +22,8 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-05-26 14:40:08 $
+    $Revision: 1.2 $
+    $Date: 2008-05-27 16:27:32 $
 	-->
 
 	<xsl:output method="xml" indent="yes"/>
@@ -40,21 +40,45 @@
 		<xsl:value-of select="concat( 'Does not meet the format requirements for', $format-name)"/>
 	</xsl:template>
 
+	<xsl:template name="i18n-command-not-found">
+		<xsl:param name="command"/>
+		<xsl:choose>
+			<xsl:when test="$command">
+				<xsl:value-of select="concat( 'Unrecognised command ', $command)"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="'No command?'"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+	
 	<xsl:template name="i18n-delete-prompt">
 		<xsl:value-of select="'To delete this record'"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-indefinite-article">
-		<!-- a string, presumed to be a noun- e.g. the name of an entity -->
+		<!-- a string, presumed to be a noun - e.g. the name of a domain entity -->
 		<xsl:param name="noun"/>
 		<xsl:variable name="initial" select="substring( $noun, 1, 1)"/>
 		<xsl:choose>
-			<xsl:when test="$initial = 'A' or $initial = 'a'">an</xsl:when>
-			<xsl:when test="$initial = 'E' or $initial = 'e'">an</xsl:when>
-			<xsl:when test="$initial = 'I' or $initial = 'i'">an</xsl:when>
-			<xsl:when test="$initial = 'O' or $initial = 'o'">an</xsl:when>
-			<xsl:when test="$initial = 'U' or $initial = 'u'">an</xsl:when>
-			<xsl:otherwise>a</xsl:otherwise>
+			<xsl:when test="$initial = 'A' or $initial = 'a'">
+				<xsl:value-of select="concat( 'an ', $noun)"/>
+			</xsl:when>
+			<xsl:when test="$initial = 'E' or $initial = 'e'">
+				<xsl:value-of select="concat( 'an ', $noun)"/>
+			</xsl:when>
+			<xsl:when test="$initial = 'I' or $initial = 'i'">
+				<xsl:value-of select="concat( 'an ', $noun)"/>
+			</xsl:when>
+			<xsl:when test="$initial = 'O' or $initial = 'o'">
+				<xsl:value-of select="concat( 'an ', $noun)"/>
+			</xsl:when>
+			<xsl:when test="$initial = 'U' or $initial = 'u'">
+				<xsl:value-of select="concat( 'an ', $noun)"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="concat( 'a ', $noun)"/>
+			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
 
@@ -69,10 +93,10 @@
 		<xsl:value-of select="concat( 'List', $plural)"/>
 	</xsl:template>
 
+	<!-- English-laguage syntactic sugar of entity name -->
 	<xsl:template name="i18n-plural">
 		<!-- a string, presumed to be a noun -->
 		<xsl:param name="noun"/>
-		<!-- English-laguage syntactic sugar of entity name -->
 		<xsl:choose>
 			<xsl:when test="$noun='Person'">People</xsl:when>
 			<!-- add other special cases here -->
@@ -80,13 +104,12 @@
 				<xsl:value-of select="concat( $noun, 'es')"/>
 			</xsl:when>
 			<xsl:when test="starts-with( substring($noun, string-length($noun) ), 'y')">
-				<xsl:value-of select="concat( substring( $noun, 0, string-length($noun)), 'ies')"/>
+				<xsl:value-of select="concat( substring( $noun, string-length($noun)), 'ies')"/>
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:value-of select="concat( $noun, 's')"/>
 			</xsl:otherwise>
 		</xsl:choose>
-
 	</xsl:template>
 
 	<!-- the 'really delete' message, used in two-phase delete process -->
@@ -100,6 +123,19 @@
 	<!-- the 'confirm delete' message, used in two-phase delete process -->
 	<xsl:template name="i18n-really-delete-yes">
 		<xsl:value-of select="'Yes, do delete it'"/>
+	</xsl:template>
+
+	<xsl:template name="i18n-record-not-found">
+		<xsl:param name="entity-name"/>
+		<xsl:value-of select="concat( 'No record of type ', $entity-name, ' with the key values supplied was found')"/>
+	</xsl:template>
+	
+	<xsl:template name="i18n-record-not-saved">
+		<xsl:value-of select="'Record not saved'"/>
+	</xsl:template>
+	
+	<xsl:template name="i18n-record-saved">
+		<xsl:value-of select="'Record saved successfully'"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-save-prompt">
@@ -117,7 +153,7 @@
 			</xsl:call-template>
 		</xsl:variable>
 					  
-		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran, ' ', $definition-name)"/>
+		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran)"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-value-entity">
@@ -131,7 +167,7 @@
 			</xsl:call-template>
 		</xsl:variable>
 
-		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran, ' ', $entity-name)"/>
+		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran)"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-value-required">
@@ -151,6 +187,6 @@
 			</xsl:call-template>
 		</xsl:variable>
 
-		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran, ' ', $type-name)"/>
+		<xsl:value-of select="concat( 'The value for ', $property-name, ' must be ', $aoran)"/>
 	</xsl:template>
 </xsl:stylesheet>

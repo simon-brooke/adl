@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.22 $
-    $Date: 2008-05-26 14:40:08 $
+    $Revision: 1.23 $
+    $Date: 2008-05-27 16:27:27 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -162,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -232,12 +232,6 @@
   <!-- layout of forms -->
 	<xsl:template match="adl:form" mode="non-empty-layout">
 		<xsl:variable name="formname" select="@name"/>
-		<xsl:variable name="aoran">
-			<xsl:call-template name="i18n-indefinite-article">
-				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
-			</xsl:call-template>
-			<xsl:variable name="initial" select="substring( ancestor::adl:entity/@name, 1, 1)"/>
-		</xsl:variable>
 		<xsl:text>
 		</xsl:text>
 		<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ancestor::adl:entity/@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
@@ -249,7 +243,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 		</xsl:comment>
 		#capturefor( title)
 		#if ( $instance)
@@ -345,17 +339,11 @@
 
 	<xsl:template match="adl:form" mode="empty-layout">
 		<xsl:variable name="formname" select="@name"/>
-		<xsl:variable name="aoran">
-			<xsl:call-template name="i18n-indefinite-article">
-				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
-			</xsl:call-template>
-			<xsl:variable name="initial" select="substring( ancestor::adl:entity/@name, 1, 1)"/>
-		</xsl:variable>
 		<xsl:text>
 		</xsl:text>
 		<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ancestor::adl:entity/@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
 		<xsl:text>
-    </xsl:text>
+		</xsl:text>
 		<html>
 			<xsl:comment>
 				#if ( $instance)
@@ -375,7 +363,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
 				<script type='text/javascript' language='JavaScript1.2'>
@@ -999,7 +987,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1038,7 +1026,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
