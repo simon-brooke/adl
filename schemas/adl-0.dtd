@@ -13,11 +13,19 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.13 $
+        $Revision: 1.14 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-<!--  Before we start: some useful definitions									                -->
+<!--  Before we start: import XHTML											-->
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!ENTITY % XHTML PUBLIC
+   "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+%XHTML;
+
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  Before we start: some useful definitions					                -->
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
 
 <!-- some basic character entities inherited from HTML. Actually we probably ought to 
@@ -254,7 +262,7 @@ that we can allow HTML block level entities within content elements -->
   should HTML markup within a documentation element be allowed? If so, are
   there restrictions?
 -->
-<!ELEMENT documentation (#PCDATA)>
+<!ELEMENT documentation (%Flow;)>
 <!ATTLIST documentation
   xmlns     CDATA             #IMPLIED>
 
@@ -453,6 +461,11 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
   markup is definitely not allowed!
   
   name:   the name of this parameter
+  
+  TODO: This needs to be renamed or removed because it conflicts with the
+  XHTML element of the same name. In fact it could be simply removed since 
+  our usage is compatible with the XHTML usage, but it might be less 
+  ambiguous to rename it.
 -->
 <!ELEMENT param (#PCDATA)>
 <!ATTLIST param
@@ -466,6 +479,13 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	is UNDEFINED; either behaviour is correct. If at database layer it's also 
 	UNDEFINED whether they're encoded as a single reference data table or as 
 	separate reference data tables for each property.
+	
+	value:	the value of this option
+
+	TODO: This needs to be renamed or removed because it conflicts with the
+	XHTML element of the same name. In fact it could be simply removed since 
+	our usage is compatible with the XHTML usage, but it might be less 
+	ambiguous to rename it.
 -->
 <!ELEMENT option (documentation?, prompt*)>
 <!-- if the value is different from the prompt the user sees, specify it -->
@@ -535,7 +555,11 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
   locale      %Locale;        #REQUIRED
   xmlns     CDATA             #IMPLIED>
 
-<!-- a form through which an entity may be added or edited -->
+<!-- a form through which an entity may be added or edited
+
+  TODO: This needs to be renamed because it conflicts with the
+  XHTML element of the same name. 
+-->
 <!ELEMENT form (documentation?, ( %PageStuff;)*)>
 <!ATTLIST form %PageAttrs;>
 
@@ -607,6 +631,11 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	content to place in the head of the generated document; this is #PCDATA 
 	because it will almost certainly belong to a different namespace 
 	(usually HTML)
+
+	TODO: This needs to be renamed or removed because it conflicts with the
+	XHTML element of the same name. In fact it could be simply removed since 
+	our usage is compatible with the XHTML usage, but it might be less 
+	ambiguous to rename it.
 -->
 <!ELEMENT head (#PCDATA) >
 <!ATTLIST head
@@ -615,19 +644,17 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 
 <!-- 
 	content to place in the top of the body of the generated document; 
-	this is #PCDATA because it will almost certainly belong to a different 
-	namespace (usually HTML)
+	this is %Flow; which is any HTML block or inline level element.
 -->
-<!ELEMENT top (#PCDATA) >
+<!ELEMENT top (%Flow;) >
 <!ATTLIST top
   xmlns     CDATA             #IMPLIED>
 
 <!-- 
 	content to place at the foot of the body of the generated document; 
-	this is #PCDATA because it will almost certainly belong to a different 
-	namespace (usually HTML)
+	this is %Flow; which is any HTML block or inline level element.
 -->
-<!ELEMENT foot (#PCDATA) >
+<!ELEMENT foot (%Flow;) >
 <!ATTLIST foot
   xmlns     CDATA             #IMPLIED>
 
