@@ -3,7 +3,7 @@
          xmlns="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          xmlns:nant="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          >
-	<property name="buildfile.revision" value="$Revision: 1.1 $"/>
+	<property name="buildfile.revision" value="$Revision: 1.2 $"/>
 	<property name="adl" value="."/>
 	<property name="transforms" value="${adl}/transforms01"/>
 	<property name="locale" value="fr-FR"/>
@@ -17,5 +17,4 @@
 	</target>
 
 	<target name="test" depends="localise-views"/>
-
 </project>
