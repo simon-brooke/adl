@@ -7,7 +7,7 @@
 	
 	<!--
     Application Description Language framework
-    i18n-en-GB-include.xsl
+    i18n-en-GB-include.xslt
     
     (c) 2007 Cygnet Solutions Ltd
     
@@ -22,8 +22,8 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-05-27 16:27:32 $
+    $Revision: 1.3 $
+    $Date: 2008-05-29 10:26:47 $
 	-->
 
 	<xsl:output method="xml" indent="yes"/>
