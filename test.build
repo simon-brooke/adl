@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project name="ADL" default="test"
+         xmlns="http://nant.sf.net/release/0.85-rc4/nant.xsd"
+         xmlns:nant="http://nant.sf.net/release/0.85-rc4/nant.xsd"
+         >
+	<property name="buildfile.revision" value="$Revision: 1.1 $"/>
+	<property name="adl" value="."/>
+	<property name="transforms" value="${adl}/transforms01"/>
+	<property name="locale" value="fr-FR"/>
+
+	<target name="localise-views" 
+		description="create a localised version of adl2views for the current locale">
+
+		<style verbose="true" style="${transforms}/localise-transform.xslt"
+			   in="${transforms}/adl2views.xslt"
+			   out="${transforms}/adl2views.${locale}.auto.xslt" />
+	</target>
+
+	<target name="test" depends="localise-views"/>
+
+</project>
