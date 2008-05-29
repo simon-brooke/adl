@@ -1,28 +1,28 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-    <!--						    											                                  -->
-    <!--	adl-0.dtd    			    										                            -->
-    <!--																		                                    -->
-    <!--	Purpose:															                                -->
-    <!--	Document Type Description for Application Description	                -->
-    <!--	Language. Normative for now; will be replaced by a schema.     		    -->
-    <!--																		                                    -->
-    <!--	Author:		Simon Brooke <simon@cygnets.co.uk>			  	                -->
-    <!--	Created:	24th January 2006										                        -->
-    <!--	Copyright:	(c) 2007 Cygnet Solutions Ltd						                  -->
-    <!--      							      									                            -->
+    <!--						    											-->
+    <!--	adl-0.dtd    			    										-->
+    <!--																		-->
+    <!--	Purpose:															-->
+    <!--	Document Type Description for Application Description				-->
+    <!--	Language. Normative for now; will be replaced by a schema.     	   `-->
+    <!--																		-->
+    <!--	Author:		Simon Brooke <simon@cygnets.co.uk>			  			-->
+    <!--	Created:	24th January 2006				                        -->
+    <!--	Copyright:	(c) 2007 Cygnet Solutions								-->
+    <!--      							      		                            -->
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.14 $
+        $Revision: 1.15 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-<!--  Before we start: import XHTML											-->
+<!--  Before we start: import XHTML												-->
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-<!ENTITY % XHTML PUBLIC
+<!-- ENTITY  % XHTML PUBLIC
    "-//W3C//DTD XHTML 1.0 Transitional//EN"
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-%XHTML;
+%XHTML; -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
 <!--  Before we start: some useful definitions					                -->
@@ -262,7 +262,7 @@ that we can allow HTML block level entities within content elements -->
   should HTML markup within a documentation element be allowed? If so, are
   there restrictions?
 -->
-<!ELEMENT documentation (%Flow;)>
+<!ELEMENT documentation (#PCDATA)>
 <!ATTLIST documentation
   xmlns     CDATA             #IMPLIED>
 
@@ -646,7 +646,7 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	content to place in the top of the body of the generated document; 
 	this is %Flow; which is any HTML block or inline level element.
 -->
-<!ELEMENT top (%Flow;) >
+<!ELEMENT top (#PCDATA) >
 <!ATTLIST top
   xmlns     CDATA             #IMPLIED>
 
@@ -654,7 +654,7 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 	content to place at the foot of the body of the generated document; 
 	this is %Flow; which is any HTML block or inline level element.
 -->
-<!ELEMENT foot (%Flow;) >
+<!ELEMENT foot (#PCDATA) >
 <!ATTLIST foot
   xmlns     CDATA             #IMPLIED>
 
