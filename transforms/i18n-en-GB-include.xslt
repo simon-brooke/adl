@@ -22,11 +22,9 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2008-05-29 16:40:09 $
+    $Revision: 1.2 $
+    $Date: 2008-06-03 14:38:15 $
 	-->
-
-	<xsl:output method="xml" indent="yes"/>
 
 	<xsl:template name="i18n-add-a-new">
 		<!-- a string, presumed to be the name of a domain entity -->

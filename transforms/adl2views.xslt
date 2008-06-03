@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-05-29 16:39:38 $
+    $Revision: 1.4 $
+    $Date: 2008-06-03 14:38:15 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -162,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -243,7 +243,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 		</xsl:comment>
 		#capturefor( title)
 		#if ( $instance)
@@ -257,13 +257,6 @@
 		#capturefor( headextras)
 		<xsl:call-template name="head"/>
 		<script type='text/javascript' language='JavaScript1.2'>
-			var panes = new Array( <xsl:for-each select='adl:fieldgroup'>
-				"<xsl:value-of select='@name'/>"<xsl:choose>
-					<xsl:when test="position() = last()"/>
-					<xsl:otherwise>,</xsl:otherwise>
-				</xsl:choose>
-			</xsl:for-each> );
-
 			var siteRoot = '$siteRoot';
 
 			function performInitialisation()
@@ -314,8 +307,6 @@
 
 		${StylesHelper.InstallStylesheet( "Epoch")}
 
-		<script type="text/javascript" language='JavaScript1.2' src="../script/panes.js"></script>
-
 		<style type="text/css">
 			<xsl:for-each select="ancestor::adl:entity//adl:property[@required='true']">
 				#<xsl:value-of select="concat( 'advice-required-instance_', @name)"/>
@@ -363,16 +354,10 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
 				<script type='text/javascript' language='JavaScript1.2'>
-					var panes = new Array( <xsl:for-each select='adl:fieldgroup'>
-						"<xsl:value-of select='@name'/>"<xsl:choose>
-							<xsl:when test="position() = last()"/>
-							<xsl:otherwise>,</xsl:otherwise>
-						</xsl:choose>
-					</xsl:for-each> );
 
 					var siteRoot = '$siteRoot';
 
@@ -422,8 +407,6 @@
 				</script>
 
 				${StylesHelper.InstallStylesheet( "Epoch")}
-
-				<script type="text/javascript" language='JavaScript1.2' src="../script/panes.js"></script>
 
 				<style type="text/css">
 					<xsl:for-each select="ancestor::adl:entity//adl:property[@required='true']">
@@ -478,7 +461,8 @@
 					#end
 				#end
 			</xsl:if>
-			<form method="post" onsubmit="invokeSubmitHandlers( this)">
+			<form method="post" onsubmit="invokeSubmitHandlers( this)"  class="tabbed">
+				<input type="hidden" name="currentpane" value="$!currentpane" />
 				<xsl:attribute name="action">
 					<xsl:value-of select="concat( $formname, 'SubmitHandler.rails')"/>
 				</xsl:attribute>
@@ -503,7 +487,7 @@
 					</xsl:choose>
 				</xsl:for-each>
 				<xsl:if test="$form/adl:fieldgroup">
-					<div id="tabbar">
+					<!-- div id="tabbar">
 						<xsl:for-each select="$form/adl:fieldgroup">
 							<span class="tab">
 								<xsl:attribute name="id">
@@ -525,10 +509,10 @@
 								</a>
 							</span>
 						</xsl:for-each>
-					</div>
+					</div -->
 				</xsl:if>
 				<xsl:apply-templates select="$form/adl:fieldgroup"/>
-				<div class="pane">
+				<div class="non-pane">
 					<table>
 						<xsl:choose>
 							<xsl:when test="@properties='listed'">
@@ -574,7 +558,7 @@
 	</xsl:template>
 
 	<xsl:template match="adl:fieldgroup">
-		<div class="pane">
+		<div class="tab-pane">
 			<xsl:attribute name="id">
 				<xsl:value-of select="concat( @name, 'pane')"/>
 			</xsl:attribute>
@@ -584,19 +568,14 @@
 					<xsl:otherwise>display: none</xsl:otherwise>
 				</xsl:choose>
 			</xsl:attribute>
-			<a>
-				<xsl:attribute name="name">
-					<xsl:value-of select="concat( @name, 'anchor')"/>
-				</xsl:attribute>
-				<h3>
-					<xsl:call-template name="showprompt">
-						<xsl:with-param name="node" select="."/>
-						<xsl:with-param name="fallback" select="@name"/>
-						<xsl:with-param name="entity" select="ancestor::adl:entity"/>
-						<xsl:with-param name="locale" select="$locale"/>
-					</xsl:call-template>
-				</h3>
-			</a>
+			<h3 class="title">
+				<xsl:call-template name="showprompt">
+					<xsl:with-param name="node" select="."/>
+					<xsl:with-param name="fallback" select="@name"/>
+					<xsl:with-param name="entity" select="ancestor::adl:entity"/>
+					<xsl:with-param name="locale" select="$locale"/>
+				</xsl:call-template>
+			</h3>
 			<table>
 				<xsl:apply-templates select="adl:field|adl:verb|adl:auxlist"/>
 			</table>
@@ -987,7 +966,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1026,7 +1005,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.4 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1379,75 +1358,71 @@
 
 	<!-- overall page layout -->
 
-  <xsl:template match="adl:content"/>
+	<xsl:template match="adl:content"/>
 
-    <!-- assuming an empty layout, install all the standard scripts 
+	<!-- assuming an empty layout, install all the standard scripts 
     which an ADL page may need -->
-    <xsl:template name="install-scripts">
-      ${ScriptsHelper.InstallScript( "ShuffleWidget")}
+	<xsl:template name="install-scripts">
+		${ScriptsHelper.InstallScript( "ShuffleWidget")}
 
-      ${Ajax.InstallScripts()}
-      ${FormHelper.InstallScripts()}
-      ${Validation.InstallScripts()}
-      ${Scriptaculous.InstallScripts()}
-      ${DateTimeHelper.InstallScripts()}
+		${Ajax.InstallScripts()}
+		${FormHelper.InstallScripts()}
+		${Validation.InstallScripts()}
+		${Scriptaculous.InstallScripts()}
+		${DateTimeHelper.InstallScripts()}
 
-      ${ScriptsHelper.InstallScript( "Sitewide")}
-      ${ScriptsHelper.InstallScript( "Behaviour")}
-      ${ScriptsHelper.InstallScript( "Epoch")}
-      ${ScriptsHelper.InstallScript( "Panes")}
-    </xsl:template>
+		${ScriptsHelper.InstallScript( "Sitewide")}
+		${ScriptsHelper.InstallScript( "Behaviour")}
+		${ScriptsHelper.InstallScript( "Epoch")}
+		${ScriptsHelper.InstallScript( "Panes")}
+	</xsl:template>
 
-		<xsl:template match="navigation">
-			foobar!
-		</xsl:template>
-		
-		<xsl:template match="adl:navigation">
-			<xsl:variable name="pagename" select="@name"/>
-			<ul class="generatednav">
-				<xsl:choose>
-					<xsl:when test="@include='list'">
-						<xsl:for-each select="//adl:entity[adl:list[@name=$pagename]]">
-							<li>
-								<a>
-									<xsl:attribute name="href">
-										<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-									</xsl:attribute>
-									<xsl:value-of select="@name"/>
-								</a>
-							</li>
-						</xsl:for-each>
-					</xsl:when>
-					<xsl:when test="@include='form'">
-						<xsl:for-each select="//adl:entity[adl:form[@name=$pagename]]">
-							<li>
-								<a>
-									<xsl:attribute name="href">
-										<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-									</xsl:attribute>
-									<xsl:value-of select="@name"/>
-								</a>
-							</li>
-						</xsl:for-each>
-					</xsl:when>
-					<xsl:when test="@include='page'">
-						<xsl:for-each select="//adl:entity[adl:page[@name=$pagename]]">
-							<li>
-								<a>
-									<xsl:attribute name="href">
-										<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-									</xsl:attribute>
-									<xsl:value-of select="@name"/>
-								</a>
-							</li>
-						</xsl:for-each>
-					</xsl:when>
-				</xsl:choose>
-			</ul>
-		</xsl:template>
-		
-		
-    <xsl:template name="head">
+	<xsl:template match="adl:navigation">
+		<xsl:variable name="pagename" select="@name"/>
+		<ul class="generatednav">
+			<xsl:choose>
+				<xsl:when test="@include='list'">
+					<xsl:for-each select="//adl:entity[adl:list[@name=$pagename]]">
+						<li>
+							<a>
+								<xsl:attribute name="href">
+									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+								</xsl:attribute>
+								<xsl:value-of select="@name"/>
+							</a>
+						</li>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:when test="@include='form'">
+					<xsl:for-each select="//adl:entity[adl:form[@name=$pagename]]">
+						<li>
+							<a>
+								<xsl:attribute name="href">
+									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+								</xsl:attribute>
+								<xsl:value-of select="@name"/>
+							</a>
+						</li>
+					</xsl:for-each>
+				</xsl:when>
+				<xsl:when test="@include='page'">
+					<xsl:for-each select="//adl:entity[adl:page[@name=$pagename]]">
+						<li>
+							<a>
+								<xsl:attribute name="href">
+									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+								</xsl:attribute>
+								<xsl:value-of select="@name"/>
+							</a>
+						</li>
+					</xsl:for-each>
+				</xsl:when>
+			</xsl:choose>
+		</ul>
+	</xsl:template>
+
+
+	<xsl:template name="head">
     <xsl:choose>
       <xsl:when test="adl:head">
         <xsl:for-each select="adl:head/*">

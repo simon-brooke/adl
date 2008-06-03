@@ -53,6 +53,8 @@
     <Content Include="transforms\localise-transform.xslt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="schemas\adl-0.dtd" />
+    <None Include="schemas\adl-0.xsd" />
     <None Include="test.build" />
   </ItemGroup>
   <ItemGroup>
