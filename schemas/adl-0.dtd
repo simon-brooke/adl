@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.15 $
+        $Revision: 1.16 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -104,11 +104,11 @@ that we can allow HTML block level entities within content elements -->
 <!-- 
 	data types which are more complex than SimpleDataTypes...
 	entity : 		a foreign key link to another entity (i.e. the 'many' end of a 
-              one-to-many link);
-  list :      a list of some other entity that links to me (i.e. the 'one' end of
-              a one-to-many link);
+					one-to-many link);
+	list :			a list of some other entity that links to me (i.e. the 'one' end of
+					a one-to-many link);
 	link : 			a many to many link (via a link table);
-	defined : 	a type defined by a typedef.
+	defined : 		a type defined by a typedef.
 -->
 <!ENTITY % ComplexDataTypes "entity|link|list|defined" >
 
