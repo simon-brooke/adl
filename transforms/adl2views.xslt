@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.8 $
-    $Date: 2008-06-06 15:52:48 $
+    $Revision: 1.9 $
+    $Date: 2008-06-09 11:31:52 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -162,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -243,7 +243,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 		</xsl:comment>
 		#capturefor( title)
 		#if ( $instance)
@@ -364,7 +364,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
 				<script type='text/javascript' language='JavaScript1.2'>
@@ -715,7 +715,6 @@
 				#if( $instance)
 				#if( <xsl:value-of select="concat( '$instance.', @name)"/>)
 				<xsl:value-of select="concat( '$t.Msg( $instance.', @name, ')')"/>
-				$FormHelper.HiddenField( "instance.<xsl:value-of select="@name"/>")
 				#else
 				<input type="text">
 					<xsl:attribute name="name">
@@ -750,20 +749,20 @@
 					<xsl:with-param name="fallback" select="@name"/>
 				</xsl:call-template>")}
 			</td>
-			<td class="widget" colspan="2">
-				<table>
+			<td class="widget shuffle" colspan="2">
+				<table class="shuffle">
 					<tr>
-						<td class="widget" rowspan="2">
+						<td class="widget shuffle-all" rowspan="2">
 							${ShuffleWidgetHelper.UnselectedOptions( "<xsl:value-of select="concat( @name, '_unselected')"/>", <xsl:value-of select="concat( '$all_', @name)"/>, $instance.<xsl:value-of select="@name"/>)}
 						</td>
-						<td class="widget">
+						<td class="widget shuffle-action">
 							<input type="button" value="include &gt;&gt;">
 								<xsl:attribute name="onclick">
 									<xsl:value-of select="concat( 'shuffle(', @name, '_unselected, ', @name, ')')"/>
 								</xsl:attribute>
 							</input>
 						</td>
-						<td class="widget" rowspan="2">
+						<td class="widget shuffle-selected" rowspan="2">
 							<xsl:variable name="entityname" select="@entity"/>
 							<xsl:variable name="foreignkey" select="@farkey"/>
 							<xsl:variable name="allow-shuffle-back">
@@ -780,7 +779,7 @@
 						</td>
 					</tr>
 					<tr>
-						<td class="widget">
+						<td class="widget shuffle-action">
 							<input type="button" value="&lt;&lt; exclude">
 								<xsl:attribute name="onclick">
 									<xsl:value-of select="concat( 'shuffle(', @name, ', ', @name, '_unselected)')"/>
@@ -963,7 +962,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1002,7 +1001,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
