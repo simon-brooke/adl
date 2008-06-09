@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.9 $
-    $Date: 2008-06-09 11:31:52 $
+    $Revision: 1.10 $
+    $Date: 2008-06-09 15:52:37 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -54,7 +54,7 @@
 		checks which groups the current user is member of, and renders each widget with the most relaxed 
 		permissions applicable to that user - but we don't yet have the parts in place to do that.
 		This variable selects which group's permissions should be used when generating widgets -->
-	<xsl:param name="permissions-group" select="public"/>
+	<xsl:param name="permissions-group" select="'public'"/>
 
 	<!-- bug 1800 : the name of the Velocity layout to use. If you are to 
 		be able to usefully define content in ADL, then the default ADL layout 
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -162,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 					</xsl:comment>
 					<xsl:call-template name="install-scripts"/>
 				</head>
@@ -243,7 +243,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 		</xsl:comment>
 		#capturefor( title)
 		#if ( $instance)
@@ -364,7 +364,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
 				<script type='text/javascript' language='JavaScript1.2'>
@@ -813,12 +813,18 @@
 			if they are not a member of a group which has write access, the widget should be 
 			disabled. I don't have time to implement this now as it is not trivial, but it is 
 			important! -->
+		<xsl:message terminate="no">
+			matched adl:property; groupname is '<xsl:value-of select="$permissions-group"/>'
+		</xsl:message>
 		<xsl:variable name="permission">
 			<xsl:call-template name="property-permission">
 				<xsl:with-param name="property" select="."/>
-				<xsl:with-param name="groupname" select ="$permissions-group"/>
+				<xsl:with-param name="groupname" select="$permissions-group"/>
 			</xsl:call-template>
 		</xsl:variable>
+		<xsl:message terminate="no">
+			matched adl:property; parmission = '<xsl:value-of select="$permission"/>'
+		</xsl:message>
 		<xsl:if test="$permission != 'none'">
 			<tr>
 				<xsl:attribute name="class">
@@ -962,7 +968,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1001,7 +1007,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1516,7 +1522,10 @@
     -->
     <xsl:template name="property-permission">
       <xsl:param name="property"/>
-      <xsl:param name="groupname" select="public"/>
+      <xsl:param name="groupname" select="'public'"/>
+		<xsl:message terminate="no">
+			property-permission: property is '<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, ':', $property/@name)"/>'; groupname is '<xsl:value-of select="$groupname"/>'
+		</xsl:message>
       <xsl:choose>
         <xsl:when test="$property/adl:permission[@group=$groupname]">
           <xsl:value-of select="$property/adl:permission[@group=$groupname]/@permission"/>
