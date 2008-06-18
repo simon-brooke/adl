@@ -39,6 +39,7 @@
   </Target>
   -->
   <ItemGroup>
+    <Content Include="TestApp\testapp.adl.xml" />
     <Content Include="transforms\adl2canonical.xslt" />
     <Content Include="transforms\adl2controllerclasses.xslt" />
     <Content Include="transforms\adl2entityclass.xslt" />
@@ -56,8 +57,21 @@
     <None Include="schemas\adl-0.dtd" />
     <None Include="schemas\adl-0.xsd" />
     <None Include="test.build" />
+    <None Include="TestApp\testapp.auto.sql" />
+    <None Include="TestApp\Web\Views\Auto\test\address\edit.auto.vm" />
+    <None Include="TestApp\Web\Views\Auto\test\address\list.auto.vm" />
+    <None Include="TestApp\Web\Views\Auto\test\address\maybedelete.auto.vm" />
+    <None Include="TestApp\Web\Views\Auto\test\person\edit.auto.vm" />
+    <None Include="TestApp\Web\Views\Auto\test\person\maybedelete.auto.vm" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="NewFolder1\" />
+    <Compile Include="TestApp\Auto\Address.auto.cs" />
+    <Compile Include="TestApp\Auto\person.auto.cs" />
+    <Compile Include="TestApp\Web\Controllers\Auto\AbstractadltestappController.auto.cs" />
+    <Compile Include="TestApp\Web\Controllers\Auto\addressController.auto.cs" />
+    <Compile Include="TestApp\Web\Controllers\Auto\personController.auto.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TestApp\Web\bin\" />
   </ItemGroup>
 </Project>
