@@ -1,21 +1,160 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<project name="ADL" default="test"
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<project name="ADL-Test-App" default="build"
          xmlns="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          xmlns:nant="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          >
-	<property name="buildfile.revision" value="$Revision: 1.3 $"/>
+	<property name="build.revision" value="$Revision: 1.4 $"/>
+
 	<property name="adl" value="."/>
-	<property name="transforms" value="${adl}/transforms01"/>
-	<property name="locale" value="fr-FR"/>
+	<property name="adl-transforms" value="${adl}/transforms"/>
+	<property name="testapp" value="testapp"/>
+	<property name="rootns" value="Cygnet.ADL.TestApp"/>
+	<property name="entityns" value="${rootns}.Entities"/>
+	<property name="controllerns" value="${rootns}.Controllers"/>
 
-	<target name="localise-views" 
-		description="create a localised version of adl2views for the current locale">
+	<property name="controllers" value="testapp/Web/Controllers"/>
+	<property name="views" value="testapp/Web/Views" />
 
-		<style verbose="true" style="${transforms}/localise-transform.xslt"
-			   in="${transforms}/adl2views.xslt"
-			   out="${transforms}/adl2views.${locale}.auto.xslt" />
+	<property name="formcontroller" value="testapp/Web/Controllers/Form"/>
+	<property name="formview" value="testapp/Web/Views/Form"/>
+	<property name="bindir" value="testapp/Web/bin"/>
+	<property name="tmpdir" value="tmp"/>
+
+	<property name="adl-src" value="${testapp}/testapp.adl.xml" />
+	<property name="canonical" value="${tmpdir}/testapp.adl.xml" />
+
+	<property name="area-name" value="test"/>
+
+	<property name="nant-tasks" value="${tmpdir}/NantTasks.dll"/>
+
+	<target name="fetchtasks" depends="prepare"
+		  description="fetches our NantTaks library from the well known place where it resides">
+		<get src="http://libs.cygnets.co.uk/NantTasks.dll" dest="${nant-tasks}"/>
 	</target>
 
-	
-	<target name="test" depends="localise-views"/>
+	<target name="canonicalise" description="generates adl for testapp entities">
+		<!-- adl2canonical.xslt -->
+		<style verbose="true" style="${adl-transforms}/adl2canonical.xslt"
+			   in="${adl-src}"
+			   out="${canonical}">
+			<parameters>
+				<parameter name="abstract-key-name-convention" value="Name_Id"/>
+			</parameters>
+		</style>
+	</target>
+
+
+	<target name="hbm" description="generates adl for testapp database NHibernate mapping"
+			depends="canonicalise">
+		<style verbose="true" style="${adl-transforms}/adl2hibernate.xslt"
+			   in="${canonical}"
+			   out="${tmpdir}/testapp.hbm.xml">
+			<parameters>
+				<parameter name="namespace" value="${entityns}"/>
+				<parameter name="assembly" value="${rootns}"/>
+			</parameters>
+		</style>
+	</target>
+
+	<target name="sql" description="Generates testapp database initialisation script"
+			depends="canonicalise">
+		<style verbose="true" style="${adl-transforms}/adl2mssql.xslt"
+			   in="${canonical}"
+			   out="${testapp}/testapp.auto.sql">
+			<parameters>
+				<parameter name="abstract-key-name-convention" value="Name_Id"/>
+				<parameter name="database" value="ADL_TestApp"/>
+			</parameters>
+		</style>
+	</target>
+
+	<target name="entities" description="creates C# classes for entities in the database"
+			depends="fetchtasks canonicalise">
+		<loadtasks assembly="${nant-tasks}" />
+
+		<style verbose="true" style="${adl-transforms}/adl2entityclass.xslt"
+			   in="${canonical}"
+			   out="${tmpdir}/classes.auto.cs">
+			<parameters>
+				<parameter name="locale" value="en-UK"/>
+				<parameter name="controllerns" value="${controllerns}"/>
+				<parameter name="entityns" value="${entityns}"/>
+			</parameters>
+		</style>
+		<exec program="c:\Program Files\astyle\bin\astyle.exe"
+			basedir="."
+			commandline="--style=java --indent=tab=4 --indent-namespaces ${tmpdir}/classes.auto.cs"/>
+		<split-regex in="${tmpdir}/classes.auto.cs"
+					 destdir="${testapp}/Auto"
+									 pattern="cut here: next file '([a-zA-Z0-9_.]*)'"/>
+	</target>
+
+	<target name="views" description="creates Velocity templates"
+			depends="fetchtasks canonicalise">
+		<loadtasks assembly="${nant-tasks}" />
+
+		<style verbose="true" style="${adl-transforms}/adl2views.xslt"
+			   in="${canonical}"
+			   out="${tmpdir}/views.auto.vm">
+			<parameters>
+				<parameter name="layout-name" value="default"/>
+				<parameter name="locale" value="en-UK"/>
+				<parameter name="controllerns" value="${controllerns}"/>
+				<parameter name="entityns" value="${entityns}"/>
+				<parameter name="generate-site-navigation" value="false"/>
+				<parameter name="permissions-group" value="partsbookeditors"/>
+				<parameter name="area-name" value="${area-name}"/>
+				<parameter name="show-messages" value="true"/>
+			</parameters>
+		</style>
+		<split-regex in="${tmpdir}/views.auto.vm"
+					 destdir="${views}/Auto/${area-name}" pattern="cut here: next file '([a-zA-Z0-9_./]*)'"/>
+	</target>
+
+	<target name="controllers" description="creates C# controller classes" depends="fetchtasks canonicalise">
+		<loadtasks assembly="${nant-tasks}" />
+		<style verbose="true" style="${adl-transforms}/adl2controllerclasses.xslt"
+			   in="${canonical}"
+			   out="${tmpdir}/controllers.auto.cs">
+
+			<parameters>
+				<parameter name="locale" value="en-UK"/>
+				<parameter name="controllerns" value="${controllerns}"/>
+				<parameter name="entityns" value="${entityns}"/>
+				<parameter name="layout-name" value="default"/>
+				<parameter name="rescue-name" value="generalerror"/>
+				<parameter name="area-name" value="${area-name}"/>
+			</parameters>
+		</style>
+		<exec program="c:\Program Files\astyle\bin\astyle.exe"
+			basedir="."
+			commandline="--style=java --indent=tab=4 --indent-namespaces ${tmpdir}/controllers.auto.cs"/>
+		<split-regex in="${tmpdir}/controllers.auto.cs"
+				   destdir="${controllers}/Auto" pattern="cut here: next file '([a-zA-Z0-9_.]*)'"/>
+	</target>
+
+
+	<target name="prepare" description="prepare directories used during the build">
+		<mkdir dir="${bindir}" failonerror="false"/>
+		<mkdir dir="${tmpdir}" failonerror="false"/>
+	</target>
+
+	<target name="clean" description="removes all products of the build process except the xml-ised database schema">
+		<delete>
+			<fileset>
+				<include name="**/*.auto.*"/>
+			</fileset>
+		</delete>
+		<delete failonerror="false" dir="${bindir}"/>
+		<delete failonerror="false" dir="${tmpdir}"/>
+	</target>
+
+	<target name="build" depends="prepare entities controllers views sql hbm"
+			description="compiles Visual Studio solution using msbuild">
+		<exec program="msbuild.exe"
+			  basedir="c:\windows\microsoft.net\framework\v3.5\"
+			  commandline="ADL.sln"/>
+	</target>
+	<target name="deploy" depends="clean build"/>
+
 </project>
