@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{15DF3516-FE95-4BB0-9353-2E1E624303B8}</ProjectGuid>
+    <ProjectGuid>{D705F7CA-EB87-48EF-8F18-7D1AD90660BA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ADL</RootNamespace>
-    <AssemblyName>ADL</AssemblyName>
+    <RootNamespace>UnitTests</RootNamespace>
+    <AssemblyName>UnitTests</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -30,6 +30,24 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -38,23 +56,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <Content Include="transforms\adl2canonical.xslt" />
-    <Content Include="transforms\adl2controllerclasses.xslt" />
-    <Content Include="transforms\adl2entityclass.xslt" />
-    <Content Include="transforms\adl2hibernate.xslt" />
-    <Content Include="transforms\adl2mssql.xslt" />
-    <Content Include="transforms\adl2psql.xslt" />
-    <Content Include="transforms\adl2views.xslt" />
-    <Content Include="transforms\base-type-include.xslt" />
-    <Content Include="transforms\csharp-type-include.xslt" />
-    <Content Include="transforms\datadescriber.xslt" />
-    <Content Include="transforms\i18n-en-GB-include.xslt" />
-    <Content Include="transforms\localise-transform.xslt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="schemas\adl-0.dtd" />
-    <None Include="schemas\adl-0.xsd" />
-    <None Include="test.build" />
-  </ItemGroup>
 </Project>
