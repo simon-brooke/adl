@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.2 $
+      $Revision: 1.3 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -103,7 +103,7 @@
         --    <xsl:value-of select="$product-version"/>
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.2 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.3 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -161,7 +161,7 @@
   <xsl:template name="foreignkey">
     <xsl:param name="nearside"/>
     <xsl:param name="farside"/>
-    <xsl:param name="keyfield"/>
+    <xsl:param name="linkfield"/>
     <xsl:param name="ondelete" select="'NO ACTION'"/>
 
     <xsl:variable name="neartable">
@@ -178,7 +178,7 @@
     
     <!-- set up referential integrity constraints for primary tables -->
         ALTER TABLE "<xsl:value-of select="$neartable"/>"
-            ADD FOREIGN KEY ( "<xsl:value-of select="$keyfield"/>") 
+            ADD FOREIGN KEY ( "<xsl:value-of select="$linkfield"/>") 
             REFERENCES "<xsl:value-of select="$fartable"/>" ON DELETE <xsl:value-of select="$ondelete"/>
             
         GO
@@ -202,7 +202,7 @@
           <xsl:call-template name="foreignkey">
             <xsl:with-param name="nearside" select="$nearside"/>
             <xsl:with-param name="farside" select="$farside"/>
-            <xsl:with-param name="keyfield" select="$keyfield"/>
+            <xsl:with-param name="linkfield" select="$keyfield"/>
           </xsl:call-template>
         </xsl:otherwise>
       </xsl:choose>
@@ -221,7 +221,7 @@
       <xsl:call-template name="foreignkey">
         <xsl:with-param name="nearside" select="@entity"/>
         <xsl:with-param name="farside" select="../@name"/>
-        <xsl:with-param name="keyfield" select="$farkey"/>
+        <xsl:with-param name="linkfield" select="$farkey"/>
         <xsl:with-param name="ondelete">
           <xsl:choose>
             <xsl:when test="@cascade='all'">CASCADE</xsl:when>
@@ -491,13 +491,13 @@
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$neartable"/>
-                <xsl:with-param name="keyfield" select="concat( $nearside, 'Link')"/>
+                <xsl:with-param name="linkfield" select="concat( $nearside, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'NO ACTION'"/>
               </xsl:call-template>
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$fartable"/>
-                <xsl:with-param name="keyfield" select="concat( $farside, 'Link')"/>
+                <xsl:with-param name="linkfield" select="concat( $farside, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
             </xsl:when>
@@ -505,13 +505,13 @@
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$neartable"/>
-                <xsl:with-param name="keyfield" select="concat( $nearside, 'Id')"/>
+                <xsl:with-param name="linkfield" select="concat( $nearside, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
               <xsl:call-template name="foreignkey">
                 <xsl:with-param name="nearside" select="$linktablename"/>
                 <xsl:with-param name="farside" select="$fartable"/>
-                <xsl:with-param name="keyfield" select="concat( @entity, 'Id')"/>
+                <xsl:with-param name="linkfield" select="concat( @entity, 'Link')"/>
                 <xsl:with-param name="ondelete" select="'CASCADE'"/>
               </xsl:call-template>
             </xsl:otherwise>
