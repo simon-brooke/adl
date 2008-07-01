@@ -12,11 +12,11 @@
 	Copyright (c) 2008 Cygnet Solutions Ltd
 	
 	$Author: sb $
-	$Revision: 1.1 $
-	$Date: 2008-06-18 15:55:49 $
+	$Revision: 1.2 $
+	$Date: 2008-07-01 16:08:17 $
 -->
 
-<application name="adltestapp" xmlns="http://cygnets.co.uk/schemas/adl-1.2">
+<application name="ADLTestApp" xmlns="http://cygnets.co.uk/schemas/adl-1.2">
 	<content>
 		<head>
 			
@@ -42,14 +42,14 @@
 	</typedef>
 	<group name="public"/>
 	<group name="admin" parent="public"/>
-	<entity name="person">
+	<entity name="Person">
 		<property name="LastName" type="string" required="true" size="100" distinct="user">
 			<prompt locale="en-UK" prompt="Surname"/>
 		</property>
 		<property name="ForeNames" type="string" required="true" size="100" distinct="user">
 			<prompt locale="en-UK" prompt="Fore names"/>
 		</property>
-		<property name="Partner" type="entity" entity="person"/>
+		<property name="Partner" type="entity" entity="Person"/>
 		<property name="Gender" type="string" size="1" required="true">
 			<option value="M">
 				<prompt locale="en-GB" prompt="Male"/>
@@ -59,8 +59,8 @@
 			</option> 
 		</property>
 		<property name="age" type="defined" typedef="age"/>
-		<property name="Address" type="entity" entity="address" distinct="user"/> 
-		<property name="Friends" type="link" entity="person"/>
+		<property name="Address" type="entity" entity="Address" distinct="user"/> 
+		<property name="Friends" type="link" entity="Person"/>
 		<form name="edit" properties="listed">
 			<fieldgroup name="Personal Data">
 				<documentation>
@@ -84,7 +84,7 @@
 			</fieldgroup>
 		</form>
 	</entity>
-	<entity name="address">
+	<entity name="Address">
 		<key>
 			<property name="Number" type="string" size="8" distinct="all">
 				<prompt locale="en-GB" prompt="House number"/>

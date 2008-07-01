@@ -3,7 +3,7 @@
          xmlns="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          xmlns:nant="http://nant.sf.net/release/0.85-rc4/nant.xsd"
          >
-	<property name="build.revision" value="$Revision: 1.4 $"/>
+	<property name="build.revision" value="$Revision: 1.5 $"/>
 
 	<property name="adl" value="."/>
 	<property name="adl-transforms" value="${adl}/transforms"/>
@@ -22,10 +22,10 @@
 
 	<property name="adl-src" value="${testapp}/testapp.adl.xml" />
 	<property name="canonical" value="${tmpdir}/testapp.adl.xml" />
-
 	<property name="area-name" value="test"/>
-
 	<property name="nant-tasks" value="${tmpdir}/NantTasks.dll"/>
+	<property name="nant-contrib-dll" value="C:\Program Files\nantcontrib-0.85\bin\NAnt.Contrib.Tasks.dll"/>
+
 
 	<target name="fetchtasks" depends="prepare"
 		  description="fetches our NantTaks library from the well known place where it resides">
@@ -43,6 +43,11 @@
 		</style>
 	</target>
 
+	<target name="analyse">
+		<loadtasks assembly="${nant-contrib-dll}" />
+		<fxcop directOutputToConsole="true" projectFile="${testapp}/TestApp.fxcop">
+		</fxcop>
+	</target>
 
 	<target name="hbm" description="generates adl for testapp database NHibernate mapping"
 			depends="canonicalise">

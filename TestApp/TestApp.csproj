@@ -33,6 +33,10 @@
     <Reference Include="Castle.Core, Version=1.0.3.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL" />
     <Reference Include="Castle.MonoRail.Framework, Version=1.0.3.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL" />
     <Reference Include="Castle.MonoRail.Framework.Views.NVelocity, Version=1.0.3.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL" />
+    <Reference Include="Iesi.Collections, Version=1.0.0.3, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>L:\Castle\1.0.3RC3\Iesi.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="NHibernate, Version=1.2.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -82,6 +86,12 @@
     <None Include="Web\Views\Auto\test\address\maybedelete.auto.vm" />
     <None Include="Web\Views\Auto\test\person\edit.auto.vm" />
     <None Include="Web\Views\Auto\test\person\maybedelete.auto.vm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CygnetToolkit\CygnetToolkit.csproj">
+      <Project>{77FB7DE5-1F33-4DDC-8A2E-79EF4728705E}</Project>
+      <Name>CygnetToolkit</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
