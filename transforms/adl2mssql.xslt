@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.3 $
+      $Revision: 1.4 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -103,7 +103,7 @@
         --    <xsl:value-of select="$product-version"/>
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.3 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.4 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
@@ -239,21 +239,41 @@
   <xsl:template match="adl:entity[@foreign='true']" mode="table"/> 
 
   <xsl:template match="adl:entity" mode="table">
-    <xsl:variable name="table">
-      <xsl:call-template name="tablename">
-        <xsl:with-param name="entityname" select="@name"/>
-      </xsl:call-template>
-    </xsl:variable>
+	  <!-- the name of the entity we're generating -->
+	  <xsl:variable name="entityname" select="@name"/>
+	  <!-- the name of the table to generate -->
+	  <xsl:variable name="table">
+		  <xsl:call-template name="tablename">
+			  <xsl:with-param name="entityname" select="@name"/>
+		  </xsl:call-template>
+	  </xsl:variable>
+	  <!-- the entity we are generating -->
+	  <xsl:variable name="generating-entity" select="."/>
 
-        -------------------------------------------------------------------------------------------------
-        --    primary table <xsl:value-of select="$table"/>
+		-------------------------------------------------------------------------------------------------
+		--    primary table <xsl:value-of select="$table"/>
         -------------------------------------------------------------------------------------------------
         CREATE TABLE  "<xsl:value-of select="$table"/>"
-        (
-    <xsl:for-each select="descendant::adl:property[not( @type='link' or @type = 'list' or @concrete='false')]">
-      <xsl:apply-templates select="."/>
-      <xsl:if test="position() != last()">,</xsl:if>
-    </xsl:for-each>
+		(
+	  <xsl:for-each select="descendant::adl:property[not( @type='link' or @type = 'list' or @concrete='false')]">
+		  <xsl:apply-templates select="."/>
+		  <xsl:if test="position() != last()">,</xsl:if>
+	  </xsl:for-each>
+	  <xsl:for-each select="//adl:property[@type='list' and @entity = $entityname]">
+		  <xsl:variable name="referringprop" select="."/>
+		  <xsl:choose>
+			  <xsl:when test="$generating-entity//adl:property[ @type='entity' and @entity=$referringprop/ancestor::adl:entity/@name]">
+				  <!-- if the entity for which I'm currently generating already has a specified property
+				  which links to this foreign entity, I don't have to dummy one up -->
+			  </xsl:when>
+			  <xsl:otherwise>
+				  <!-- dummy up the 'many' end of a one-to-many link -->
+				  , "<xsl:value-of select="ancestor::adl:entity/@name"/>"<xsl:text> </xsl:text><xsl:call-template name="sql-type">
+					  <xsl:with-param name="property" select="ancestor::adl:entity/adl:key/adl:property[position() = 1]"/>
+				  </xsl:call-template>
+			  </xsl:otherwise>
+		  </xsl:choose>
+	  </xsl:for-each>
     <xsl:apply-templates select="adl:key"/>
         )
 
