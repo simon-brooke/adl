@@ -12,7 +12,7 @@
       Convert ADL to MS-SQL
       
       $Author: sb $
-      $Revision: 1.4 $
+      $Revision: 1.5 $
   -->
     
   <xsl:output indent="no" encoding="UTF-8" method="text"/>
@@ -103,14 +103,14 @@
         --    <xsl:value-of select="$product-version"/>
         --
         --    Database for application <xsl:value-of select="@name"/> version <xsl:value-of select="@version"/>
-        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.4 $', 12)"/>
+        --    Generated for MS-SQL 2000+ using adl2mssql.xslt <xsl:value-of select="substring('$Revision: 1.5 $', 12)"/>
         --
         --    Code generator (c) 2007 Cygnet Solutions Ltd
         --
         -------------------------------------------------------------------------------------------------
 
     <xsl:if test="string-length( $database) &gt; 0">
-      use <xsl:value-of select="$database"/>;
+      use "<xsl:value-of select="$database"/>";
     </xsl:if>
 
         -------------------------------------------------------------------------------------------------
