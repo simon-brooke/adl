@@ -4,11 +4,13 @@
   xmlns="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-	<xsl:output encoding="UTF-8" method="html" indent="yes" />
+	<xsl:output encoding="UTF-8" method="xml" indent="yes" />
 
 	<xsl:param name="locale" select="en-UK"/>
 
 	<xsl:param name="css-stylesheet"/>
+
+	<xsl:param name="detail" select="full"/>
 
 	<xsl:template match="adl:application">
 		<html xmlns="http://www.w3.org/1999/xhtml">
@@ -27,11 +29,32 @@
 			</head>
 			<body>
 				<h1>
-					Data definition for the <xsl:value-of select="@name"/> application version <xsl:value-of select="@version"/>
+					Data definition for the '<xsl:value-of select="@name"/>' application version <xsl:value-of select="@version"/>
 				</h1>
 				<xsl:apply-templates select="adl:documentation"/>
-
+				<h2>Contents</h2>
+				<dl>
+					<xsl:for-each select="adl:entity">
+						<dt>
+							<a>
+								<xsl:attribute name="href">
+									<xsl:value-of select="concat( '#entity-', @name)"/>
+								</xsl:attribute>
+								Entity '<xsl:value-of select="@name"/>'
+							</a>
+						</dt>
+						<dd>
+							<xsl:apply-templates select="adl:documentation"/>
+						</dd>
+					</xsl:for-each>
+				</dl>
 				<xsl:for-each select="adl:entity">
+					<a>
+						<xsl:attribute name="name">
+							<xsl:value-of select="concat( 'entity-', @name)"/>
+						</xsl:attribute>
+					</a>
+					<hr/>
 					<h2>
 						<xsl:value-of select="@name" />
 					</h2>
@@ -52,11 +75,13 @@
 						<tr class="header">
 							<th class="white">Property</th>
 							<th class="white">Type</th>
-							<th class="white">Req'd</th>
-							<th class="white">Def'lt</th>
-							<th class="white">Size</th>
-							<th class="white">Distinct</th>
-							<th class="white">Prompt</th>
+							<xsl:if test="$detail = 'full'">
+								<th class="white">Req'd</th>
+								<th class="white">Def'lt</th>
+								<th class="white">Size</th>
+								<th class="white">Distinct</th>
+								<th class="white">Prompt</th>
+							</xsl:if>
 						</tr>
 						<xsl:for-each select="adl:property" >
 							<tr>
@@ -96,23 +121,25 @@
 									</xsl:if>
 									&#160;
 								</td>
-								<td>
-									<xsl:value-of select="@required"/>&#160;
-								</td>
-								<td>
-									<xsl:value-of select="@default"/>&#160;
-								</td>
-								<td>
-									<xsl:value-of select="@size"/>&#160;
-								</td>
-								<td>
-									<xsl:value-of select="@distinct"/>&#160;
-								</td>
-								<td>
-									<xsl:for-each select="adl:prompt">
-										<xsl:apply-templates select="adl:prompt"/>&#160;
-									</xsl:for-each>
-								</td>
+								<xsl:if test="$detail = 'full'">
+									<td>
+										<xsl:value-of select="@required"/>&#160;
+									</td>
+									<td>
+										<xsl:value-of select="@default"/>&#160;
+									</td>
+									<td>
+										<xsl:value-of select="@size"/>&#160;
+									</td>
+									<td>
+										<xsl:value-of select="@distinct"/>&#160;
+									</td>
+									<td>
+										<xsl:for-each select="adl:prompt">
+											<xsl:apply-templates select="adl:prompt"/>&#160;
+										</xsl:for-each>
+									</td>
+								</xsl:if>
 							</tr>
 							<xsl:if test="adl:help">
 								<tr>
@@ -123,7 +150,7 @@
 							</xsl:if>
 							<xsl:if test="adl:documentation">
 								<tr>
-									<td>
+									<td colspan="8">
 										<xsl:apply-templates select="adl:documentation"/>&#160;
 									</td>
 								</tr>
