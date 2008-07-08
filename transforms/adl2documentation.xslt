@@ -28,6 +28,7 @@
 				</xsl:if>
 			</head>
 			<body>
+				<address name="top"/>
 				<h1>
 					Data definition for the '<xsl:value-of select="@name"/>' application version <xsl:value-of select="@version"/>
 				</h1>
@@ -40,7 +41,7 @@
 								<xsl:attribute name="href">
 									<xsl:value-of select="concat( '#entity-', @name)"/>
 								</xsl:attribute>
-								Entity '<xsl:value-of select="@name"/>'
+								<xsl:value-of select="@name"/>
 							</a>
 						</dt>
 						<dd>
@@ -59,67 +60,98 @@
 						<xsl:value-of select="@name" />
 					</h2>
 					<xsl:apply-templates select="adl:documentation"/>
-					<dl>
-						<xsl:for-each select="adl:permission">
-							<dt>
-								Group:
-								<xsl:value-of select="@group"/>
-							</dt>
-							<dd>
-								Permissions:
-								<xsl:value-of select="@permission"/>
-							</dd>
-						</xsl:for-each>
-					</dl>
+					<h3>Access control</h3>
 					<table>
-						<tr class="header">
-							<th class="white">Property</th>
-							<th class="white">Type</th>
-							<xsl:if test="$detail = 'full'">
-								<th class="white">Req'd</th>
-								<th class="white">Def'lt</th>
-								<th class="white">Size</th>
-								<th class="white">Distinct</th>
-								<th class="white">Prompt</th>
-							</xsl:if>
+						<tr>
+							<th>Group</th>
+							<th>Permission</th>
 						</tr>
-						<xsl:for-each select="adl:property" >
+						<xsl:for-each select="adl:permission">
 							<tr>
-								<xsl:attribute name="class">
-									<xsl:choose>
-										<xsl:when test="position() mod 2 = 0">even</xsl:when>
-										<xsl:otherwise>odd</xsl:otherwise>
-									</xsl:choose>
-								</xsl:attribute>
 								<td>
-									<xsl:value-of select="@name"/>&#160;
+									<xsl:value-of select="@group"/>
 								</td>
 								<td>
+									<xsl:value-of select="@permission"/>
+								</td>
+							</tr>
+						</xsl:for-each>
+					</table>
+					<h3>Properties</h3>
+					<table>
+						<tr class="header">
+							<th>Property</th>
+							<th>Type</th>
+							<xsl:if test="$detail = 'full'">
+								<th>Req'd</th>
+								<th>Def'lt</th>
+								<th>Size</th>
+								<th>Distinct</th>
+								<th>Prompt</th>
+							</xsl:if>
+						</tr>
+						<xsl:for-each select=".//adl:property" >
+							<xsl:variable name="rowclass">
+								<xsl:choose>
+									<xsl:when test="position() mod 2 = 0">even</xsl:when>
+									<xsl:otherwise>odd</xsl:otherwise>
+								</xsl:choose>
+							</xsl:variable>
+							<tr>
+								<xsl:attribute name="class">
+									<xsl:value-of select="$rowclass"/>
+								</xsl:attribute>
+								<th>
+									<xsl:value-of select="@name"/>&#160;
+								</th>
+								<td>
 									<xsl:value-of select="@type"/>
-									<xsl:if test="@type='entity'">
-										of type <xsl:value-of select="@entity"/>
-									</xsl:if>
-									<xsl:if test="@definition">
-										:
-										<xsl:variable name="definition">
-											<xsl:value-of select="@definition"/>
-										</xsl:variable>
-										<xsl:variable name="defined-type">
-											<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@type"/>
-										</xsl:variable>
-										<xsl:choose>
-											<xsl:when  test="$defined-type = 'string'">
-												String matching
-												"<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@pattern"/>"
-											</xsl:when>
-											<xsl:otherwise>
-												<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@minimum"/> &lt;
-												<xsl:value-of select="@definition"/> &lt;
-												<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@maximum"/>
-											</xsl:otherwise>
-										</xsl:choose>
-									</xsl:if>
-									&#160;
+									<xsl:choose>
+										<xsl:when test="@type='entity'">
+											of type <a>
+												<xsl:attribute name="href">
+													<xsl:value-of select="concat( '#entity-', @entity)"/>
+												</xsl:attribute>
+												<xsl:value-of select="@entity"/>
+											</a>
+										</xsl:when>
+										<xsl:when test="@type = 'link'">
+											to entity of type <a>
+												<xsl:attribute name="href">
+													<xsl:value-of select="concat( '#entity-', @entity)"/>
+												</xsl:attribute>
+												<xsl:value-of select="@entity"/>
+											</a>
+										</xsl:when>
+										<xsl:when test="@type = 'list'">
+											of entities of type <a>
+												<xsl:attribute name="href">
+													<xsl:value-of select="concat( '#entity-', @entity)"/>
+												</xsl:attribute>
+												<xsl:value-of select="@entity"/>
+											</a>
+										</xsl:when>
+										<xsl:when test="@definition">
+											:
+											<xsl:variable name="definition">
+												<xsl:value-of select="@definition"/>
+											</xsl:variable>
+											<xsl:variable name="defined-type">
+												<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@type"/>
+											</xsl:variable>
+											<xsl:choose>
+												<xsl:when  test="$defined-type = 'string'">
+													String matching
+													"<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@pattern"/>"
+												</xsl:when>
+												<xsl:otherwise>
+													<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@minimum"/> &lt;
+													<xsl:value-of select="@definition"/> &lt;
+													<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@maximum"/>
+												</xsl:otherwise>
+											</xsl:choose>
+										</xsl:when>
+									</xsl:choose>
 								</td>
 								<xsl:if test="$detail = 'full'">
 									<td>
@@ -141,26 +173,75 @@
 									</td>
 								</xsl:if>
 							</tr>
+							<xsl:if test="adl:option">
+								<tr>
+									<xsl:attribute name="class">
+										<xsl:value-of select="$rowclass"/>
+									</xsl:attribute>
+									<td>
+										<xsl:attribute name="rowspan">
+											<xsl:value-of select="count( adl:option)"/>
+										</xsl:attribute>
+										Options:
+									</td>
+									<td>
+										<xsl:apply-templates select="adl:option[ position()=1]"/>
+									</td>
+									<xsl:for-each select="adl:option[position() &gt; 1]">
+										<tr>
+											<xsl:attribute name="class">
+												<xsl:value-of select="$rowclass"/>
+											</xsl:attribute>
+											<td>
+												<xsl:apply-templates select="."/>
+											</td>
+										</tr>
+									</xsl:for-each>
+								</tr>
+							</xsl:if>
 							<xsl:if test="adl:help">
 								<tr>
+									<xsl:attribute name="class">
+										<xsl:value-of select="$rowclass"/>
+									</xsl:attribute>
 									<td>
-										<xsl:apply-templates select="adl:help"/>&#160;
+										<td>Helptext:</td>
+										<td>
+											<xsl:attribute name="colspan">
+												<xsl:choose>
+													<xsl:when test="$detail='full'">7</xsl:when>
+													<xsl:otherwise>2</xsl:otherwise>
+												</xsl:choose>
+											</xsl:attribute>
+											<xsl:apply-templates select="adl:help"/>
+										</td>
 									</td>
 								</tr>
 							</xsl:if>
 							<xsl:if test="adl:documentation">
 								<tr>
-									<td colspan="8">
-										<xsl:apply-templates select="adl:documentation"/>&#160;
+									<xsl:attribute name="class">
+										<xsl:value-of select="$rowclass"/>
+									</xsl:attribute>
+									<td>Documentation:</td>
+									<td>
+										<xsl:attribute name="colspan">
+											<xsl:choose>
+												<xsl:when test="$detail='full'">7</xsl:when>
+												<xsl:otherwise>2</xsl:otherwise>
+											</xsl:choose>
+										</xsl:attribute>
+										<xsl:apply-templates select="adl:documentation"/>
 									</td>
 								</tr>
 							</xsl:if>
 						</xsl:for-each>
 					</table>
+					<xsl:apply-templates select="form"/>
+					<xsl:apply-templates select="list"/>
+					<xsl:apply-templates select="page"/>
+					<a href="#top">[back to top]</a>
 				</xsl:for-each>
-				<xsl:apply-templates select="form"/>
-				<xsl:apply-templates select="list"/>
-				<xsl:apply-templates select="page"/>
 			</body>
 		</html>
 	</xsl:template>
@@ -458,7 +539,17 @@
 		<xsl:apply-templates select="adl:field|adl:fieldgroup|adl:auxlist|adl:verb"/>
 	</xsl:template>
 
-
+	<xsl:template match="adl:option">
+		<xsl:value-of select="@value"/>
+		<xsl:if test="adl:prompt">
+			: <xsl:apply-templates select="adl:prompt"/>
+		</xsl:if>
+		<xsl:if test="adl:help">
+			(<i xmlns="http://www.w3.org/1999/xhtml">
+				<xsl:apply-templates select="adl:prompt"/>
+			</i>)
+		</xsl:if>
+	</xsl:template>
 
 
 </xsl:stylesheet>

@@ -1,0 +1,37 @@
+ /******************************************************
+  *    Application Description Language framework
+  *    adl2documentation.xslt
+  *    
+  *    (c) 2007 Cygnet Solutions Ltd
+  *    
+  *    Produce basic documentation of an ADL file
+  *    
+  *    $Author: sb $
+  *    $Revision: 1.1 $
+  *
+  ******************************************************/
+  
+BODY 
+{
+	color: Black;
+	background-color: White;
+	font-family: Sans-Serif;
+}
+  
+TD, TH 
+{
+	text-align: left;
+	vertical-align: top;
+	padding: 0.1em 0.5em;
+}
+
+.documentation
+{
+	font-style: italic;
+}
+
+.odd
+{
+	color: Black;
+	background-color: Silver;
+}
