@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.16 $
+        $Revision: 1.17 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -167,13 +167,15 @@ that we can allow HTML block level entities within content elements -->
   
   name:     the name of this application
   version:  the version number of this application
+  revision:	the revision of the ADL document
   xmlns:    XML namespace, in case required
 -->
 <!ELEMENT application ( documentation?, content?, typedef*,  group*, entity*)>
 <!ATTLIST application 
-	name 		  CDATA 						#REQUIRED
+	name 		CDATA 						#REQUIRED
 	version 	CDATA 						#IMPLIED
-  xmlns     CDATA             #IMPLIED>
+	revision	CDATA						#IMPLIED
+	xmlns		CDATA						#IMPLIED>
 
 <!-- 
 	the definition of a defined type. At this stage a defined type is either

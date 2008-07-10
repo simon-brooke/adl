@@ -32,6 +32,11 @@
 				<h1>
 					Data definition for the '<xsl:value-of select="@name"/>' application version <xsl:value-of select="@version"/>
 				</h1>
+				<p>
+					<strong>
+						Generated from <xsl:value-of select="@revision"/> of the ADL specification.
+					</strong>
+				</p>
 				<xsl:apply-templates select="adl:documentation"/>
 				<h2>Contents</h2>
 				<dl>
