@@ -116,7 +116,7 @@
 											</a>
 										</xsl:when>
 										<xsl:when test="@type = 'link'">
-											to entity of type <a>
+											(many to many) to entities of type <a>
 												<xsl:attribute name="href">
 													<xsl:value-of select="concat( '#entity-', @entity)"/>
 												</xsl:attribute>
@@ -124,7 +124,7 @@
 											</a>
 										</xsl:when>
 										<xsl:when test="@type = 'list'">
-											of entities of type <a>
+											(one to many) of entities of type <a>
 												<xsl:attribute name="href">
 													<xsl:value-of select="concat( '#entity-', @entity)"/>
 												</xsl:attribute>
