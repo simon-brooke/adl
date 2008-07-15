@@ -12,7 +12,7 @@
       Transform ADL to Hibernate
       
       $Author: sb $
-      $Revision: 1.4 $
+      $Revision: 1.5 $
   -->
 
 	<xsl:param name="namespace"/>
@@ -125,7 +125,7 @@
 	*
 	*	  <xsl:value-of select="@revision"/>
     *
-    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.4 $', 12)"/>
+    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.5 $', 12)"/>
     *
     ***************************************************************************
 			</xsl:comment>
@@ -472,13 +472,13 @@
 				</xsl:variable>
 
 				<set>
-					<xsl:apply-templates select="adl:documentation"/>
 					<xsl:attribute name="name">
 						<xsl:value-of select="@name"/>
 					</xsl:attribute>
 					<xsl:attribute name="table">
 						<xsl:value-of select="$tablename"/>
 					</xsl:attribute>
+					<xsl:apply-templates select="adl:documentation"/>
 					<key>
 						<xsl:attribute name="column">
 							<xsl:value-of select="concat( ../@name, 'Id')"/>
