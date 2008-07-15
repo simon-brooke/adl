@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.8 $
-    $Date: 2008-07-15 16:28:59 $
+    $Revision: 1.9 $
+    $Date: 2008-07-15 16:41:31 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>
+		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -85,7 +85,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.8 $', 10)"/>.
+		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
@@ -330,7 +330,7 @@
 			/// <xsl:value-of select="normalize-space( help[@locale=$locale])"/>
 		</xsl:if>
 		/// &lt;/summary&gt;
-		<xsl:if test="@distinct = 'user' or @distinct = 'all'">[IsUserDistinct]</xsl:if>
+		<xsl:if test="@distinct = 'user' or @distinct = 'all'">[IsUserDistinct()]</xsl:if>
 		public virtual <xsl:value-of select="normalize-space( $csharp-type)"/><xsl:value-of select="normalize-space( $nullable-decoration)"/><xsl:text> </xsl:text> <xsl:value-of select="@name"/>
 		{
 		get {
