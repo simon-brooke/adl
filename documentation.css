@@ -7,7 +7,7 @@
   *    Produce basic documentation of an ADL file
   *    
   *    $Author: sb $
-  *    $Revision: 1.1 $
+  *    $Revision: 1.2 $
   *
   ******************************************************/
   
@@ -33,5 +33,11 @@ TD, TH
 .odd
 {
 	color: Black;
-	background-color: Silver;
+	background-color: rgb( 240, 240, 256);
+}
+
+.even
+{
+	color: Black;
+	background-color: rgb( 240, 256, 240);
 }
