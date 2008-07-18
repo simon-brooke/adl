@@ -6,7 +6,7 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output encoding="UTF-8" method="xml" indent="yes" />
 
-	<xsl:param name="locale" select="en-UK"/>
+	<xsl:param name="locale" select="en-GB"/>
 
 	<xsl:param name="css-stylesheet"/>
 
