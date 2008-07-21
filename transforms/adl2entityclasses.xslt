@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.9 $
-    $Date: 2008-07-15 16:41:31 $
+    $Revision: 1.10 $
+    $Date: 2008-07-21 10:00:48 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>
+		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -85,7 +85,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.9 $', 10)"/>.
+		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.10 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
@@ -164,26 +164,39 @@
 		<xsl:choose>
 			<xsl:when test="descendant::adl:property[@distinct='user' or @distinct='all']">
 				<xsl:for-each select="descendant::adl:property[@distinct='user' or @distinct='all']">
-					if ( <xsl:value-of select="@name"/> != null){
 					<xsl:choose>
 						<xsl:when test="@type='message'">
+							if ( <xsl:value-of select="@name"/> != null){
 							result.Append( <xsl:value-of select="concat( @name, '.LocalText')"/>);
+							}
 						</xsl:when>
 						<xsl:when test="@type='entity'">
 							<!-- TODO: this is dangerous and could potentially give rise to 
                       infinite loops; find a way of stopping it running away! -->
+							if ( <xsl:value-of select="@name"/> != null){
 							result.Append( <xsl:value-of select="concat( @name, '.UserIdentifier')"/>);
+							}
 						</xsl:when>
 						<xsl:when test="@type='date'">
 							<!-- if what we've got is just a date, we only want to see the date part of it -->
+							if ( <xsl:value-of select="@name"/> != null){
 							result.Append(<xsl:value-of select="@name"/>.ToString( "d"));
+							}
 						</xsl:when>
 						<xsl:when test="@type='time'">
 							<!-- if what we've got is just a time, we only want to see the time part of it -->
+							if ( <xsl:value-of select="@name"/> != null){
 							result.Append(<xsl:value-of select="@name"/>.ToString( "t"));
+							}
+						</xsl:when>
+						<xsl:when test="@required = 'true' and (@type = 'integer' or @type = 'real' or @type = 'boolean' or @type = 'money')">
+							<!-- can't be null because we will have generated a non-nullable type -->
+							result.Append(<xsl:value-of select="@name"/>.ToString();
 						</xsl:when>
 						<xsl:otherwise>
+							if ( <xsl:value-of select="@name"/> != null){
 							result.Append(<xsl:value-of select="@name"/>);
+							}
 						</xsl:otherwise>
 					</xsl:choose>
 					<xsl:choose>
@@ -192,7 +205,6 @@
 							result.Append( ",");
 						</xsl:otherwise>
 					</xsl:choose>
-					}
 				</xsl:for-each>
 			</xsl:when>
 			<xsl:otherwise>
@@ -344,18 +356,30 @@
 		}
 		set {
 		<xsl:if test="@required='true'">
-			if ( value == null)
-			{
-			throw new DataRequiredException( <xsl:choose>
-				<xsl:when test="ifmissing[@locale=$locale]">
-					<xsl:apply-templates select="ifmissing"/>
+			<!-- If we could generate a non-nullable type we have done so; otherwise,
+				must catch null -->
+			<xsl:choose>
+				<xsl:when test="@type='integer'"/>
+				<xsl:when test="@type='real'"/>
+				<xsl:when test="@type='money'">
+					<!-- not quite certain of that - check! -->
 				</xsl:when>
+				<xsl:when test="@type='boolean'"/>
 				<xsl:otherwise>
-					"The value for <xsl:value-of select="@name"/> may not be set to null"
+					if ( value == null)
+					{
+					throw new DataRequiredException( <xsl:choose>
+						<xsl:when test="ifmissing[@locale=$locale]">
+							<xsl:apply-templates select="ifmissing"/>
+						</xsl:when>
+						<xsl:otherwise>
+							"The value for <xsl:value-of select="@name"/> may not be set to null"
+						</xsl:otherwise>
+					</xsl:choose>
+					);
+					}
 				</xsl:otherwise>
 			</xsl:choose>
-			);
-			}
 		</xsl:if>
 		<xsl:if test="@type='defined'">
 			<xsl:variable name="definition">
