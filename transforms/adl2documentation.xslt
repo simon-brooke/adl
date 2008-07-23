@@ -8,7 +8,8 @@
 
 	<xsl:param name="locale" select="en-GB"/>
 
-	<xsl:param name="css-stylesheet"/>
+	<xsl:param name="css-stylesheet" 
+			   select="'http://libs.cygnets.co.uk/adl/unstable/ADL/documentation.css'"/>
 
 	<xsl:param name="detail" select="full"/>
 
