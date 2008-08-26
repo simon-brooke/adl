@@ -8,8 +8,8 @@
     Transform ADL into entity classes
     
     $Author: sb $
-    $Revision: 1.11 $
-    $Date: 2008-07-21 10:08:35 $
+    $Revision: 1.12 $
+    $Date: 2008-08-26 11:10:57 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -61,7 +61,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -85,7 +85,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>.
+		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
@@ -151,6 +151,35 @@
 			</xsl:if>
 		</xsl:for-each>
 		return result.ToString();
+		}
+		}
+		
+		/// &lt;summary&gt;
+		/// True if I have not yet been persisted to the database, else false.
+		/// NOTE: This code is experimental and may change!
+		/// &lt;/summary&gt;
+		public override Boolean IsNew {
+		get {
+		Boolean result = false;
+		<xsl:for-each select="descendant::adl:property[adl:generator]">
+				<xsl:choose>
+					<xsl:when test="@type='integer'">
+						if ( <xsl:value-of select="@name"/> == 0) {
+						result = true;
+						}
+					</xsl:when>
+					<xsl:when test="@type='string'">
+						if ( String.IsNullOrEmpty( <xsl:value-of select="@name"/>)) {
+						result = true;
+						}
+					</xsl:when>
+					<xsl:otherwise>
+						/* TODO: ADL does not yet correctly generate IsNew for 
+						 * properties of type <xsl:value-of select="@type"/> */
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:for-each>
+			return result;
 		}
 		}
 
