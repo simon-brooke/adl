@@ -8,8 +8,8 @@
     Transform ADL into C# entity classes
     
     $Author: sb $
-    $Revision: 1.13 $
-    $Date: 2008-10-02 10:43:42 $
+    $Revision: 1.14 $
+    $Date: 2008-10-02 10:52:40 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -17,7 +17,7 @@
 <xsl:stylesheet version="1.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:exsl="http://exslt.org/common"
-  xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
   xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 
 	<xsl:include href="csharp-type-include.xslt"/>
@@ -66,7 +66,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>
+		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -92,7 +92,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.13 $', 10)"/>.
+		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0"
-	xmlns="http://cygnets.co.uk/schemas/adl-1.2"
-	xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+	xmlns="http://libs.cygnets.co.uk/adl/1.1/"
+	xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 	<!--
@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.11 $
-    $Date: 2008-07-10 10:12:17 $
+    $Revision: 1.12 $
+    $Date: 2008-10-02 10:52:45 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -162,7 +162,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -245,7 +245,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -368,7 +368,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -974,7 +974,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1013,7 +1013,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.11 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.12 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0"
   xmlns="urn:nhibernate-mapping-2.2"
-  xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<!--
       Application Description Framework
@@ -12,7 +12,7 @@
       Transform ADL to Hibernate
       
       $Author: sb $
-      $Revision: 1.6 $
+      $Revision: 1.7 $
   -->
 
 	<xsl:param name="namespace"/>
@@ -138,7 +138,7 @@
 	*
 	*	  <xsl:value-of select="@revision"/>
     *
-    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.6 $', 12)"/>
+    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.7 $', 12)"/>
     *
     ***************************************************************************
 			</xsl:comment>

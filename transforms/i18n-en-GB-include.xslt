@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0"
-	xmlns="http://cygnets.co.uk/schemas/adl-1.2"
-	xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+	xmlns="http://libs.cygnets.co.uk/adl/1.1/"
+	xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 	
@@ -22,8 +22,8 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-06-03 14:38:15 $
+    $Revision: 1.3 $
+    $Date: 2008-10-02 10:52:40 $
 	-->
 
 	<xsl:template name="i18n-add-a-new">

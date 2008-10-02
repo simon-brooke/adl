@@ -8,8 +8,8 @@
     Transform ADL into ActiveRecord conforming entity classes
     
     $Author: sb $
-    $Revision: 1.2 $
-    $Date: 2008-10-02 10:43:42 $
+    $Revision: 1.3 $
+    $Date: 2008-10-02 10:52:40 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -17,7 +17,7 @@
 <xsl:stylesheet version="1.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:exsl="http://exslt.org/common"
-  xmlns:adl="http://cygnets.co.uk/schemas/adl-1.2"
+  xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
   xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 
 	<!-- NOTE NOTE NOTE:
@@ -62,7 +62,7 @@
 		//
 		//	Main application entry point for <xsl:value-of select="@name"/>
 		//  Automatically generated from application description using
-		//  adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.2 $', 10)"/>
+		//  adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -83,7 +83,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of application <xsl:value-of select="@name"/>
-		/// using adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.2 $', 10)"/>.
+		/// using adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
@@ -121,7 +121,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.2 $', 10)"/>
+		//  adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -144,7 +144,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.2 $', 10)"/>.
+		/// using adl2activerecord.xsl revision <xsl:value-of select="substring( '$Revision: 1.3 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
