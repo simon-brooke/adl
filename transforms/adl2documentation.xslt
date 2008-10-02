@@ -53,7 +53,7 @@
 							</a>
 						</dt>
 						<dd>
-							<xsl:apply-templates select="adl:documentation"/>
+							<xsl:value-of select="adl:documentation"/>
 						</dd>
 					</xsl:for-each>
 				</dl>
@@ -132,7 +132,15 @@
 											</a>
 										</xsl:when>
 										<xsl:when test="@type = 'list'">
-											(one to many) of entities of type <a>
+											<xsl:choose>
+												<xsl:when test="@required='true'">
+													(one to one-or-many)
+												</xsl:when>
+												<xsl:otherwise>
+													(one to zero-or-many)
+												</xsl:otherwise>
+											</xsl:choose>
+											of entities of type <a>
 												<xsl:attribute name="href">
 													<xsl:value-of select="concat( '#entity-', @entity)"/>
 												</xsl:attribute>
@@ -148,7 +156,7 @@
 												<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@type"/>
 											</xsl:variable>
 											<xsl:choose>
-												<xsl:when  test="$defined-type = 'string'">
+												<xsl:when test="$defined-type = 'string'">
 													String matching
 													"<xsl:value-of select="/adl:application/adl:definition[@name=$definition]/@pattern"/>"
 												</xsl:when>
@@ -294,8 +302,60 @@
 
 	<xsl:template match="adl:documentation">
 		<div xmlns="http://www.w3.org/1999/xhtml" class="documentation">
-			<xsl:apply-templates />
+			<xsl:value-of select="."/>
+			<xsl:if test="adl:reference">
+				<h4>See also</h4>
+				<ul>
+					<xsl:apply-templates select="adl:reference"/>
+				</ul>
+			</xsl:if>
 		</div>
+	</xsl:template>
+
+	<xsl:template match="adl:reference">
+		<xsl:variable name="abbr" select="@abbr"/>
+		<xsl:variable name="specification" select="/adl:application/adl:specification[@abbr=$abbr]"/>
+		<li xmlns="http://www.w3.org/1999/xhtml">
+			<xsl:choose>
+				<xsl:when test="@entity">
+					<a>
+						<xsl:attribute name="href">
+							<xsl:value-of select="concat('#',@entity)"/>
+						</xsl:attribute>
+						<xsl:value-of select="@entity"/>
+						<xsl:if test="@property">
+							: <xsl:value-of select="@property"/>
+						</xsl:if>
+					</a>
+				</xsl:when>
+				<xsl:when test="$specification/@url">
+					<a xmlns="http://www.w3.org/1999/xhtml">
+						<xsl:attribute name="href">
+							<xsl:choose>
+								<xsl:when test="@section">
+									<xsl:value-of select="concat( $specification/@url, '#', @section)"/>
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of select="$specification/@url"/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:attribute>
+						<xsl:value-of select="$specification/@name"/>:
+						<xsl:if test="@section">
+							<xsl:value-of select="@section"/>:
+						</xsl:if>
+					</a>
+					<xsl:apply-templates/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$specification/@name"/>:
+					<xsl:if test="@section">
+						<xsl:value-of select="@section"/>:
+					</xsl:if>
+					<xsl:apply-templates/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</li>
 	</xsl:template>
 
 	<xsl:template match="adl:form">

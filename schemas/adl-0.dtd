@@ -13,12 +13,13 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.17 $
+        $Revision: 1.18 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-<!--  Before we start: import XHTML												-->
+<!--  Before we start: import XHTML	for use in documentation sections			-->
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  doesn't work yet  -->
 <!-- ENTITY  % XHTML PUBLIC
    "-//W3C//DTD XHTML 1.0 Transitional//EN"
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -168,13 +169,15 @@ that we can allow HTML block level entities within content elements -->
   name:     the name of this application
   version:  the version number of this application
   revision:	the revision of the ADL document
+  currency: the base monetary currency, in the form of an ISO 4217 three-letter code
   xmlns:    XML namespace, in case required
 -->
-<!ELEMENT application ( documentation?, content?, typedef*,  group*, entity*)>
+<!ELEMENT application ( specification?, documentation?, content?, typedef*,  group*, entity*)>
 <!ATTLIST application 
 	name 		CDATA 						#REQUIRED
 	version 	CDATA 						#IMPLIED
 	revision	CDATA						#IMPLIED
+	currency	CDATA						#IMPLIED
 	xmlns		CDATA						#IMPLIED>
 
 <!-- 
@@ -251,7 +254,7 @@ that we can allow HTML block level entities within content elements -->
                 for it, although code which links to it will be generated
 -->
 <!ELEMENT entity ( documentation?, content?, key?,
-      (property | one-to-many | many-to-many | many-to-one)*,
+      (property)*,
       permission*, (form | page | list)*)>
 <!ATTLIST entity 
     name      CDATA           #REQUIRED
@@ -264,7 +267,7 @@ that we can allow HTML block level entities within content elements -->
   should HTML markup within a documentation element be allowed? If so, are
   there restrictions?
 -->
-<!ELEMENT documentation (#PCDATA)>
+<!ELEMENT documentation ( #PCDATA|reference)*>
 <!ATTLIST documentation
   xmlns     CDATA             #IMPLIED>
 
@@ -327,117 +330,6 @@ that we can allow HTML block level entities within content elements -->
   concrete    %Boolean;       #IMPLIED
   cascade     (%CascadeActions;)  #IMPLIED>
 
-<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
-property[@type='list']. TODO: Not complete, not yet strictly convinced it's the right solution -->
-<!--
-  a property whose value is a set of entities
-  
-	name:			  the name of this property.
-	entity:			if type='entity', the name of the entity this property is 
-					    a foreign key link to.
-              if type='list', the name of the entity that has a foreign 
-              key link to this entity
-  farkey:     if type='list', the name of farside key in the listed 
-              entity
-	required:		whether this propery is required (i.e. 'not null').
-  concrete:   if set to 'false', this property is not stored in the 
-              database but must be computed (manually written code must
-              be provided to support this)
-  cascade:    what action(s) on the parent entity should be cascaded to
-              entitie(s) linked on this property. Valid only if type='entity',
-              type='link' or type='list'.
-  column:     name of the column in a SQL database table in which this property
-              is stored. TODO: Think about this.
-  unsaved-value:
-              of a property whose persistent value is set on first being 
-              committed to persistent store, the value which it holds before
-              it has been committed
--->
-<!ELEMENT one-to-many (documentation?)>
-<!ATTLIST one-to-many 
-	name 		    CDATA 					#REQUIRED
-	distinct 	  (none|all|user|system) 	#IMPLIED
-	entity 		  CDATA 					#IMPLIED
-  farkey      CDATA           #IMPLIED
- 	required 	  %Boolean; 			#IMPLIED
-  concrete    %Boolean;       #IMPLIED
-  cascade     (%CascadeActions;)  #IMPLIED
-  column      CDATA           #IMPLIED
-  unsaved-value CDATA         #IMPLIED>
-<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
-property[@type='link']. TODO: Not complete, not yet strictly convinced it's the right solution -->
-<!--
-  a pseudo-property whose value is a set of entities
-  TODO: maybe should have an optional attribute for the name of the linking table
-  
-	name:			  the name of this property.
-	entity:			if type='entity', the name of the entity this property is 
-					    a foreign key link to.
-              if type='list', the name of the entity that has a foreign 
-              key link to this entity
-  farkey:     if type='list', the name of farside key in the listed 
-              entity
-	required:		whether this propery is required (i.e. 'not null').
-  concrete:   if set to 'false', this property is not stored in the 
-              database but must be computed (manually written code must
-              be provided to support this)
-  cascade:    what action(s) on the parent entity should be cascaded to
-              entitie(s) linked on this property. Valid only if type='entity',
-              type='link' or type='list'.
-  column:     name of the column in a SQL database table in which this property
-              is stored. TODO: Think about this.
-  unsaved-value:
-              of a property whose persistent value is set on first being 
-              committed to persistent store, the value which it holds before
-              it has been committed
--->
-<!ELEMENT many-to-many (documentation?)>
-<!ATTLIST many-to-many 
-	name 		    CDATA 					#REQUIRED
-	distinct 	  (none|all|user|system) 	#IMPLIED
-	entity 		  CDATA 					#IMPLIED
-  farkey      CDATA           #IMPLIED
- 	required 	  %Boolean; 			#IMPLIED
-  concrete    %Boolean;       #IMPLIED
-  cascade     (%CascadeActions;)  #IMPLIED
-  column      CDATA           #IMPLIED
-  unsaved-value CDATA         #IMPLIED>
-
-<!-- It may be worth extracting properties which are not 'simple' into separate elements; this is equivalent to
-property[@type='entity']. TODO: Not complete, not yet strictly convinced it's the right solution.
--->
-<!--
-  a property whose value is an entity
-  TODO: should this have an attribute 'default'?
-  
-	name:			  the name of this property.
-	entity:			the name of the entity this property is 
-					    a foreign key link to.
-	required:		whether this propery is required (i.e. 'not null').
-  concrete:   if set to 'false', this property is not stored in the 
-              database but must be computed (manually written code must
-              be provided to support this)
-  cascade:    what action(s) on the parent entity should be cascaded to
-              entitie(s) linked on this property. Valid only if type='entity',
-              type='link' or type='list'.
-  column:     name of the column in a SQL database table in which this property
-              is stored. TODO: Think about this.
-  unsaved-value:
-              of a property whose persistent value is set on first being 
-              committed to persistent store, the value which it holds before
-              it has been committed
--->
-<!ELEMENT many-to-one (documentation?)>
-<!ATTLIST many-to-one 
-	name 		    CDATA 					        #REQUIRED
-	distinct 	  (none|all|user|system) 	#IMPLIED
-	entity 		  CDATA 					        #IMPLIED
-  farkey      CDATA                   #IMPLIED
- 	required 	  %Boolean; 			        #IMPLIED
-  concrete    %Boolean;               #IMPLIED
-  cascade     (%CascadeActions;)      #IMPLIED
-  column      CDATA                   #IMPLIED
-  unsaved-value CDATA                 #IMPLIED>
 
 <!-- 
   marks a property which is auto-generated by some part of the system. 
@@ -660,5 +552,46 @@ property[@type='entity']. TODO: Not complete, not yet strictly convinced it's th
 <!ATTLIST foot
   xmlns     CDATA             #IMPLIED>
 
+<!-- 
+	The 'specification' and 'reference' elements are for documentation only,
+	and do not contribute to the engineering of the application described.
+	
+	A specification element is intended chiefly to declare the reference
+	documents which may be used in documentation elements later in the 
+	document. 
+	
+	url:		The URL from which the document referenced can be retrieved
+	name:		The full name (title) given to this document
+	abbr:		A convenient abbreviated name
+-->
+<!ELEMENT specification (documentation?, reference*)>
+<!ATTLIST specification
+		url			CDATA	#IMPLIED
+		name		CDATA	#REQUIRED
+		abbr		CDATA	#REQUIRED
+		>
 
+<!-- 
+	The 'specification' and 'reference' elements are for documentation only,
+	and do not contribute to the engineering of the application described.
+	
+	A reference element is a reference to a specifying document. 
+	
+	abbr:		The abbreviated name of the specification to which this
+				reference refers
+	section:	The 'anchor part' (part following a hash character) which,
+				when appended to the URL, will locate the exact section
+				referenced.
+	entity:		A reference to another entity within this ADL document
+	property:	A reference to another property within this ADL document;
+				if entity is also specified then of that entity, else of
+				the ancestor entity if any
+	-->
+<!ELEMENT reference (documentation?)>
+<!ATTLIST reference
+		abbr		CDATA	#IMPLIED
+		section		CDATA	#IMPLIED
+		entity		CDATA	#IMPLIED
+		property	CDATA	#IMPLIED
+		>
 

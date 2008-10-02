@@ -12,14 +12,27 @@
       Transform ADL to Hibernate
       
       $Author: sb $
-      $Revision: 1.5 $
+      $Revision: 1.6 $
   -->
 
 	<xsl:param name="namespace"/>
 	<xsl:param name="assembly"/>
 	<xsl:param name="database"/>
+	<!-- whether or not we want lazy initialisation of lists. Lazy initialisation 
+	is economic of memory and of startup time, and works well in things which are 
+	essentially atomic like Web transactions; but can lead to gnarly bugs.
+	Values: 'true' (default) or 'false' - anything else will result in an error -->
+	<xsl:param name="lazy" select="'true'"/> 
 	<!-- the name and version of the product being built -->
 	<xsl:param name="product-version" select="'Application Description Language Framework'"/>
+
+	<!-- the convention to use for fieldnames in link tables:
+		Name - the name of the foreign key is the same as the name of the table linked to
+		NameId - the name of the foreign key is the same as the name of the table linked to, followed by 'Id'
+		Name_Id - the name of the foreign key is the same as the name of the table linked to, followed by '_Id'
+		Name_Link  - the name of the foreign key is the same as the name of the table linked to, followed by '_Link'
+	-->
+	<xsl:param name="linktable-field-name-convention" select="Name"/>
 
 	<xsl:output indent="no" method="xml" encoding="UTF-8"/>
 	<!-- NOTE! indent="no" because hibernate falls over if there is whitespace inside
@@ -125,7 +138,7 @@
 	*
 	*	  <xsl:value-of select="@revision"/>
     *
-    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.5 $', 12)"/>
+    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.6 $', 12)"/>
     *
     ***************************************************************************
 			</xsl:comment>
@@ -415,6 +428,9 @@
 					<xsl:attribute name="name">
 						<xsl:value-of select="@name"/>
 					</xsl:attribute>
+					<xsl:attribute name="lazy">
+						<xsl:value-of select="$lazy"/>
+					</xsl:attribute>
 					<xsl:attribute name="inverse">
 						<!-- true if the other end of the link is described in the ADL (which it normally will be) -->
 						<xsl:choose>
@@ -422,20 +438,14 @@
 							<xsl:otherwise>false</xsl:otherwise>
 						</xsl:choose>
 					</xsl:attribute>
-					<xsl:apply-templates select="adl:documentation"/>
-					<!-- careful with reformatting here: 
-					'The element cannot contain white space. Content model is empty.' -->
-					<key>
-						<xsl:attribute name="column">
-							<!-- this is the name of the farside foreign key field which points to me -->
-							<xsl:value-of select="$farkey"/>
-						</xsl:attribute>
-					</key>
-					<one-to-many>
-						<xsl:attribute name="class">
-							<xsl:value-of select="@entity"/>
-						</xsl:attribute>
-					</one-to-many>
+					<xsl:attribute name="cascade">
+						<xsl:choose>
+							<xsl:when test="@cascade">
+								<xsl:value-of select="@cascade"/>
+							</xsl:when>
+							<xsl:otherwise>all</xsl:otherwise>
+						</xsl:choose>
+					</xsl:attribute>
 					<xsl:choose>
 						<xsl:when test="@cascade='manual'"/>
 						<xsl:when test="@cascade">
@@ -444,6 +454,22 @@
 							</xsl:attribute>
 						</xsl:when>
 					</xsl:choose>
+					<xsl:apply-templates select="adl:documentation"/>
+					<!-- careful with reformatting here: 
+					'The element cannot contain white space. Content model is empty.' -->
+					<key>
+						<xsl:attribute name="column">
+							<!-- this is the name of the farside foreign key field which points to me -->
+							<xsl:call-template name="maybe-escape-keyword">
+								<xsl:with-param name="unescaped" select="$farkey"/>
+							</xsl:call-template>
+						</xsl:attribute>
+					</key>
+					<one-to-many>
+						<xsl:attribute name="class">
+							<xsl:value-of select="@entity"/>
+						</xsl:attribute>
+					</one-to-many>
 				</set>
 			</xsl:otherwise>
 		</xsl:choose>
@@ -475,23 +501,53 @@
 					<xsl:attribute name="name">
 						<xsl:value-of select="@name"/>
 					</xsl:attribute>
+					<xsl:attribute name="lazy">
+						<xsl:value-of select="$lazy"/>
+					</xsl:attribute>
 					<xsl:attribute name="table">
 						<xsl:value-of select="$tablename"/>
 					</xsl:attribute>
+					<xsl:attribute name="cascade">
+						<xsl:choose>
+							<xsl:when test="@cascade">
+								<xsl:value-of select="@cascade"/>
+							</xsl:when>
+							<xsl:otherwise>all</xsl:otherwise>
+						</xsl:choose>
+					</xsl:attribute>
 					<xsl:apply-templates select="adl:documentation"/>
+					<xsl:variable name="linksuffix">
+						<xsl:choose>
+							<xsl:when test="$linktable-field-name-convention = 'Name'"/>
+							<xsl:when test="$linktable-field-name-convention = 'NameId'">
+								<xsl:value-of select="'Id'"/>
+							</xsl:when>
+							<xsl:when test="$linktable-field-name-convention = 'Name_Id'">
+								<xsl:value-of select="'_Id'"/>
+							</xsl:when>
+							<xsl:when test="$linktable-field-name-convention = 'NameLink'">
+								<xsl:value-of select="'Link'"/>
+							</xsl:when>
+							<xsl:when test="$linktable-field-name-convention = 'Name_Link'">
+								<xsl:value-of select="'_Link'"/>
+							</xsl:when>
+						</xsl:choose>
+					</xsl:variable>
 					<key>
 						<xsl:attribute name="column">
-							<xsl:value-of select="concat( ../@name, 'Id')"/>
+							<xsl:call-template name="maybe-escape-keyword">
+								<xsl:with-param name="unescaped" select="concat( ../@name, $linksuffix)"/>
+							</xsl:call-template> 
 						</xsl:attribute>
 					</key>
 					<many-to-many>
 						<xsl:attribute name="column">
 							<xsl:choose>
 								<xsl:when test="../@name = @entity">
-									<xsl:value-of select="concat( @entity, '_1Id')"/>
+									<xsl:value-of select="concat( @entity, '_1', $linksuffix)"/>
 								</xsl:when>
 								<xsl:otherwise>
-									<xsl:value-of select="concat( @entity, 'Id')"/>
+									<xsl:value-of select="concat( @entity, $linksuffix)"/>
 								</xsl:otherwise>
 							</xsl:choose>
 						</xsl:attribute>
@@ -527,25 +583,38 @@
 	</xsl:template>
 
 	<xsl:template match="adl:documentation">
-		<xsl:comment>
-			<xsl:apply-templates/>
-		</xsl:comment>
+		<xsl:choose>
+			<xsl:when test="ancestor::adl:documentation"/>
+			<xsl:otherwise>
+				<xsl:comment>
+					<xsl:apply-templates/>
+				</xsl:comment>
+			</xsl:otherwise>
+		</xsl:choose>
 	</xsl:template>
 
 	<!-- consistent, repeatable way of getting the column name for a given property -->
 	<xsl:template name="property-column-name">
 		<!-- a property element -->
 		<xsl:param name="property"/>
-		<xsl:variable name="unescaped">
-			<xsl:choose>
-				<xsl:when test="$property/@column">
-					<xsl:value-of select="$property/@column"/>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:value-of select="$property/@name"/>
-				</xsl:otherwise>
-			</xsl:choose>
-		</xsl:variable>
+		<xsl:call-template name="maybe-escape-keyword">
+			<xsl:with-param name="unescaped">
+				<xsl:choose>
+					<xsl:when test="$property/@column">
+						<xsl:value-of select="$property/@column"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="$property/@name"/>
+					</xsl:otherwise>
+				</xsl:choose>
+			</xsl:with-param>
+		</xsl:call-template>
+	</xsl:template>
+
+	<!-- if the string passed as a parameter is an SQL keyword, escape it with square brackets;
+		else return it as is.-->
+	<xsl:template name="maybe-escape-keyword">
+		<xsl:param name="unescaped"/>
 		<xsl:choose>
 			<xsl:when test="contains( $sqlkeywords, concat(' ', translate( $unescaped, $lcase, $ucase),' '))">
 				<xsl:value-of select="concat( '[', $unescaped, ']')"/>
