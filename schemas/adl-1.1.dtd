@@ -1,0 +1,597 @@
+    <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+    <!--						    											-->
+    <!--	adl-1.1.dtd    			    										-->
+    <!--																		-->
+    <!--	Purpose:															-->
+    <!--	Document Type Description for Application Description				-->
+    <!--	Language. Normative for now; will be replaced by a schema.     	   `-->
+    <!--																		-->
+    <!--	Author:		Simon Brooke <simon@cygnets.co.uk>			  			-->
+    <!--	Created:	24th January 2006				                        -->
+    <!--	Copyright:	(c) 2007 Cygnet Solutions								-->
+    <!--      							      		                            -->
+    <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+    
+    <!--
+        $Revision: 1.1 $
+ 	    -->
+
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  Before we start: import XHTML	for use in documentation sections			-->
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  doesn't work yet  -->
+<!-- ENTITY  % XHTML PUBLIC
+   "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+%XHTML; -->
+
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  Before we start: some useful definitions					                -->
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+
+<!-- some basic character entities inherited from HTML. Actually we probably ought to 
+import all the HTML4 character entity files, and possibly the HTML4 Strict DTD (so 
+that we can allow HTML block level entities within content elements -->
+<!ENTITY nbsp "&#160;">
+<!ENTITY pound "&#163;">
+<!ENTITY copy "&#169;">
+
+
+<!-- boolean means true or false -->
+<!ENTITY % Boolean "(true|false)" >
+
+<!-- 
+	Locale is a string comprising an ISO 639 language code followed by a space
+	followed by an ISO 3166 country code, or else the string 'default'. See:
+	<URL:http://www.ics.uci.edu/pub/ietf/http/related/iso639.txt>
+	<URL:http://www.chemie.fu-berlin.de/diverse/doc/ISO_3166.html>
+-->
+<!ENTITY % Locale "CDATA" >
+
+<!-- 
+	permissions a group may have on an entity, list, page, form or field
+	permissions are deemed to increase as you go right. A group cannot 
+	have greater permission on a field than on the form it is in, or
+	greater permission on form than the entity it belongs to
+	
+	none:			none
+	read:			select
+	insert:			insert
+	noedit:			select, insert
+	edit:			select, insert, update
+	all:			select, insert, update, delete
+-->
+<!ENTITY % Permissions "none|read|insert|noedit|edit|all" >
+
+
+<!--
+  actions which should be cascaded to dependent objects. All these values except
+  'manual' are taken from Hibernate and should be passed through the adl2hibernate 
+  mapping transparently. Relevent only for properties with type='entity', type='link'
+  and type='list'
+  
+  all :       cascade delete, save and update
+  all-delete-orphan : see hibernate documentation; relates to transient objects only
+  delete :    cascade delete actions, but not save and update
+  manual :    cascading will be handled in manually managed code, code to
+              handle cascading should not be generated
+  save-update : cascade save and update actions, but not delete.
+-->
+<!ENTITY % CascadeActions "all|all-delete-orphan|delete|manual|save-update">
+
+<!-- 
+	data types which can be used in a typedef to provide validation - 
+	e.g. a string can be used with a regexp or a scalar can be used with 
+	min and max values 
+	string: 		  varchar		java.sql.Types.VARCHAR
+	integer:		  int			  java.sql.Types.INTEGER
+	real:			    double		java.sql.Types.DOUBLE
+	money:			  money		  java.sql.Types.INTEGER
+	date:			    date		  java.sql.Types.DATE
+	time:			    time		  java.sql.Types.TIME
+	timestamp:		timestamp	java.sql.Types.TIMESTAMP
+-->
+<!ENTITY % DefinableDataTypes "string|integer|real|money|date|time|timestamp" >
+
+<!-- 
+	data types which are fairly straightforward translations of JDBC data types
+	boolean:		boolean or	java.sql.Types.BIT
+					    char(1)		  java.sql.Types.CHAR
+	text:			  text or		  java.sql.Types.LONGVARCHAR 
+					    memo		    java.sql.Types.CLOB
+-->
+<!ENTITY % SimpleDataTypes "%DefinableDataTypes;|boolean|text" >
+
+<!-- 
+	data types which are more complex than SimpleDataTypes...
+	entity : 		a foreign key link to another entity (i.e. the 'many' end of a 
+					one-to-many link);
+	list :			a list of some other entity that links to me (i.e. the 'one' end of
+					a one-to-many link);
+	link : 			a many to many link (via a link table);
+	defined : 		a type defined by a typedef.
+-->
+<!ENTITY % ComplexDataTypes "entity|link|list|defined" >
+
+<!--
+  data types which require special handling - which don't simply map onto 
+  common SQL data types
+  geopos :    a latitude/longitude pair (experimental and not yet implemented)
+  image :     a raster image file, in jpeg|gif|png format (experimental, not yet implemented)
+  message :   an internationalised message, having different translations for different locales
+-->
+<!ENTITY % SpecialDataTypes "geopos|image|message" >
+
+<!-- all data types -->
+<!ENTITY % AllDataTypes "%ComplexDataTypes;|%SimpleDataTypes;|%SpecialDataTypes;" >
+
+<!-- content, for things like pages (i.e. forms, lists, pages) -->
+<!ENTITY % Content "head|top|foot" >
+
+<!ENTITY % FieldStuff "field|fieldgroup|auxlist|verb">
+
+<!ENTITY % PageContent "%Content;|%FieldStuff;" >
+
+<!ENTITY % PageStuff "%PageContent;|permission|pragma" >
+
+<!-- Properties for pages:
+  name:               obviously, the name (URL stub) of the page
+  properties:         the properties of the entity the page describes to be shown
+                      as fields on the page
+      all:            obviously, all properties (except the abstract primary key, if
+                      present)
+      user-distinct:  all properties which are user-distinct (NOTE: Not yet implemented)
+      listed:         only those properties for which fields are explicitly listed
+-->  
+<!ENTITY % PageAttrs 
+	"name CDATA #REQUIRED
+	 properties (all|user-distinct|listed) #REQUIRED" >
+
+<!-- Actions for generators (mainly for keyfields - see entity 'generator', below
+  assigned:           In manually-maintained code, you contract to assign a value 
+                      to this property before it is persisted.
+  guid:               The system will supply a unique GUid value to this field 
+                      before it is persisted.
+  mannual:            You contract to supply a generatos class in manually maintained
+                      code.
+  native:             The database will supply a unique value to this field when it
+                      is persisted; the value will be an integer. RECOMMENDED!
+-->
+<!ENTITY % GeneratorActions "assigned|guid|manual|native">
+
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+<!--  Elements																	                                -->
+<!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+
+<!-- 
+  the application that the document describes: required top level element
+  
+  name:     the name of this application
+  version:  the version number of this application
+  revision:	the revision of the ADL document
+  currency: the base monetary currency, in the form of an ISO 4217 three-letter code
+  xmlns:    XML namespace, in case required
+-->
+<!ELEMENT application ( specification?, documentation?, content?, typedef*,  group*, entity*)>
+<!ATTLIST application 
+	name 		CDATA 						#REQUIRED
+	version 	CDATA 						#IMPLIED
+	revision	CDATA						#IMPLIED
+	currency	CDATA						#IMPLIED
+	xmlns		CDATA						#IMPLIED>
+
+<!-- 
+	the definition of a defined type. At this stage a defined type is either
+	a string		in which case it must have size and pattern, or
+	a scalar		in which case it must have minimum and/or maximum
+	pattern must be a regular expression as interpreted by org.apache.regexp.RE
+	minimum and maximum must be of appropriate format for the datatype specified.
+	Validation may be done client-side and/or server-side at application layer
+	and/or server side at database layer.
+
+  name:     the name of this typedef
+  type:     the simple type on which this defined type is based; must be
+            present unless in-implementation children are supplied
+  size:     the data size of this defined type
+  pattern:  a regular expression which values for this type must match
+  minimum:  the minimum value for this type (if base type is scalar)
+  maximum:  the maximum value for this type (if base type is scalar)
+  -->
+<!ELEMENT typedef (documentation?, in-implementation*, help*) >
+
+<!ATTLIST typedef 
+	name 		  CDATA 						#REQUIRED
+	type 		  (%DefinableDataTypes;) 		#IMPLIED
+	size 		  CDATA 						#IMPLIED
+	pattern 	CDATA 						#IMPLIED
+	minimum 	CDATA 						#IMPLIED
+	maximum 	CDATA 						#IMPLIED>
+
+<!--
+  information about how to translate a type into types known to different target
+  languages. TODO: Once again I'm not wholly comfortable with the name; I'm not 
+  really comfortable that this belongs in ADL at all.
+  
+  target:     the target language
+  value:      the type to use in that target language
+  kind:       OK, I confess I don't understand this, but Andrew needs it... 
+-->
+<!ELEMENT in-implementation (documentation?)>
+
+<!ATTLIST in-implementation
+      target  CDATA           #REQUIRED
+      value   CDATA           #REQUIRED
+      kind    CDATA           #IMPLIED>
+
+<!-- 
+  a group of people with similar permissions to one another 
+  
+  name: the name of this group
+  parent: the name of a group of which this group is subset
+  -->
+<!ELEMENT group (documentation?)>
+
+<!ATTLIST group 
+  name      CDATA             #REQUIRED
+  parent    CDATA             #IMPLIED>
+
+
+
+<!-- 
+	an entity which has properties and relationships; maps onto a database
+	table or a Java serialisable class - or, of course, various other things
+  
+  name:         obviously, the name of this entity
+  natural-key:  if present, the name of a property of this entity which forms
+                a natural primary key [NOTE: Only partly implemented. NOTE: much of
+                the present implementation assumes all primary keys will be 
+                integers. This needs to be fixed!] DEPRECATED: remove; replace with the
+                'key' element, below.
+  table:        the name of the table in which this entity is stored. Defaults to same
+                as name of entity. Strongly recommend this is not used unless it needs
+                to be different from the name of the entity
+  foreign:      this entity is part of some other system; no code will be generated
+                for it, although code which links to it will be generated
+-->
+<!ELEMENT entity ( documentation?, content?, key?,
+      (property)*,
+      permission*, (form | page | list)*)>
+<!ATTLIST entity 
+    name      CDATA           #REQUIRED
+    natural-key CDATA         #IMPLIED
+    table     CDATA           #IMPLIED
+    foreign   %Boolean;       #IMPLIED>
+
+<!-- 
+  contains documentation on the element which immediately contains it. TODO:
+  should HTML markup within a documentation element be allowed? If so, are
+  there restrictions?
+-->
+<!ELEMENT documentation ( #PCDATA|reference)*>
+<!ATTLIST documentation
+  xmlns     CDATA             #IMPLIED>
+
+
+<!-- an explicit primary key, possibly compound -->
+<!ELEMENT key (property*)>
+
+
+<!-- 
+	a property (field) of an entity (table) 
+	
+	name:			  the name of this property.
+	type:			  the type of this property.
+	default:		the default value of this property. There will probably be 
+					    magic values of this!
+	typedef:	  name of the typedef to use, it type = 'defined'.
+	distinct:		distinct='system' required that every value in the system 
+					    will be distinct (i.e. natural primary key);
+					    distinct='user' implies that the value may be used by users 
+					    in distinguishing entities even if values are not formally 
+					    unique; 
+					    distinct='all' implies that the values are formally unique 
+					    /and/ are user friendly (NOTE: not implemented).
+	entity:			if type='entity', the name of the entity this property is 
+					    a foreign key link to.
+              if type='list', the name of the entity that has a foreign 
+              key link to this entity
+  farkey:     if type='list', the name of farside key in the listed 
+              entity; if type='entity' and the farside field to join to 
+              is not the farside primary key, then the name of that
+              farside field
+	required:		whether this propery is required (i.e. 'not null').
+	size: 			fieldwidth of the property if specified.
+  concrete:   if set to 'false', this property is not stored in the 
+              database but must be computed (manually written code must
+              be provided to support this)
+  cascade:    what action(s) on the parent entity should be cascaded to
+              entitie(s) linked on this property. Valid only if type='entity',
+              type='link' or type='list'.
+  column:     name of the column in a SQL database table in which this property
+              is stored. TODO: Think about this.
+  unsaved-value:
+              of a property whose persistent value is set on first being 
+              committed to persistent store, the value which it holds before
+              it has been committed
+-->
+<!ELEMENT property ( documentation?, generator?, permission*, option*, prompt*, help*, ifmissing*)>
+
+<!ATTLIST property 
+	name 		    CDATA 					#REQUIRED
+	type 		    (%AllDataTypes;)  #REQUIRED
+	default 	  CDATA 					#IMPLIED
+	typedef 	CDATA 					#IMPLIED
+	distinct 	  (none|all|user|system) 	#IMPLIED
+	entity 		  CDATA 					#IMPLIED
+  farkey      CDATA           #IMPLIED
+ 	required 	  %Boolean; 			#IMPLIED
+	size 		    CDATA 					#IMPLIED
+  column      CDATA           #IMPLIED
+  concrete    %Boolean;       #IMPLIED
+  cascade     (%CascadeActions;)  #IMPLIED>
+
+
+<!-- 
+  marks a property which is auto-generated by some part of the system. 
+  This is based on the Hibernate construct, except that the Hibernate 
+  implementation folds both its internal generators and custom generators 
+  onto the same attribute. This separates them onto two attributes so we 
+  can police values for Hibernate's 'builtin' generators.
+  
+  action:       one of the supported Hibernate builtin generators, or 
+                'manual'. 'native' is strongly recommended in most instances
+  class:        if action is 'manual', the name of a manually maintained 
+                class conforming to the Hibernate IdentifierGenerator 
+                interface, or its equivalent in other languages
+-->
+<!ELEMENT generator (documentation?, param*)>
+<!ATTLIST generator
+      action  (%GeneratorActions;)    #REQUIRED
+      class   CDATA                   #IMPLIED>
+
+<!--
+  A parameter passed to the generator. Again, based on the Hibernate 
+  implementation. TODO: #PCDATA is wrong as the content model, as embedded
+  markup is definitely not allowed!
+  
+  name:   the name of this parameter
+  
+  TODO: This needs to be renamed or removed because it conflicts with the
+  XHTML element of the same name. In fact it could be simply removed since 
+  our usage is compatible with the XHTML usage, but it might be less 
+  ambiguous to rename it.
+-->
+<!ELEMENT param (#PCDATA)>
+<!ATTLIST param
+  name        CDATA           #REQUIRED>
+
+
+
+<!-- 
+	one of an explicit list of optional values a property may have 
+	NOTE: whether options get encoded at application layer or at database layer 
+	is UNDEFINED; either behaviour is correct. If at database layer it's also 
+	UNDEFINED whether they're encoded as a single reference data table or as 
+	separate reference data tables for each property.
+	
+	value:	the value of this option
+
+	TODO: This needs to be renamed or removed because it conflicts with the
+	XHTML element of the same name. In fact it could be simply removed since 
+	our usage is compatible with the XHTML usage, but it might be less 
+	ambiguous to rename it.
+-->
+<!ELEMENT option (documentation?, prompt*)>
+<!-- if the value is different from the prompt the user sees, specify it -->
+<!ATTLIST option 
+  value       CDATA           #IMPLIED>
+
+
+<!-- 
+	permissions policy on an entity, a page, form, list or field 
+	
+	group: 			the group to which permission is granted
+	permission:		the permission which is granted to that group
+-->
+<!ELEMENT permission (documentation?)>
+<!ATTLIST permission 
+	group 		  CDATA 					#REQUIRED
+	permission 	(%Permissions;) #REQUIRED>
+
+
+<!--
+  pragmatic advice to generators of lists and forms, in the form of 
+  name/value pairs which may contain anything. Over time some pragmas
+  will become 'well known', but the whole point of having a pragma
+  architecture is that it is extensible.
+-->
+<!ELEMENT pragma (documentation?)>
+<!ATTLIST pragma
+  name        CDATA           #REQUIRED
+  value       CDATA           #REQUIRED>
+
+<!-- 
+	a prompt for a property or field; used as the prompt text for a widget 
+	which edits it. Typically there will be only one of these per property
+  per locale; if there are more than one all those matching the locale may
+  be concatenated, or just one may be used.
+	
+	prompt:			the prompt to use
+	locale:			the locale in which to prefer this prompt	
+-->
+<!ELEMENT prompt (documentation?)>
+<!ATTLIST prompt
+	prompt		  CDATA				  	#REQUIRED
+	locale		  %Locale;				#REQUIRED >
+
+<!-- 
+	helptext about a property of an entity, or a field of a page, form or 
+	list, or a typedef. Typically there will be only one of these per property
+  per locale; if there are more than one all those matching the locale may
+  be concatenated, or just one may be used.
+
+	locale:			the locale in which to prefer this prompt	
+-->
+<!ELEMENT help (#PCDATA)>
+<!ATTLIST help
+	locale		  %Locale;				#REQUIRED
+  xmlns     CDATA             #IMPLIED >
+
+<!--
+  helpful text to be shown if a property value is missing, typically when 
+  a form is submitted. Typically there will be only one of these per property
+  per locale; if there are more than one all those matching the locale may
+  be concatenated, or just one may be used. Later there may be more sophisticated
+  behaviour here.
+-->
+<!ELEMENT ifmissing (#PCDATA)>
+<!ATTLIST ifmissing
+  locale      %Locale;        #REQUIRED
+  xmlns     CDATA             #IMPLIED>
+
+<!-- a form through which an entity may be added or edited
+
+  TODO: This needs to be renamed because it conflicts with the
+  XHTML element of the same name. 
+-->
+<!ELEMENT form (documentation?, ( %PageStuff;)*)>
+<!ATTLIST form %PageAttrs;>
+
+
+<!-- a page on which an entity may be displayed -->
+<!ELEMENT page (documentation?, ( %PageStuff;)*)>
+<!ATTLIST page %PageAttrs;>
+
+
+<!-- 
+	a list on which entities of a given type are listed
+
+	onselect:		name of form/page/list to go to when
+					    a selection is made from the list 
+-->
+<!ELEMENT list (documentation?, ( %PageStuff;)*)>
+<!ATTLIST list %PageAttrs;
+	onselect	  CDATA 					#IMPLIED >
+
+
+<!--
+  a subsidiary list, on which entities related to primary
+  entities in the enclosing page or list are listed
+  
+  property:   the property of the enclosing entity that this
+              list displays (obviously, must be of type='list')
+  onselect:   the form or page of the listed entity to call
+              when an item from the list is selected
+  canadd:     true if the user should be able to add records
+              to this list
+  -->
+<!ELEMENT auxlist (documentation?, (prompt|%FieldStuff;)*)>
+<!ATTLIST auxlist %PageAttrs;
+  property    CDATA           #REQUIRED
+  onselect    CDATA           #IMPLIED
+  canadd      %Boolean;       #IMPLIED>
+
+<!--
+  a group of fields and other controls within a form or list, which the 
+  renderer might render as a single pane in a tabbed display, for example.
+  -->
+<!ELEMENT fieldgroup (documentation?, (prompt|%FieldStuff;)*)>
+<!ATTLIST fieldgroup
+  name        CDATA           #REQUIRED>
+
+
+<!-- a field in a form or page
+
+  property:   the property which this field displays/edits
+  -->
+<!ELEMENT field (documentation?, prompt*, help*, permission*) >
+<!ATTLIST field 
+  property    CDATA           #REQUIRED >
+
+<!-- a verb is something that may be done through a form. Probably the verbs 'store' 
+  and 'delete' are implied, but maybe they need to be explicitly declared. The 'verb'
+  attribute of the verb is what gets returned to the controller -->
+<!ELEMENT verb (documentation?, prompt*, help*, permission*) >
+<!ATTLIST verb
+  verb        CDATA           #REQUIRED
+  dangerous   %Boolean;       #REQUIRED>
+
+
+<!-- a container for global content -->
+<!ELEMENT content (%Content;)*>
+
+
+<!-- 
+	content to place in the head of the generated document; this is #PCDATA 
+	because it will almost certainly belong to a different namespace 
+	(usually HTML)
+
+	TODO: This needs to be renamed or removed because it conflicts with the
+	XHTML element of the same name. In fact it could be simply removed since 
+	our usage is compatible with the XHTML usage, but it might be less 
+	ambiguous to rename it.
+-->
+<!ELEMENT head (#PCDATA) >
+<!ATTLIST head
+  xmlns     CDATA             #IMPLIED>
+
+
+<!-- 
+	content to place in the top of the body of the generated document; 
+	this is %Flow; which is any HTML block or inline level element.
+-->
+<!ELEMENT top (#PCDATA) >
+<!ATTLIST top
+  xmlns     CDATA             #IMPLIED>
+
+<!-- 
+	content to place at the foot of the body of the generated document; 
+	this is %Flow; which is any HTML block or inline level element.
+-->
+<!ELEMENT foot (#PCDATA) >
+<!ATTLIST foot
+  xmlns     CDATA             #IMPLIED>
+
+<!-- 
+	The 'specification' and 'reference' elements are for documentation only,
+	and do not contribute to the engineering of the application described.
+	
+	A specification element is intended chiefly to declare the reference
+	documents which may be used in documentation elements later in the 
+	document. 
+	
+	url:		The URL from which the document referenced can be retrieved
+	name:		The full name (title) given to this document
+	abbr:		A convenient abbreviated name
+-->
+<!ELEMENT specification (documentation?, reference*)>
+<!ATTLIST specification
+		url			CDATA	#IMPLIED
+		name		CDATA	#REQUIRED
+		abbr		CDATA	#REQUIRED
+		>
+
+<!-- 
+	The 'specification' and 'reference' elements are for documentation only,
+	and do not contribute to the engineering of the application described.
+	
+	A reference element is a reference to a specifying document. 
+	
+	abbr:		The abbreviated name of the specification to which this
+				reference refers
+	section:	The 'anchor part' (part following a hash character) which,
+				when appended to the URL, will locate the exact section
+				referenced.
+	entity:		A reference to another entity within this ADL document
+	property:	A reference to another property within this ADL document;
+				if entity is also specified then of that entity, else of
+				the ancestor entity if any
+	-->
+<!ELEMENT reference (documentation?)>
+<!ATTLIST reference
+		abbr		CDATA	#IMPLIED
+		section		CDATA	#IMPLIED
+		entity		CDATA	#IMPLIED
+		property	CDATA	#IMPLIED
+		>
+
