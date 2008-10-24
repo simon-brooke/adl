@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.1 $
+        $Revision: 1.2 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -172,7 +172,7 @@ that we can allow HTML block level entities within content elements -->
   currency: the base monetary currency, in the form of an ISO 4217 three-letter code
   xmlns:    XML namespace, in case required
 -->
-<!ELEMENT application ( specification?, documentation?, content?, typedef*,  group*, entity*)>
+<!ELEMENT application ( specification*, documentation?, content?, typedef*,  group*, entity*)>
 <!ATTLIST application 
 	name 		CDATA 						#REQUIRED
 	version 	CDATA 						#IMPLIED
