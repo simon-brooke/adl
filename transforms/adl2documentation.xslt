@@ -333,7 +333,7 @@
 						<xsl:attribute name="href">
 							<xsl:choose>
 								<xsl:when test="@section">
-									<xsl:value-of select="concat( $specification/@url, '#', @section)"/>
+									<xsl:value-of select="concat( $specification/@url, @section)"/>
 								</xsl:when>
 								<xsl:otherwise>
 									<xsl:value-of select="$specification/@url"/>
