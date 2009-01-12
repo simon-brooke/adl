@@ -8,8 +8,8 @@
     Transform ADL into C# entity classes
     
     $Author: sb $
-    $Revision: 1.14 $
-    $Date: 2008-10-02 10:52:40 $
+    $Revision: 1.15 $
+    $Date: 2009-01-12 10:51:40 $
   -->
 
 <!-- WARNING WARNING WARNING: Do NOT reformat this file! 
@@ -66,7 +66,7 @@
 		//  (c)2007 Cygnet Solutions Ltd
 		//
 		//  Automatically generated from application description using
-		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>
+		//  adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.15 $', 10)"/>
 		//
 		//  <xsl:value-of select="/adl:application/@revision"/>
 		//
@@ -92,7 +92,7 @@
 		/// &lt;/summary&gt;
 		/// &lt;remarks&gt;
 		/// Automatically generated from description of entity <xsl:value-of select="@name"/>
-		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.14 $', 10)"/>.
+		/// using adl2entityclass.xsl revision <xsl:value-of select="substring( '$Revision: 1.15 $', 10)"/>.
 		/// Note that manually maintained parts of this class may be defined in
 		/// a separate file called <xsl:value-of select="@name"/>.manual.cs, q.v.
 		///
@@ -100,15 +100,34 @@
 		/// &lt;/remarks&gt;
 		public partial class <xsl:value-of select="@name"/> : Entity
 		{
+		#if DEBUG
+		/// &lt;summary&gt;
+		/// while debugging, keep track of the number of live instances
+		/// &lt;/summary&gt;
+		public volatile static int instances = 0;
+		#endif
 		/// &lt;summary&gt;
 		/// Auto-generated no-args constructor; does nothing (but probably should
 		/// ensure ID slot is initialised correctly)
 		/// &lt;/summary&gt;
 		public <xsl:value-of select="@name"/>() : base(){
 		<xsl:call-template name="initialise-lists"/>
+		
+		#if DEBUG
+		/* while debugging, keep track of the number of live instances; increment on creation */
+		instances ++;
+		#endif
 		}
 
-
+		#if DEBUG
+		/// &lt;summary&gt;
+		/// while debugging, keep track of the number of live instances; decrement on deletion
+		/// &lt;/summary&gt;
+		<xsl:value-of select="concat( '~', @name)"/>() {
+		instances --;
+		}
+		#endif
+ 
 		<xsl:choose>
 			<xsl:when test="@natural-key">
 				/* natural primary key exists - not generating abstract key */
