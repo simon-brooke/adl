@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.17 $
-    $Date: 2009-01-28 12:10:02 $
+    $Revision: 1.18 $
+    $Date: 2009-01-28 18:03:43 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -366,7 +366,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -624,7 +624,7 @@
 
 			<xsl:choose>
 				<xsl:when test="@properties='listed'">
-					<xsl:comment>auxlist for with listed fields</xsl:comment>
+					<xsl:comment>auxlist for with listed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
 					<xsl:call-template name="internal-with-fields-list">
 						<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
 						<xsl:with-param name="fields" select="adl:field"/>
@@ -632,7 +632,7 @@
 					</xsl:call-template>
 				</xsl:when>
 				<xsl:otherwise>
-					<xsl:comment>auxlist with computed fields</xsl:comment>
+					<xsl:comment>auxlist with computed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
 					<xsl:call-template name="internal-with-properties-list">
 						<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
 						<xsl:with-param name="properties" select="//adl:entity[@name=$farent]//adl:property[(@distinct='user' or @distinct='all') and not( @type='link' or @type='list')]"/>
@@ -972,7 +972,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1010,7 +1010,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.17 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1093,21 +1093,15 @@
 		  <table>
 			  <tr>
 				  <xsl:for-each select="$fields">
-					  <xsl:choose>
-						  <xsl:when test="@type='list'">
-							  <!-- suppress layout of columns which are themselves lists -->
-						  </xsl:when>
-						  <xsl:otherwise>
-							  <th>
-								  <xsl:call-template name="showprompt">
-									  <xsl:with-param name="node" select="."/>
-									  <xsl:with-param name="fallback" select="@property"/>
-									  <xsl:with-param name="entity" select="$entity"/>
-									  <xsl:with-param name="locale" select="$locale"/>
-								  </xsl:call-template>
-							  </th>
-						  </xsl:otherwise>
-					  </xsl:choose>
+					  <xsl:variable name="field" select="."/>
+					  <th>
+						  <xsl:call-template name="showprompt">
+						  <xsl:with-param name="node" select="."/>
+						  <xsl:with-param name="fallback" select="@property"/>
+						  <xsl:with-param name="entity" select="$entity"/>
+						  <xsl:with-param name="locale" select="$locale"/>
+						  </xsl:call-template>
+					  </th>
 				  </xsl:for-each>
 				  <xsl:for-each select="$entity/adl:form">
 					  <th>-</th>
@@ -1116,51 +1110,48 @@
 			  <xsl:if test="$can-search = 'true'">
 				  <tr class="search">
 					  <xsl:for-each select="$fields">
-						  <xsl:choose>
-							  <xsl:when test="@type='list'">
-								  <!-- suppress layout of columns which are themselves lists -->
-							  </xsl:when>
-							  <xsl:otherwise>
-								  <td class="search">
-									  <xsl:variable name="pname" select="@property"/>
-									  <xsl:variable name="property" select="$entity//adl:property[@name=$pname]"/>
-									  <xsl:variable name="size">
+						  <xsl:variable name="field" select="."/>
+						  <td class="search">
+							  <xsl:variable name="size">
+								  <xsl:choose>
+									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='string'">
 										  <xsl:choose>
-											  <xsl:when test="$property/@type='string'">
-												  <xsl:choose>
-													  <xsl:when test="$property/@size &gt; 20">20</xsl:when>
-													  <xsl:otherwise>
-														  <xsl:value-of select="$property/@size"/>
-													  </xsl:otherwise>
-												  </xsl:choose>
-											  </xsl:when>
-											  <xsl:when test="$property/@type='integer'">8</xsl:when>
-											  <xsl:when test="$property/@type='real'">8</xsl:when>
-											  <xsl:when test="$property/@type='money'">8</xsl:when>
-											  <!-- xsl:when test="$property/@type='message'">20</xsl:when doesn't work yet -->
-											  <xsl:when test="$property/@type='text'">20</xsl:when>
-											  <!-- xsl:when test="$property/@type='enity'">20</xsl:when doesn't work yet -->
-											  <xsl:otherwise>0</xsl:otherwise>
+											  <xsl:when test="$entity//adl:property[@name=$field/@property]/@size &gt; 20">20</xsl:when>
+											  <xsl:otherwise>
+												  <xsl:value-of select="$entity//adl:property[@name=$field/@property]/@size"/>
+											  </xsl:otherwise>
 										  </xsl:choose>
-									  </xsl:variable>
-									  <xsl:if test="$size != 0">
-										  <input>
-											  <xsl:attribute name="name">
-												  <xsl:value-of select="concat('search_',$property/@name)"/>
-											  </xsl:attribute>
-											  <xsl:attribute name="size">
-												  <xsl:value-of select="$size"/>
-											  </xsl:attribute>
-											  <xsl:attribute name="value">
-												  <xsl:value-of select="concat( '$!search_', $property/@name)"/>
-											  </xsl:attribute>
-										  </input>
-									  </xsl:if>
-								  </td>
-							  </xsl:otherwise>
-						  </xsl:choose>
+									  </xsl:when>
+									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='integer'">8</xsl:when>
+									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='real'">8</xsl:when>
+									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='money'">8</xsl:when>
+									  <!-- xsl:when test="$entity//adl:property[@name=$field/@property]/@type='message'">20</xsl:when doesn't work yet -->
+									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='text'">20</xsl:when>
+									  <!-- xsl:when test="$entity//adl:property[@name=$field/@property]/@type='enity'">20</xsl:when doesn't work yet -->
+									  <xsl:otherwise>0</xsl:otherwise>
+								  </xsl:choose>
+							  </xsl:variable>
+							  <xsl:if test="$size != 0">
+								  <input>
+									  <xsl:attribute name="name">
+										  <xsl:value-of select="concat('search_',$entity//adl:property[@name=$field/@property]/@name)"/>
+									  </xsl:attribute>
+									  <xsl:attribute name="size">
+										  <xsl:value-of select="$size"/>
+									  </xsl:attribute>
+									  <xsl:attribute name="value">
+										  <xsl:value-of select="concat( '$!search_', $entity//adl:property[@name=$field/@property]/@name)"/>
+									  </xsl:attribute>
+								  </input>
+							  </xsl:if>
+						  </td>
 					  </xsl:for-each>
 				  </tr>
+			  </xsl:if>
+			  <xsl:if test="not( $entity/@name)">
+				  <xsl:message terminate="yes">
+					  Unknown entity whilst trying to generate list
+				  </xsl:message>
 			  </xsl:if>
 			  #foreach( <xsl:value-of select="concat( '$', $entity/@name)"/> in <xsl:value-of select="concat('$', $instance-list)"/>)
 			  #if ( $velocityCount % 2 == 0)
@@ -1170,40 +1161,32 @@
 			  #end
 			  <tr class="$oddity">
 				  <xsl:for-each select="$fields">
-					  <xsl:variable name="pname" select="@property"/>
-					  <xsl:variable name="property" select="$entity//adl:property[@name=$pname]"/>
-					  <xsl:choose>
-						  <xsl:when test="@type='list'">
-							  <!-- suppress layout of columns which are themselves lists -->
-						  </xsl:when>
-						  <xsl:otherwise>
-							  <td>
-								  <xsl:choose>
-									  <xsl:when test="not( $property/@name)">
-										  <!-- shouldn't happen. There is definitely a bug here, because it does happen - but it shouldn't -->
-									  </xsl:when>
-									  <xsl:when test="$property/@type = 'date'">
-										  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-										  <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
-										  #end
-									  </xsl:when>
-									  <xsl:when test="$property/@type='message'">
-										  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-										  $t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-										  #end
-									  </xsl:when>
-									  <xsl:when test="$property/@type='entity'">
-										  #if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-										  <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
-										  #end
-									  </xsl:when>
-									  <xsl:otherwise>
-										  <xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
-									  </xsl:otherwise>
-								  </xsl:choose>
-							  </td>
-						  </xsl:otherwise>
-					  </xsl:choose>
+					  <xsl:variable name="field" select="."/>
+					  <td>
+						  <xsl:choose>
+							  <xsl:when test="not( $entity//adl:property[@name=$field/@property]/@name)">
+								  <!-- shouldn't happen. There is definitely a bug here, because it does happen - but it shouldn't -->
+							  </xsl:when>
+							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type = 'date'">
+								  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
+								  <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>.ToString( 'd')
+								  #end
+							  </xsl:when>
+							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='message'">
+								  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
+								  $t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
+								  #end
+							  </xsl:when>
+							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='entity'">
+								  #if( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
+								  <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name, '.UserIdentifier')"/>
+								  #end
+							  </xsl:when>
+							  <xsl:otherwise>
+								  <xsl:value-of select="concat( '$!', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>
+							  </xsl:otherwise>
+						  </xsl:choose>
+					  </td>
 				  </xsl:for-each>
 				  <xsl:variable name="keys">
 					  <!-- assemble keys in a Velocity-friendly format, then splice it into
@@ -1231,7 +1214,7 @@
 					  <td>
 						  <a>
 							  <xsl:attribute name="href">
-								  <xsl:value-of select="concat( @name, '.rails', $keys)"/>
+								  <xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
 							  </xsl:attribute>
 							  <xsl:value-of select="@name"/>!
 						  </a>
