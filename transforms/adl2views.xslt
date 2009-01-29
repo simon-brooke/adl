@@ -13,8 +13,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.18 $
-    $Date: 2009-01-28 18:03:43 $
+    $Revision: 1.19 $
+    $Date: 2009-01-29 16:39:32 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -366,7 +366,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -495,7 +495,9 @@
 						<xsl:otherwise>
 							<!-- create a hidden widget for the natural primary key -->
 							#if ( $instance)
+							#if ( ! ( $instance.IsNew))
 							${FormHelper.HiddenField( "instance.<xsl:value-of select="$keyname"/>")}
+							#end
 							#end
 						</xsl:otherwise>
 					</xsl:choose>
@@ -607,7 +609,7 @@
 					</xsl:attribute>
 					<a>
 						<xsl:attribute name="href">
-							<xsl:value-of select="concat( $action, '.rails?', $farkey, '=$instance.', $nearkey)"/>
+							<xsl:value-of select="concat( $action, 'With', $farkey, '.rails?', $farkey, '=$instance.', $nearkey)"/>
 						</xsl:attribute>
 						<xsl:call-template name="i18n-add-a-new">
 							<xsl:with-param name="entity-name" select="$farent"/>
@@ -972,7 +974,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1010,7 +1012,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.18 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1353,7 +1355,7 @@
 					<td>
 						<a>
 							<xsl:attribute name="href">
-								<xsl:value-of select="concat( @name, '.rails', $keys)"/>
+								<xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
 							</xsl:attribute>
 							<xsl:value-of select="@name"/>!
 						</a>
