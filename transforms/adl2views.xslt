@@ -3,7 +3,9 @@
 	xmlns="http://libs.cygnets.co.uk/adl/1.1/"
 	xmlns:adl="http://libs.cygnets.co.uk/adl/1.1/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+	xmlns:msxsl="urn:schemas-microsoft-com:xslt"
+				xmlns:exsl="urn:schemas-microsoft-com:xslt"
+                extension-element-prefixes="exsl">
 	<!--
     Application Description Language framework
     adl2views.xsl
@@ -13,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.19 $
-    $Date: 2009-01-29 16:39:32 $
+    $Revision: 1.20 $
+    $Date: 2009-01-30 15:08:26 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +126,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +163,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +246,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -366,7 +368,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -819,19 +821,34 @@
 			if they are not a member of a group which has write access, the widget should be 
 			disabled. I don't have time to implement this now as it is not trivial, but it is 
 			important! -->
-		<xsl:message terminate="no">
+		<xsl:comment>
 			matched adl:property; groupname is '<xsl:value-of select="$permissions-group"/>'
-		</xsl:message>
-		<xsl:variable name="permission">
-			<xsl:call-template name="property-permission">
-				<xsl:with-param name="property" select="."/>
-				<xsl:with-param name="groupname" select="$permissions-group"/>
+		</xsl:comment>
+		<xsl:variable name="property" select="."/>
+			<xsl:variable name="permission">
+				<xsl:call-template name="property-permission">
+					<xsl:with-param name="property" select="$property"/>
+					<xsl:with-param name="groupname" select="@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:variable name="editgroups">
+				<xsl:call-template name="collect-edit-groups">
+					<xsl:with-param name="property" select="$property"/>
+				</xsl:call-template>
+			</xsl:variable>
+		<xsl:variable name="insertgroups">
+			<xsl:call-template name="collect-insert-groups">
+				<xsl:with-param name="property" select="$property"/>
 			</xsl:call-template>
 		</xsl:variable>
-		<xsl:message terminate="no">
-			matched adl:property; parmission = '<xsl:value-of select="$permission"/>'
-		</xsl:message>
-		<xsl:if test="$permission != 'none'">
+		<xsl:variable name="readgroups">
+			<xsl:call-template name="collect-read-groups">
+				<xsl:with-param name="property" select="$property"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:comment>
+				matched adl:property; group = '<xsl:value-of select="@name"/>' permission = '<xsl:value-of select="$permission"/>'
+			</xsl:comment>
 			<tr>
 				<xsl:attribute name="class">
 					<xsl:value-of select="$oddness"/>
@@ -929,29 +946,34 @@
 							<xsl:otherwise>1</xsl:otherwise>
 						</xsl:choose>
 					</xsl:variable>
-					<xsl:if test="$permission='insert' or $permission='noedit'">
-						#set ( $maybe-edit="editable")
-						#if ( $instance)
-						#if ( <xsl:value-of select="concat( '$instance.', @name)"/>)
-						<xsl:choose>
-							<xsl:when test="$permission='insert'">
-								#set ( $maybe-edit="none")
-							</xsl:when>
-							<xsl:when test="$permission='noedit'">
-								#set ( $maybe-edit="noneditable")
-							</xsl:when>
-						</xsl:choose>
-						#set( $maybe-edit="editable")
-						#end
-						#end
-					</xsl:if>
+				<xsl:if test="exsl:node-set( $editgroups)/*">
+					<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+					cause the Velocity parser to break! -->
+					#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Editable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
+					#else
+				</xsl:if>
+				<xsl:if test="exsl:node-set( $insertgroups)/*">
+					#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					${<xsl:value-of select="concat( '$', ancestor::adl:entity/@name, 'FieldHelper')"/>.Immutable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
+					#else
+				</xsl:if>
+				<xsl:if test="exsl:node-set( $readgroups)/*">
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.DisplayAndHidden( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
+					#end
+				</xsl:if>	
+				<xsl:if test="exsl:node-set( $insertgroups)/*">
+					#end
+				</xsl:if>
+				<xsl:if test="exsl:node-set( $editgroups)/*">
+					#end
+				</xsl:if>
 				</td>
 				<td class="help">
 					<xsl:apply-templates select="adl:help[@locale = $locale]"/>
 				</td>
 			</tr>
-		</xsl:if>
 	</xsl:template>
 
 
@@ -974,7 +996,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1012,7 +1034,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.19 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1524,6 +1546,10 @@
 		</xsl:choose>
 	</xsl:template>
 
+	<xsl:template match="groups">
+		<xsl:apply-templates/>
+	</xsl:template>
+
 	<!-- find, as a string, the permission which applies to this property in the context of the named group.
       NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
       property: a property element
@@ -1551,8 +1577,75 @@
         <xsl:otherwise>none</xsl:otherwise>
       </xsl:choose>
     </xsl:template>
-    
-    <!-- find, as a string, the permission which applies to this field in the context of the named group
+
+	<!-- collect all groups which can edit the specified property -->
+	<xsl:template name="collect-edit-groups">
+		<xsl:param name="property"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="perm">
+				<xsl:call-template name="property-permission">
+					<xsl:with-param name="property" select="$property"/>
+					<xsl:with-param name="groupname" select="@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
+	<!-- those groups which can insert but not edit -->
+	<xsl:template name="collect-insert-groups">
+		<xsl:param name="property"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="perm">
+				<xsl:call-template name="property-permission">
+					<xsl:with-param name="property" select="$property"/>
+					<xsl:with-param name="groupname" select="@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='insert'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='noedit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
+	<!-- those groups which can read but not insert -->
+	<xsl:template name="collect-read-groups">
+		<xsl:param name="property"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="perm">
+				<xsl:call-template name="property-permission">
+					<xsl:with-param name="property" select="$property"/>
+					<xsl:with-param name="groupname" select="@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='noedit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='read'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
+
+	<!-- find, as a string, the permission which applies to this field in the context of the named group
       field: a field element
       groupname: a string, being the name of a group
     -->
