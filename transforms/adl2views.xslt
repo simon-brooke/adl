@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.21 $
-    $Date: 2009-02-02 10:49:13 $
+    $Revision: 1.22 $
+    $Date: 2009-02-02 18:13:39 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -126,7 +126,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -163,7 +163,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -246,7 +246,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -368,7 +368,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -963,7 +963,7 @@
 					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.DisplayAndHidden( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
 					#else
 				</xsl:if>
-					[You are not authorised to view this value]
+					[Not authorised]
 				<xsl:if test="exsl:node-set( $readgroups)/*">
 					#end
 				</xsl:if>
@@ -1000,7 +1000,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1038,7 +1038,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1190,31 +1190,10 @@
 			  <tr class="$oddity">
 				  <xsl:for-each select="$fields">
 					  <xsl:variable name="field" select="."/>
-					  <td>
-						  <xsl:choose>
-							  <xsl:when test="not( $entity//adl:property[@name=$field/@property]/@name)">
-								  <!-- shouldn't happen. There is definitely a bug here, because it does happen - but it shouldn't -->
-							  </xsl:when>
-							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type = 'date'">
-								  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
-								  <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>.ToString( 'd')
-								  #end
-							  </xsl:when>
-							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='message'">
-								  #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
-								  $t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
-								  #end
-							  </xsl:when>
-							  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='entity'">
-								  #if( <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>)
-								  <xsl:value-of select="concat( '$', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name, '.UserIdentifier')"/>
-								  #end
-							  </xsl:when>
-							  <xsl:otherwise>
-								  <xsl:value-of select="concat( '$!', $entity/@name, '.', $entity//adl:property[@name=$field/@property]/@name)"/>
-							  </xsl:otherwise>
-						  </xsl:choose>
-					  </td>
+					  <xsl:call-template name="list-field">
+						  <xsl:with-param name="entity" select="$entity"/>
+						  <xsl:with-param name="property" select="."/>
+					  </xsl:call-template>
 				  </xsl:for-each>
 				  <xsl:variable name="keys">
 					  <!-- assemble keys in a Velocity-friendly format, then splice it into
@@ -1332,28 +1311,10 @@
 			#end
 			<tr class="$oddity">
 				<xsl:for-each select="$properties">
-					<td>
-						<xsl:choose>
-							<xsl:when test="@type = 'date'">
-								#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', @name)"/>)
-								<xsl:value-of select="concat( '$', $entity/@name, '.', @name)"/>.ToString( 'd')
-								#end
-							</xsl:when>
-							<xsl:when test="@type='message'">
-								#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', @name)"/>)
-								$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', @name)"/>)
-								#end
-							</xsl:when>
-							<xsl:when test="@type='entity'">
-								#if( <xsl:value-of select="concat( '$', $entity/@name, '.', @name)"/>)
-								<xsl:value-of select="concat( '$', $entity/@name, '.', @name, '.UserIdentifier')"/>
-								#end
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:value-of select="concat( '$!', $entity/@name, '.', @name)"/>
-							</xsl:otherwise>
-						</xsl:choose>
-					</td>
+					<xsl:call-template name="list-field">
+						<xsl:with-param name="entity" select="$entity"/>
+						<xsl:with-param name="property" select="."/>
+					</xsl:call-template>
 				</xsl:for-each>
 				<xsl:variable name="keys">
 					<!-- assemble keys in a Velocity-friendly format, then splice it into
@@ -1392,6 +1353,48 @@
 		</table>
 	</xsl:template>
 
+	<!-- output a list field -->
+	<xsl:template name="list-field">
+		<xsl:param name="entity"/>
+		<xsl:param name="property"/>
+		<xsl:variable name="readgroups">
+			<xsl:call-template name="collect-read-groups">
+				<xsl:with-param name="property" select="$property"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<td>
+			<xsl:if test="exsl:node-set( $readgroups)/*">
+				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+				${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Display( "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "")}
+				#else
+			</xsl:if>
+			[Not authorised]
+			<xsl:if test="exsl:node-set( $readgroups)/*">
+				#end
+			</xsl:if>
+
+			<!-- xsl:choose>
+				<xsl:when test="$property/@type = 'date'">
+					#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+					<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
+					#end
+				</xsl:when>
+				<xsl:when test="$property/@type='message'">
+					#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+					$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+					#end
+				</xsl:when>
+				<xsl:when test="$property/@type='entity'">
+					#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+					<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
+					#end
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
+				</xsl:otherwise>
+			</xsl:choose -->
+		</td>
+	</xsl:template>
 
 	<!-- overall page layout -->
 
@@ -1604,7 +1607,7 @@
 		</xsl:for-each>
 	</xsl:template>
 
-	<!-- those groups which can insert but not edit -->
+	<!-- those groups which can insert -->
 	<xsl:template name="collect-insert-groups">
 		<xsl:param name="property"/>
 		<xsl:for-each select="//adl:group">
@@ -1615,6 +1618,12 @@
 				</xsl:call-template>
 			</xsl:variable>
 			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
 				<xsl:when test="$perm='insert'">
 					<xsl:copy-of select="."/>
 				</xsl:when>
@@ -1626,7 +1635,7 @@
 		</xsl:for-each>
 	</xsl:template>
 
-	<!-- those groups which can read but not insert -->
+	<!-- those groups which can read -->
 	<xsl:template name="collect-read-groups">
 		<xsl:param name="property"/>
 		<xsl:for-each select="//adl:group">
@@ -1637,6 +1646,15 @@
 				</xsl:call-template>
 			</xsl:variable>
 			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='insert'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
 				<xsl:when test="$perm='noedit'">
 					<xsl:copy-of select="."/>
 				</xsl:when>

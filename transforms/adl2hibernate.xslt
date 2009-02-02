@@ -12,7 +12,7 @@
       Transform ADL to Hibernate
       
       $Author: sb $
-      $Revision: 1.7 $
+      $Revision: 1.8 $
   -->
 
 	<xsl:param name="namespace"/>
@@ -138,7 +138,7 @@
 	*
 	*	  <xsl:value-of select="@revision"/>
     *
-    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.7 $', 12)"/>
+    *	  Generated using adl2hibernate.xslt revision <xsl:value-of select="substring('$Revision: 1.8 $', 12)"/>
     *
     ***************************************************************************
 			</xsl:comment>
@@ -146,6 +146,32 @@
 			<xsl:apply-templates select="adl:entity"/>
 		</hibernate-mapping>
 
+	</xsl:template>
+
+	<xsl:template match="adl:group">
+		<xsl:comment>
+			Authentication check table for security group <xsl:value-of select="@name"/>
+		</xsl:comment>
+		<xsl:apply-templates select="adl:documentation"/>
+		<xsl:variable name="prefix">
+			<xsl:choose>
+				<xsl:when test="string-length( $database) &gt; 0">
+					<xsl:value-of select="concat( $database, '.dbo.')"/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:variable>
+		<class>
+			<xsl:attribute name="name">
+				<xsl:value-of select="concat( 'AuthCheck', @name)"/>
+			</xsl:attribute>
+			<xsl:attribute name="table">
+				<xsl:value-of select="concat( $prefix, '[', @table, ']')"/>
+			</xsl:attribute>
+			<id name="Check" column="Check" type="int">
+				<generator class="native"/>	
+			</id>
+		</class>
 	</xsl:template>
 
 	<xsl:template match="adl:entity[@foreign='true']"/>
