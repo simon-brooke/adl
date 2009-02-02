@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.20 $
-    $Date: 2009-01-30 15:08:26 $
+    $Revision: 1.21 $
+    $Date: 2009-02-02 10:49:13 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -126,7 +126,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -163,7 +163,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -246,7 +246,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -368,7 +368,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
@@ -949,20 +949,24 @@
 				<xsl:if test="exsl:node-set( $editgroups)/*">
 					<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
 					cause the Velocity parser to break! -->
-					#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Editable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
 					#else
 				</xsl:if>
 				<xsl:if test="exsl:node-set( $insertgroups)/*">
-					#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 					${<xsl:value-of select="concat( '$', ancestor::adl:entity/@name, 'FieldHelper')"/>.Immutable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
 					#else
 				</xsl:if>
 				<xsl:if test="exsl:node-set( $readgroups)/*">
-					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${FormHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.DisplayAndHidden( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{rendermode='<xsl:value-of select="normalize-space($render-mode)"/>',class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
+					#else
+				</xsl:if>
+					[You are not authorised to view this value]
+				<xsl:if test="exsl:node-set( $readgroups)/*">
 					#end
-				</xsl:if>	
+				</xsl:if>
 				<xsl:if test="exsl:node-set( $insertgroups)/*">
 					#end
 				</xsl:if>
@@ -996,7 +1000,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1034,7 +1038,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.20 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.21 $', 10)"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>

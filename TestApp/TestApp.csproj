@@ -69,7 +69,6 @@
     <Compile Include="Auto\address.auto.cs" />
     <Compile Include="Auto\person.auto.cs" />
     <Compile Include="Default.aspx.cs">
-      <SubType>ASPXCodeBehind</SubType>
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Default.aspx.designer.cs">

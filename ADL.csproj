@@ -43,20 +43,19 @@
   <ItemGroup>
     <Content Include="transforms\adl2canonical.xslt" />
     <Content Include="transforms\adl2controllerclasses.xslt" />
-    <Content Include="transforms\adl2entityclass.xslt" />
+    <Content Include="transforms\adl2documentation.xslt" />
+    <Content Include="transforms\adl2entityclasses.xslt" />
     <Content Include="transforms\adl2hibernate.xslt" />
     <Content Include="transforms\adl2mssql.xslt" />
     <Content Include="transforms\adl2psql.xslt" />
     <Content Include="transforms\adl2views.xslt" />
     <Content Include="transforms\base-type-include.xslt" />
     <Content Include="transforms\csharp-type-include.xslt" />
-    <Content Include="transforms\datadescriber.xslt" />
     <Content Include="transforms\i18n-en-GB-include.xslt" />
     <Content Include="transforms\localise-transform.xslt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="schemas\adl-0.dtd" />
-    <None Include="schemas\adl-0.xsd" />
+    <None Include="schemas\adl-1.1.dtd" />
     <None Include="test.build" />
   </ItemGroup>
 </Project>
