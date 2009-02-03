@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.22 $
-    $Date: 2009-02-02 18:13:39 $
+    $Revision: 1.23 $
+    $Date: 2009-02-03 13:05:08 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -49,14 +49,6 @@
 
 	<!-- the name and version of the product being built -->
 	<xsl:param name="product-version" select="'Application Description Language Framework'"/>
-
-
-	<!-- the current state of play is that we can only generate views with permissions for one group. 
-		TODO: this isn't how it's supposed to be. It's supposed to be that at service time the system 
-		checks which groups the current user is member of, and renders each widget with the most relaxed 
-		permissions applicable to that user - but we don't yet have the parts in place to do that.
-		This variable selects which group's permissions should be used when generating widgets -->
-	<xsl:param name="permissions-group" select="'public'"/>
 
 	<!-- bug 1800 : the name of the Velocity layout to use. If you are to 
 		be able to usefully define content in ADL, then the default ADL layout 
@@ -126,7 +118,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -163,7 +155,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -246,7 +238,16 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
+			Generation parameters were:
+			locale: <xsl:value-of select="$locale"/>
+			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
+			show-errors: <xsl:value-of select="$show-errors"/>
+			show-messages: <xsl:value-of select="$show-messages"/>
+			max-widget-width: <xsl:value-of select="$max-widget-width"/>
+			product-version: <xsl:value-of select="$product-version"/>
+			layout-name: <xsl:value-of select="$layout-name"/>
+			area-name: <xsl:value-of select="$area-name"/>
 
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
@@ -368,8 +369,16 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
-
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
+					Generation parameters were:
+					locale: <xsl:value-of select="$locale"/>
+					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
+					show-errors: <xsl:value-of select="$show-errors"/>
+					show-messages: <xsl:value-of select="$show-messages"/>
+					max-widget-width: <xsl:value-of select="$max-widget-width"/>
+					product-version: <xsl:value-of select="$product-version"/>
+					layout-name: <xsl:value-of select="$layout-name"/>
+					area-name: <xsl:value-of select="$area-name"/>
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
@@ -821,9 +830,6 @@
 			if they are not a member of a group which has write access, the widget should be 
 			disabled. I don't have time to implement this now as it is not trivial, but it is 
 			important! -->
-		<xsl:comment>
-			matched adl:property; groupname is '<xsl:value-of select="$permissions-group"/>'
-		</xsl:comment>
 		<xsl:variable name="property" select="."/>
 			<xsl:variable name="permission">
 				<xsl:call-template name="property-permission">
@@ -832,17 +838,17 @@
 				</xsl:call-template>
 			</xsl:variable>
 			<xsl:variable name="editgroups">
-				<xsl:call-template name="collect-edit-groups">
+				<xsl:call-template name="property-edit-groups">
 					<xsl:with-param name="property" select="$property"/>
 				</xsl:call-template>
 			</xsl:variable>
 		<xsl:variable name="insertgroups">
-			<xsl:call-template name="collect-insert-groups">
+			<xsl:call-template name="property-insert-groups">
 				<xsl:with-param name="property" select="$property"/>
 			</xsl:call-template>
 		</xsl:variable>
 		<xsl:variable name="readgroups">
-			<xsl:call-template name="collect-read-groups">
+			<xsl:call-template name="property-read-groups">
 				<xsl:with-param name="property" select="$property"/>
 			</xsl:call-template>
 		</xsl:variable>
@@ -1000,7 +1006,16 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
+			Generation parameters were:
+			locale: <xsl:value-of select="$locale"/>
+			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
+			show-errors: <xsl:value-of select="$show-errors"/>
+			show-messages: <xsl:value-of select="$show-messages"/>
+			max-widget-width: <xsl:value-of select="$max-widget-width"/>
+			product-version: <xsl:value-of select="$product-version"/>
+			layout-name: <xsl:value-of select="$layout-name"/>
+			area-name: <xsl:value-of select="$area-name"/>
 		</xsl:comment>
 
 		#capturefor( title)
@@ -1038,7 +1053,16 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.22 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.23 $', 10)"/>
+					  Generation parameters were:
+					  locale: <xsl:value-of select="$locale"/>
+					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
+					  show-errors: <xsl:value-of select="$show-errors"/>
+					  show-messages: <xsl:value-of select="$show-messages"/>
+					  max-widget-width: <xsl:value-of select="$max-widget-width"/>
+					  product-version: <xsl:value-of select="$product-version"/>
+					  layout-name: <xsl:value-of select="$layout-name"/>
+					  area-name: <xsl:value-of select="$area-name"/>
 				  </xsl:comment>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
@@ -1192,7 +1216,8 @@
 					  <xsl:variable name="field" select="."/>
 					  <xsl:call-template name="list-field">
 						  <xsl:with-param name="entity" select="$entity"/>
-						  <xsl:with-param name="property" select="."/>
+						  <xsl:with-param name="property" select="$entity//adl:property[@name=$field/@property]"/>
+						  <xsl:with-param name="objectvar" select="$entity/@name"/>
 					  </xsl:call-template>
 				  </xsl:for-each>
 				  <xsl:variable name="keys">
@@ -1314,6 +1339,7 @@
 					<xsl:call-template name="list-field">
 						<xsl:with-param name="entity" select="$entity"/>
 						<xsl:with-param name="property" select="."/>
+						<xsl:with-param name="objectvar" select="$entity/@name"/>
 					</xsl:call-template>
 				</xsl:for-each>
 				<xsl:variable name="keys">
@@ -1357,42 +1383,41 @@
 	<xsl:template name="list-field">
 		<xsl:param name="entity"/>
 		<xsl:param name="property"/>
+		<xsl:param name="objectvar" select="instance"/>
 		<xsl:variable name="readgroups">
-			<xsl:call-template name="collect-read-groups">
+			<xsl:call-template name="property-read-groups">
 				<xsl:with-param name="property" select="$property"/>
 			</xsl:call-template>
 		</xsl:variable>
 		<td>
 			<xsl:if test="exsl:node-set( $readgroups)/*">
 				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
-				${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Display( "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "")}
+				<xsl:choose>
+					<xsl:when test="$property/@type = 'date'">
+						#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+						<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
+						#end
+					</xsl:when>
+					<xsl:when test="$property/@type='message'">
+						#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+						$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+						#end
+					</xsl:when>
+					<xsl:when test="$property/@type='entity'">
+						#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+						<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
+						#end
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
+					</xsl:otherwise>
+				</xsl:choose>
 				#else
 			</xsl:if>
 			[Not authorised]
 			<xsl:if test="exsl:node-set( $readgroups)/*">
 				#end
 			</xsl:if>
-
-			<!-- xsl:choose>
-				<xsl:when test="$property/@type = 'date'">
-					#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-					<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
-					#end
-				</xsl:when>
-				<xsl:when test="$property/@type='message'">
-					#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-					$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-					#end
-				</xsl:when>
-				<xsl:when test="$property/@type='entity'">
-					#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-					<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
-					#end
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
-				</xsl:otherwise>
-			</xsl:choose -->
 		</td>
 	</xsl:template>
 
@@ -1416,51 +1441,6 @@
 		${ScriptsHelper.InstallScript( "Epoch")}
 		${ScriptsHelper.InstallScript( "Panes")}
 	</xsl:template>
-
-	<xsl:template match="adl:navigation">
-		<xsl:variable name="pagename" select="@name"/>
-		<ul class="generatednav">
-			<xsl:choose>
-				<xsl:when test="@include='list'">
-					<xsl:for-each select="//adl:entity[adl:list[@name=$pagename]]">
-						<li>
-							<a>
-								<xsl:attribute name="href">
-									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-								</xsl:attribute>
-								<xsl:value-of select="@name"/>
-							</a>
-						</li>
-					</xsl:for-each>
-				</xsl:when>
-				<xsl:when test="@include='form'">
-					<xsl:for-each select="//adl:entity[adl:form[@name=$pagename]]">
-						<li>
-							<a>
-								<xsl:attribute name="href">
-									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-								</xsl:attribute>
-								<xsl:value-of select="@name"/>
-							</a>
-						</li>
-					</xsl:for-each>
-				</xsl:when>
-				<xsl:when test="@include='page'">
-					<xsl:for-each select="//adl:entity[adl:page[@name=$pagename]]">
-						<li>
-							<a>
-								<xsl:attribute name="href">
-									<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-								</xsl:attribute>
-								<xsl:value-of select="@name"/>
-							</a>
-						</li>
-					</xsl:for-each>
-				</xsl:when>
-			</xsl:choose>
-		</ul>
-	</xsl:template>
-
 
 	<xsl:template name="head">
     <xsl:choose>
@@ -1490,17 +1470,24 @@
         </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
-		<xsl:if test="$generate-site-navigation = 'true'">
+	<xsl:if test="$generate-site-navigation = 'true'">
       <ul class="generatednav">
         <xsl:for-each select="//adl:entity[adl:list[@name='list']]">
-          <li>
-            <a>
-              <xsl:attribute name="href">
-                <xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
-              </xsl:attribute>
-              <xsl:value-of select="@name"/>
-            </a>
-          </li>
+			<xsl:variable name="readgroups">
+				<xsl:call-template name="page-read-groups">
+					<xsl:with-param name="page" select="."/>
+				</xsl:call-template>
+			</xsl:variable>
+			#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+			<li class="navigation">
+				<a>
+					<xsl:attribute name="href">
+						<xsl:value-of select="concat( '$siteRoot', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+					</xsl:attribute>
+					<xsl:value-of select="@name"/>
+				</a>
+			</li>
+			#end
         </xsl:for-each>
       </ul>
     </xsl:if>
@@ -1519,6 +1506,9 @@
         </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
+	  <p class="product-version">
+		  <xsl:value-of select="$product-version"/>
+	  </p>
   </xsl:template>
 
 	<!-- if this node (default to current node) has a child of type prompt for the current locale, 
@@ -1557,36 +1547,9 @@
 		<xsl:apply-templates/>
 	</xsl:template>
 
-	<!-- find, as a string, the permission which applies to this property in the context of the named group.
-      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
-      property: a property element
-      groupname: a string, being the name of a group
-    -->
-    <xsl:template name="property-permission">
-      <xsl:param name="property"/>
-      <xsl:param name="groupname" select="'public'"/>
-		<xsl:message terminate="no">
-			property-permission: property is '<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, ':', $property/@name)"/>'; groupname is '<xsl:value-of select="$groupname"/>'
-		</xsl:message>
-      <xsl:choose>
-        <xsl:when test="$property/adl:permission[@group=$groupname]">
-          <xsl:value-of select="$property/adl:permission[@group=$groupname]/@permission"/>
-        </xsl:when>
-        <xsl:when test="$property/ancestor::adl:entity/adl:permission[@group=$groupname]">
-          <xsl:value-of select="$property/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
-        </xsl:when>
-        <xsl:when test="//adl:group[@name=$groupname]/@parent">
-          <xsl:call-template name="property-permission">
-            <xsl:with-param name="property" select="$property"/>
-            <xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>none</xsl:otherwise>
-      </xsl:choose>
-    </xsl:template>
 
 	<!-- collect all groups which can edit the specified property -->
-	<xsl:template name="collect-edit-groups">
+	<xsl:template name="property-edit-groups">
 		<xsl:param name="property"/>
 		<xsl:for-each select="//adl:group">
 			<xsl:variable name="perm">
@@ -1608,7 +1571,7 @@
 	</xsl:template>
 
 	<!-- those groups which can insert -->
-	<xsl:template name="collect-insert-groups">
+	<xsl:template name="property-insert-groups">
 		<xsl:param name="property"/>
 		<xsl:for-each select="//adl:group">
 			<xsl:variable name="perm">
@@ -1636,7 +1599,7 @@
 	</xsl:template>
 
 	<!-- those groups which can read -->
-	<xsl:template name="collect-read-groups">
+	<xsl:template name="property-read-groups">
 		<xsl:param name="property"/>
 		<xsl:for-each select="//adl:group">
 			<xsl:variable name="perm">
@@ -1666,6 +1629,86 @@
 		</xsl:for-each>
 	</xsl:template>
 
+	<!-- collect the groups which can read a page, form or list -->
+	<xsl:template name="page-read-groups">
+		<xsl:param name="page"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="perm">
+				<xsl:call-template name="page-permission">
+					<xsl:with-param name="page" select="$page"/>
+					<xsl:with-param name="groupname" select="@name"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='insert'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='noedit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='read'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
+	<!-- find, as a string, the permission which applies to this property in the context of the named group.
+      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
+      page: a page, list or form element
+      groupname: a string, being the name of a group
+    -->
+	<xsl:template name="page-permission">
+		<xsl:param name="page"/>
+		<xsl:param name="groupname" select="'public'"/>
+		<xsl:choose>
+			<xsl:when test="$page/adl:permission[@group=$groupname]">
+				<xsl:value-of select="$page/adl:permission[@group=$groupname]/@permission"/>
+			</xsl:when>
+			<xsl:when test="$page/ancestor::adl:entity/adl:permission[@group=$groupname]">
+				<xsl:value-of select="$page/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
+			</xsl:when>
+			<xsl:when test="//adl:group[@name=$groupname]/@parent">
+				<xsl:call-template name="page-permission">
+					<xsl:with-param name="page" select="$page"/>
+					<xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>none</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<!-- find, as a string, the permission which applies to this property in the context of the named group.
+      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
+      property: a property element
+      groupname: a string, being the name of a group
+    -->
+	<xsl:template name="property-permission">
+		<xsl:param name="property"/>
+		<xsl:param name="groupname" select="'public'"/>
+		<xsl:choose>
+			<xsl:when test="$property/adl:permission[@group=$groupname]">
+				<xsl:value-of select="$property/adl:permission[@group=$groupname]/@permission"/>
+			</xsl:when>
+			<xsl:when test="$property/ancestor::adl:entity/adl:permission[@group=$groupname]">
+				<xsl:value-of select="$property/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
+			</xsl:when>
+			<xsl:when test="//adl:group[@name=$groupname]/@parent">
+				<xsl:call-template name="property-permission">
+					<xsl:with-param name="property" select="$property"/>
+					<xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
+				</xsl:call-template>
+			</xsl:when>
+			<xsl:otherwise>none</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
 
 	<!-- find, as a string, the permission which applies to this field in the context of the named group
       field: a field element
