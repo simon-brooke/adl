@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.2 $
+        $Revision: 1.3 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -291,25 +291,26 @@ that we can allow HTML block level entities within content elements -->
 					    unique; 
 					    distinct='all' implies that the values are formally unique 
 					    /and/ are user friendly (NOTE: not implemented).
-	entity:			if type='entity', the name of the entity this property is 
+	entity:	if type='entity', the name of the entity this property is 
 					    a foreign key link to.
               if type='list', the name of the entity that has a foreign 
               key link to this entity
-  farkey:     if type='list', the name of farside key in the listed 
+	farkey:   if type='list', the name of farside key in the listed 
               entity; if type='entity' and the farside field to join to 
               is not the farside primary key, then the name of that
               farside field
 	required:		whether this propery is required (i.e. 'not null').
+	immutable:		if true, once a value has been set it cannot be changed.
 	size: 			fieldwidth of the property if specified.
-  concrete:   if set to 'false', this property is not stored in the 
+	concrete: if set to 'false', this property is not stored in the 
               database but must be computed (manually written code must
               be provided to support this)
-  cascade:    what action(s) on the parent entity should be cascaded to
+	cascade:  what action(s) on the parent entity should be cascaded to
               entitie(s) linked on this property. Valid only if type='entity',
               type='link' or type='list'.
-  column:     name of the column in a SQL database table in which this property
+	column:   name of the column in a SQL database table in which this property
               is stored. TODO: Think about this.
-  unsaved-value:
+	unsaved-value:
               of a property whose persistent value is set on first being 
               committed to persistent store, the value which it holds before
               it has been committed
@@ -318,17 +319,18 @@ that we can allow HTML block level entities within content elements -->
 
 <!ATTLIST property 
 	name 		    CDATA 					#REQUIRED
-	type 		    (%AllDataTypes;)  #REQUIRED
-	default 	  CDATA 					#IMPLIED
-	typedef 	CDATA 					#IMPLIED
-	distinct 	  (none|all|user|system) 	#IMPLIED
-	entity 		  CDATA 					#IMPLIED
-  farkey      CDATA           #IMPLIED
- 	required 	  %Boolean; 			#IMPLIED
+	type 		    (%AllDataTypes;)		#REQUIRED
+	default 		CDATA 					#IMPLIED
+	typedef 		CDATA 					#IMPLIED
+	distinct 		(none|all|user|system) 	#IMPLIED
+	entity 			CDATA 					#IMPLIED
+	farkey			CDATA					#IMPLIED
+ 	required 		%Boolean; 				#IMPLIED
+	immutable		%Boolean				#IMPLIED	
 	size 		    CDATA 					#IMPLIED
-  column      CDATA           #IMPLIED
-  concrete    %Boolean;       #IMPLIED
-  cascade     (%CascadeActions;)  #IMPLIED>
+	column			CDATA					#IMPLIED
+	concrete		%Boolean;				#IMPLIED
+	cascade			(%CascadeActions;)		#IMPLIED>
 
 
 <!-- 
