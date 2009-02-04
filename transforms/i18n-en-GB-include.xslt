@@ -22,8 +22,8 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2008-10-02 10:52:40 $
+    $Revision: 1.4 $
+    $Date: 2009-02-04 18:39:11 $
 	-->
 
 	<xsl:template name="i18n-add-a-new">
@@ -35,7 +35,7 @@
 	<xsl:template name="i18n-bad-format">
 		<!-- a string, presumed to be the name of a format definition -->
 		<xsl:param name="format-name"/>
-		<xsl:value-of select="concat( 'Does not meet the format requirements for', $format-name)"/>
+		<xsl:value-of select="concat( 'Does not meet the format requirements for ', $format-name)"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-command-not-found">
@@ -88,7 +88,7 @@
 				<xsl:with-param name="noun" select="entity-name"/>
 			</xsl:call-template>
 		</xsl:variable>
-		<xsl:value-of select="concat( 'List', $plural)"/>
+		<xsl:value-of select="concat( 'List ', $plural)"/>
 	</xsl:template>
 
 	<!-- English-laguage syntactic sugar of entity name -->
@@ -171,7 +171,7 @@
 	<xsl:template name="i18n-value-required">
 		<!-- a string, presumed to be the name of a property -->
 		<xsl:param name="property-name"/>
-		<xsl:value-of select="concat( 'You must provide a value for', $property-name)"/>
+		<xsl:value-of select="concat( 'You must provide a value for ', $property-name)"/>
 	</xsl:template>
 
 	<xsl:template name="i18n-value-type">
