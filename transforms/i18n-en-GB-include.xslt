@@ -22,8 +22,8 @@
 	Templates are listed in alphabetical order.
     
     $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2009-02-04 18:39:11 $
+    $Revision: 1.5 $
+    $Date: 2009-02-06 12:08:28 $
 	-->
 
 	<xsl:template name="i18n-add-a-new">
@@ -102,7 +102,7 @@
 				<xsl:value-of select="concat( $noun, 'es')"/>
 			</xsl:when>
 			<xsl:when test="starts-with( substring($noun, string-length($noun) ), 'y')">
-				<xsl:value-of select="concat( substring( $noun, string-length($noun)), 'ies')"/>
+				<xsl:value-of select="concat( substring( $noun, 1, string-length($noun) - 1), 'ies')"/>
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:value-of select="concat( $noun, 's')"/>

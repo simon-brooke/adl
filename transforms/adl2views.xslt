@@ -15,13 +15,14 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.24 $
-    $Date: 2009-02-04 11:32:27 $
+    $Revision: 1.25 $
+    $Date: 2009-02-06 12:08:28 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
 
 	<xsl:include href="base-type-include.xslt"/>
+	<xsl:include href="permissions-include.xslt"/>
 
 	<xsl:output method="xml" indent="yes" encoding="UTF-8" omit-xml-declaration="yes"/>
 
@@ -62,6 +63,9 @@
 	<xsl:param name="area-name" select="auto"/>
 	<!-- the base url of the whole site -->
 	<xsl:param name="site-root"/>
+	<!-- Whether to authenticate at application or at database layer. 
+    If not 'Application', then 'Database'. -->
+	<xsl:param name="authentication-layer" select="Application"/>
 
 	<xsl:template match="adl:application">
 		<output>
@@ -120,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -157,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -228,7 +232,7 @@
 
   <!-- layout of forms -->
 	<xsl:template match="adl:form" mode="non-empty-layout">
-		<xsl:variable name="formname" select="@name"/>
+		<xsl:variable name="form" select="."/>
 		<xsl:text>
 		</xsl:text>
 		<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ancestor::adl:entity/@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
@@ -240,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -264,64 +268,9 @@
 		#end
 		#capturefor( headextras)
 		<xsl:call-template name="head"/>
-		<script type='text/javascript' language='JavaScript1.2'>
-			var site-root = '$site-root';
-
-			function performInitialisation()
-			{
-			<xsl:for-each select="ancestor::adl:entity/adl:property[@type='link' or @type='list']">
-				<xsl:variable name="propname" select="@name"/>
-				<xsl:choose>
-					<xsl:when test="not( @properties='listed')">
-				document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
-					</xsl:when>
-					<xsl:when test=".//field[@property=$propname]">
-				document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
-					</xsl:when>
-					<!-- if we're not doing all properties, and if this property is not the property of a field,
-						we /don't/ set up a submit handler. -->
-				</xsl:choose>
-			</xsl:for-each>
-			<xsl:if test="adl:fieldgroup">
-				switchtab( '<xsl:value-of select="adl:fieldgroup[1]/@name"/>');
-			</xsl:if>
-			}
-			var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
-
-			<xsl:for-each select="//adl:typedef">
-				<xsl:variable name="errormsg">
-					<xsl:choose>
-						<xsl:when test="adl:help[@locale=$locale]">
-							<xsl:apply-templates select="adl:help[@locale=$locale]"/>
-						</xsl:when>
-						<xsl:otherwise>
-							<xsl:call-template name="i18n-bad-format">
-								<xsl:with-param name="format-name" select="@name"/>
-							</xsl:call-template>
-						</xsl:otherwise>
-					</xsl:choose>
-				</xsl:variable>
-				Validation.add( '<xsl:value-of select="concat('validate-custom-', @name)"/>',
-				'<xsl:value-of select="normalize-space( $errormsg)"/>',
-				{
-				<xsl:choose>
-					<xsl:when test="@pattern">
-						pattern : new RegExp("<xsl:value-of select="@pattern"/>","gi")<xsl:if test="@size">
-							,
-							maxLength : <xsl:value-of select="@size"/>
-						</xsl:if>
-					</xsl:when>
-					<xsl:when test="@minimum">
-						min : <xsl:value-of select="@minimum"/><xsl:if test="@maximum">
-							,
-							max : <xsl:value-of select="@maximum"/>
-						</xsl:if>
-					</xsl:when>
-				</xsl:choose>
-				});
-			</xsl:for-each>
-
-		</script>
+		<xsl:call-template name="generate-head-javascript">
+			<xsl:with-param name="form" select="."/>
+		</xsl:call-template>
 
 		${StylesHelper.InstallStylesheet( "Epoch")}
 
@@ -347,7 +296,7 @@
 	</xsl:template>
 
 	<xsl:template match="adl:form" mode="empty-layout">
-		<xsl:variable name="formname" select="@name"/>
+		<xsl:variable name="form" select="."/>
 		<xsl:text>
 		</xsl:text>
 		<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ancestor::adl:entity/@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
@@ -371,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -384,54 +333,9 @@
 					<xsl:value-of select="/adl:application/@revision"/>
 				</xsl:comment>
 				<xsl:call-template name="install-scripts"/>
-				<script type='text/javascript' language='JavaScript1.2'>
-
-					var site-root = '$site-root';
-
-					function performInitialisation()
-					{
-					<xsl:for-each select="ancestor::adl:entity/adl:property[@type='link' or @type='list']">
-						document.<xsl:value-of select="$formname"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
-					</xsl:for-each>
-						var validator = new Validation('<xsl:value-of select="$formname"/>', {immediate : true, useTitles : true});
-					<xsl:if test="adl:fieldgroup">
-						switchtab( '<xsl:value-of select="adl:fieldgroup[1]/@name"/>');
-					</xsl:if>
-					}
-					<xsl:for-each select="//adl:typedef">
-						<xsl:variable name="errormsg">
-							<xsl:choose>
-								<xsl:when test="adl:help[@locale=$locale]">
-									<xsl:apply-templates select="adl:help[@locale=$locale]"/>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:call-template name="i18n-bad-format">
-										<xsl:with-param name="format-name" select="@name"/>
-									</xsl:call-template>
-								</xsl:otherwise>
-							</xsl:choose>
-						</xsl:variable>
-						Validation.add( '<xsl:value-of select="concat('validate-custom-', @name)"/>',
-						'<xsl:value-of select="normalize-space( $errormsg)"/>',
-						{
-						<xsl:choose>
-							<xsl:when test="@pattern">
-								pattern : new RegExp("<xsl:value-of select="@pattern"/>","gi")<xsl:if test="@size">
-									,
-									maxLength : <xsl:value-of select="@size"/>
-								</xsl:if>
-							</xsl:when>
-							<xsl:when test="@minimum">
-								min : <xsl:value-of select="@minimum"/><xsl:if test="@maximum">
-									,
-									max : <xsl:value-of select="@maximum"/>
-								</xsl:if>
-							</xsl:when>
-						</xsl:choose>
-						});
-					</xsl:for-each>
-
-				</script>
+				<xsl:call-template name="generate-head-javascript">
+					<xsl:with-param name="form" select="."/>
+				</xsl:call-template>
 
 				${StylesHelper.InstallStylesheet( "Epoch")}
 
@@ -460,7 +364,6 @@
     <xsl:template name="form-content">
 		<!-- an entity of type form -->
 		<xsl:param name="form"/>
-		<xsl:variable name="formname" select="$form/@name"/>
 		<div class="content">
 			<xsl:if test="$show-errors = 'true'">
 				#if ( $errors)
@@ -490,13 +393,13 @@
 			</xsl:if>
 			<form method="post" onsubmit="invokeSubmitHandlers( this)"  class="tabbed">
 				<xsl:attribute name="action">
-					<xsl:value-of select="concat( $formname, 'SubmitHandler.rails')"/>
+					<xsl:value-of select="concat( $form/@name, 'SubmitHandler.rails')"/>
 				</xsl:attribute>
 				<xsl:attribute name="name">
-					<xsl:value-of select="$formname"/>
+					<xsl:value-of select="$form/@name"/>
 				</xsl:attribute>
 				<xsl:attribute name="id">
-					<xsl:value-of select="$formname"/>
+					<xsl:value-of select="$form/@name"/>
 				</xsl:attribute>
 				<input type="hidden" name="currentpane" value="$!currentpane" />
 				<xsl:for-each select="$form/ancestor::adl:entity/adl:key/adl:property">
@@ -534,31 +437,50 @@
 								<button type="submit" name="command" value="store">Save this!</button>
 							</td>
 						</tr>
-						<tr align="left" valign="top" class="actionDangerous">
-
-							<td class="actionDangerous" colspan="2">
-								#if ( $instance)
-									#if ( $instance.NoDeleteReason)
-										[ $instance.NoDeleteReason ]
-									#else
-										<xsl:call-template name="i18n-delete-prompt"/>
-									#end
+						<xsl:choose>
+							<xsl:when test="$authentication-layer='Database'">
+								<xsl:variable name="deletegroups">
+									<xsl:call-template name="entity-delete-groups">
+										<xsl:with-param name="entity" select="."/>
+									</xsl:call-template>
+								</xsl:variable>
+								<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+								#if ( <xsl:for-each select="exsl:node-set( $deletegroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								<xsl:call-template name="delete-widget-row"/>
 								#end
-							</td>
-							<td class="actionDangerous" style="text-align:right">
-								#if ( $instance)
-									#if ( $instance.NoDeleteReason)
-										<button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this!</button>
-									#else
-										<button type="submit" name="command" value="delete">Delete this!</button>
-									#end
-								#end
-							</td>
-						</tr>
+							</xsl:when>
+							<xsl:when test="$authentication-layer='Application'">
+								<xsl:call-template name="delete-widget-row"/>
+							</xsl:when>
+						</xsl:choose>
 					</table>
 				</div>
 			</form>
 		</div>
+	</xsl:template>
+
+	<xsl:template name="delete-widget-row">
+		<tr align="left" valign="top" class="actionDangerous">
+			<td class="actionDangerous" colspan="2">
+				#if ( $instance)
+				#if ( $instance.NoDeleteReason)
+				[ $instance.NoDeleteReason ]
+				#else
+				<xsl:call-template name="i18n-delete-prompt"/>
+				#end
+				#end
+			</td>
+			<td class="actionDangerous" style="text-align:right">
+				#if ( $instance)
+				#if ( $instance.NoDeleteReason)
+				<button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this!</button>
+				#else
+				<button type="submit" name="command" value="delete">Delete this!</button>
+				#end
+				#end
+			</td>
+		</tr>
 	</xsl:template>
 
 	<xsl:template match="adl:fieldgroup">
@@ -639,7 +561,7 @@
 
 			<xsl:choose>
 				<xsl:when test="@properties='listed'">
-					<xsl:comment>auxlist for with listed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
+					<xsl:comment>auxlist with listed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
 					<xsl:call-template name="internal-with-fields-list">
 						<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
 						<xsl:with-param name="fields" select="adl:field"/>
@@ -756,7 +678,6 @@
 		<!-- note! this template is only intended to match properties in the context of a form:
       it may be we need to add a mode to indicate this! -->
 		<!-- for links and lists we implement a shuffle widget, which extends over both columns -->
-		<!-- TODO: Permissions! -->
 		<xsl:param name="oddness" select="odd"/>
 		<tr>
 			<xsl:attribute name="class">
@@ -769,6 +690,15 @@
 				</xsl:call-template>")}
 			</td>
 			<td class="widget shuffle" colspan="2">
+				<xsl:variable name="property" select="."/>
+				<xsl:variable name="readgroups">
+					<xsl:call-template name="entity-read-groups">
+						<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 				<table class="shuffle">
 					<tr>
 						<td class="widget shuffle-all" rowspan="2">
@@ -807,6 +737,9 @@
 						</td>
 					</tr>
 				</table>
+				#else
+				[Not authrised]
+				#end
 			</td>
 		</tr>
 		<tr>
@@ -826,24 +759,12 @@
 		<xsl:param name="oddness" select="odd"/>
 		<!-- note! this template is only intended to match properties in the context of a form:
 			it may be we need to add a mode to indicate this! -->
-		<!-- TODO: we really need to be able to handle different permissions for different 
-			groups. If the current user is not a member of a group which has read access to 
-			this widget, the widget shouldn't even appear (unless they have write but not read?); 
-			if they are not a member of a group which has write access, the widget should be 
-			disabled. I don't have time to implement this now as it is not trivial, but it is 
-			important! -->
 		<xsl:variable name="property" select="."/>
-			<xsl:variable name="permission">
-				<xsl:call-template name="property-permission">
-					<xsl:with-param name="property" select="$property"/>
-					<xsl:with-param name="groupname" select="@name"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:variable name="editgroups">
-				<xsl:call-template name="property-edit-groups">
-					<xsl:with-param name="property" select="$property"/>
-				</xsl:call-template>
-			</xsl:variable>
+		<xsl:variable name="editgroups">
+			<xsl:call-template name="property-edit-groups">
+				<xsl:with-param name="property" select="$property"/>
+			</xsl:call-template>
+		</xsl:variable>
 		<xsl:variable name="insertgroups">
 			<xsl:call-template name="property-insert-groups">
 				<xsl:with-param name="property" select="$property"/>
@@ -864,141 +785,62 @@
 					</xsl:call-template>")}
 				</td>
 				<td class="widget">
-					<xsl:variable name="render-mode">
-						<xsl:choose>
-							<xsl:when test="$permission='all'">edit</xsl:when>
-							<xsl:when test="$permission='edit'">edit</xsl:when>
-							<xsl:when test="$permission='noedit'">$maybe-edit</xsl:when>
-							<xsl:when test="$permission='insert'">$maybe-edit</xsl:when>
-							<xsl:when test="$permission='read'">noneditable</xsl:when>
-							<xsl:otherwise>none</xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:variable name="if-missing">
-						<xsl:choose>
-							<xsl:when test="adl:if-missing[@locale = $locale]">
-								<xsl:value-of select="adl:if-missing[@locale = $locale]"/>
-							</xsl:when>
-							<xsl:when test="@required='true'">
-								<xsl:call-template name="i18n-value-required">
-									<xsl:with-param name="propert-name" select="@name"/>
-								</xsl:call-template>
-							</xsl:when>
-							<xsl:when test="@type='defined'">
-								<xsl:call-template name="i18n-value-defined">
-									<xsl:with-param name="property-name" select="@name"/>
-									<xsl:with-param name="definition-name" select="@typedef"/>
-								</xsl:call-template>
-							</xsl:when>
-							<xsl:when test="@type='entity'">
-								<xsl:call-template name="i18n-value-entity">
-									<xsl:with-param name="property-name" select="@name"/>
-									<xsl:with-param name="entity-name" select="@entity"/>
-								</xsl:call-template>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:call-template name="i18n-value-type">
-									<xsl:with-param name="property-name" select="@name"/>
-									<xsl:with-param name="type-name" select="@type"/>
-								</xsl:call-template>
-							</xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:variable name="definition" select="@typedef"/>
-					<xsl:variable name="definedtype" select="//adl:typedef[@name=$definition]/@type"/>
-					<xsl:variable name="base-type">
-						<xsl:call-template name="base-type">
-							<xsl:with-param name="property" select="."/>
-						</xsl:call-template>
-					</xsl:variable>
-					<xsl:variable name="cssclass">
-						<xsl:if test="@required='true'">required </xsl:if>
-						<xsl:choose>
-							<xsl:when test="@type='defined'">
-								<xsl:choose>
-									<xsl:when test="//adl:typedef[@name=$definition]/@pattern">
-										<xsl:value-of select="concat( 'validate-custom-', $definition)"/>
-									</xsl:when>
-									<xsl:when test="//adl:typedef[@name=$definition]/@minimum">
-										<xsl:value-of select="concat( 'validate-custom-', $definition)"/>
-									</xsl:when>
-								</xsl:choose>
-							</xsl:when>
-							<xsl:when test="$base-type='integer'">validate-digits</xsl:when>
-							<xsl:when test="$base-type='real'">validate-number</xsl:when>
-							<xsl:when test="$base-type='money'">validate-number</xsl:when>
-							<xsl:when test="$base-type='date'">date-field validate-date</xsl:when>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:variable name="maxlength">
-						<xsl:call-template name="base-size">
-							<xsl:with-param name="property" select="."/>
-						</xsl:call-template>
-					</xsl:variable>
-					<xsl:variable name="size">
-						<xsl:choose>
-							<xsl:when test="$maxlength &gt; $max-widget-width">
-								<xsl:value-of select="$max-widget-width"/>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:value-of select="$maxlength"/>
-							</xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:variable name="rows">
-						<xsl:choose>
-							<xsl:when test="$base-type = 'text'">8</xsl:when>
-							<xsl:otherwise>1</xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					<xsl:variable name="href">
-						<xsl:choose>
-							<xsl:when test="$property/@type='entity' and //adl:entity[@name=$property/@entity]/adl:form[@name='edit']">
-								<!-- if this is an entity property, and the entity which it wraps has an edit form -->
-								<xsl:variable name="keys">
-									<xsl:call-template name="entity-keys-fragment">
-										<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
-										<xsl:with-param name="instance" select="concat( 'instance.', $property/@name)"/>
-									</xsl:call-template>
-								</xsl:variable>
-								<xsl:value-of select="concat( '../../', $property/@entity, '/edit.rails', $keys)"/>
-							</xsl:when>
-						</xsl:choose>
-					</xsl:variable>
-				<xsl:if test="exsl:node-set( $editgroups)/*">
-					<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
-					cause the Velocity parser to break! -->
-					#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
 					<xsl:choose>
-						<xsl:when test="$property/@immutable='true'">
-							${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Immutable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+						<xsl:when test="$authentication-layer = 'Application'">
+							<xsl:call-template name="property-widget">
+								<xsl:with-param name="property" select="."/>
+								<xsl:with-param name="mode" select="'Editable'"/>
+							</xsl:call-template>
 						</xsl:when>
 						<xsl:otherwise>
-							${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.Editable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>'}")}
+							<xsl:if test="exsl:node-set( $editgroups)/*">
+								<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+								#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								<xsl:choose>
+									<xsl:when test="$property/@immutable='true'">
+										<xsl:call-template name="property-widget">
+											<xsl:with-param name="property" select="."/>
+											<xsl:with-param name="mode" select="'Immutable'"/>
+										</xsl:call-template>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:call-template name="property-widget">
+											<xsl:with-param name="property" select="."/>
+											<xsl:with-param name="mode" select="'Editable'"/>
+										</xsl:call-template>
+									</xsl:otherwise>
+								</xsl:choose>
+								#else
+							</xsl:if>
+							<xsl:if test="exsl:node-set( $insertgroups)/*">
+								#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								<xsl:call-template name="property-widget">
+									<xsl:with-param name="property" select="."/>
+									<xsl:with-param name="mode" select="'Immutable'"/>
+								</xsl:call-template>
+								#else
+							</xsl:if>
+							<xsl:if test="exsl:node-set( $readgroups)/*">
+								#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								<xsl:call-template name="property-widget">
+									<xsl:with-param name="property" select="."/>
+									<xsl:with-param name="mode" select="'DisplayAndHidden'"/>
+								</xsl:call-template>
+								#else
+							</xsl:if>
+								[Not authorised]
+							<xsl:if test="exsl:node-set( $readgroups)/*">
+								#end
+							</xsl:if>
+							<xsl:if test="exsl:node-set( $insertgroups)/*">
+								#end
+							</xsl:if>
+							<xsl:if test="exsl:node-set( $editgroups)/*">
+								#end
+							</xsl:if>
 						</xsl:otherwise>
 					</xsl:choose>
-					#else
-				</xsl:if>
-				<xsl:if test="exsl:node-set( $insertgroups)/*">
-					#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
-					${<xsl:value-of select="concat( '$', ancestor::adl:entity/@name, 'FieldHelper')"/>.Immutable( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
-					#else
-				</xsl:if>
-				<xsl:if test="exsl:node-set( $readgroups)/*">
-					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
-					${<xsl:value-of select="concat( ancestor::adl:entity/@name, 'FieldHelper')"/>.DisplayAndHidden( "<xsl:value-of select="concat( 'instance.', @name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
-					#else
-				</xsl:if>
-					[Not authorised]
-				<xsl:if test="exsl:node-set( $readgroups)/*">
-					#end
-				</xsl:if>
-				<xsl:if test="exsl:node-set( $insertgroups)/*">
-					#end
-				</xsl:if>
-				<xsl:if test="exsl:node-set( $editgroups)/*">
-					#end
-				</xsl:if>
 				</td>
 				<td class="help">
 					<xsl:apply-templates select="adl:help[@locale = $locale]"/>
@@ -1026,7 +868,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1051,6 +893,22 @@
 		<xsl:call-template name="foot"/>
 	</xsl:template>
 
+
+	<xsl:template match="adl:option">
+		<option>
+			<xsl:attribute name="value">
+				<xsl:value-of select="@value"/>
+			</xsl:attribute>
+			<xsl:attribute name="id">
+				<xsl:value-of select="concat( ancestor::adl:property/@name, '-', @value)"/>
+			</xsl:attribute>
+			<xsl:call-template name="showprompt">
+				<xsl:with-param name="fallback" select="@value"/>
+			</xsl:call-template>
+		</option>
+	</xsl:template>
+	
+	
 	<!-- layout of a list assuming an empty layout -->
 		<xsl:template match="adl:list" mode="empty-layout">
 			<xsl:variable name="action" select="@onselect"/>
@@ -1073,7 +931,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.24 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1225,42 +1083,76 @@
 					  Unknown entity whilst trying to generate list
 				  </xsl:message>
 			  </xsl:if>
-			  #foreach( <xsl:value-of select="concat( '$', $entity/@name)"/> in <xsl:value-of select="concat('$', $instance-list)"/>)
-			  #if ( $velocityCount % 2 == 0)
-			  #set( $oddity = "even")
-			  #else
-			  #set( $oddity = "odd")
-			  #end
-			  <tr class="$oddity">
-				  <xsl:for-each select="$fields">
-					  <xsl:variable name="field" select="."/>
-					  <xsl:call-template name="list-field">
+			  <xsl:variable name="readgroups">
+				  <xsl:call-template name="entity-read-groups">
+					  <xsl:with-param name="entity" select="$entity"/>
+				  </xsl:call-template>
+			  </xsl:variable>
+			  <xsl:choose>
+				  <xsl:when test="$authentication-layer = 'Application'">
+					  <xsl:call-template name="internal-with-fields-rows">
+						  <xsl:with-param name="instance-list" select="$instance-list"/>
 						  <xsl:with-param name="entity" select="$entity"/>
-						  <xsl:with-param name="property" select="$entity//adl:property[@name=$field/@property]"/>
-						  <xsl:with-param name="objectvar" select="$entity/@name"/>
+						  <xsl:with-param name="fields"	select="$fields"/>
 					  </xsl:call-template>
-				  </xsl:for-each>
-				  <xsl:variable name="keys">
-					  <xsl:call-template name="entity-keys-fragment">
-						  <xsl:with-param name="entity" select="$entity"/>
-					  </xsl:call-template>
-				  </xsl:variable>
-				  <xsl:for-each select="$entity/adl:form">
-					  <!-- by default create a link to each form declared for the entity. 
-                    We probably need a means of overriding this -->
-					  <td>
-						  <a>
-							  <xsl:attribute name="href">
-								  <xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
-							  </xsl:attribute>
-							  <xsl:value-of select="@name"/>!
-						  </a>
-					  </td>
-				  </xsl:for-each>
-			  </tr>
-			  #end
+				  </xsl:when>
+				  <xsl:when test="exsl:node-set( $readgroups)/*">
+					<!-- NOTE NOTE NOTE: This is whitespace-sensitive! -->
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					<xsl:call-template name="internal-with-fields-rows">
+						<xsl:with-param name="instance-list" select="$instance-list"/>
+						<xsl:with-param name="entity" select="$entity"/>
+						<xsl:with-param name="fields" select="$fields"/>
+					</xsl:call-template>
+					#else
+					<tr>
+						<td colspan="5">[You are not authorised to view this data]</td>
+					</tr>
+					#end
+				  </xsl:when>
+			  </xsl:choose>
 		  </table>
 	  </xsl:template>
+
+	<xsl:template name="internal-with-fields-rows">
+		<xsl:param name="instance-list"/>
+		<xsl:param name="entity"/>
+		<xsl:param name="fields"/>
+		#foreach( <xsl:value-of select="concat( '$', $entity/@name)"/> in <xsl:value-of select="concat('$', $instance-list)"/>)
+		#if ( $velocityCount % 2 == 0)
+		#set( $oddity = "even")
+		#else
+		#set( $oddity = "odd")
+		#end
+		<tr class="$oddity">
+			<xsl:for-each select="$fields">
+				<xsl:variable name="field" select="."/>
+				<xsl:call-template name="list-field">
+					<xsl:with-param name="entity" select="$entity"/>
+					<xsl:with-param name="property" select="$entity//adl:property[@name=$field/@property]"/>
+					<xsl:with-param name="objectvar" select="$entity/@name"/>
+				</xsl:call-template>
+			</xsl:for-each>
+			<xsl:variable name="keys">
+				<xsl:call-template name="entity-keys-fragment">
+					<xsl:with-param name="entity" select="$entity"/>
+				</xsl:call-template>
+			</xsl:variable>
+			<xsl:for-each select="$entity/adl:form">
+				<!-- by default create a link to each form declared for the entity. 
+                    We probably need a means of overriding this -->
+				<td>
+					<a>
+						<xsl:attribute name="href">
+							<xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
+						</xsl:attribute>
+						<xsl:value-of select="@name"/>!
+					</a>
+				</td>
+			</xsl:for-each>
+		</tr>
+		#end
+	</xsl:template>
 
 	<xsl:template name="internal-with-properties-list">
 		<!-- a node-list of entities of type 'adl:property', each a property of the same entity, to be shown
@@ -1395,35 +1287,299 @@
 			</xsl:call-template>
 		</xsl:variable>
 		<td>
-			<xsl:if test="exsl:node-set( $readgroups)/*">
-				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+			<xsl:choose>
+				<xsl:when test="$authentication-layer = 'Application'">
+					<xsl:call-template name="list-field-inner">
+						<xsl:with-param name="entity" select="$entity"/>
+						<xsl:with-param name="property" select="$property"/>
+						<xsl:with-param name="objectvar" select="$objectvar"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:when test="exsl:node-set( $readgroups)/*">
+					<!-- NOTE NOTE NOTE: This is whitespace-sensitive! -->
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					<xsl:call-template name="list-field-inner">
+						<xsl:with-param name="entity" select="$entity"/>
+						<xsl:with-param name="property" select="$property"/>
+						<xsl:with-param name="objectvar" select="$objectvar"/>
+					</xsl:call-template>
+					#else
+					[Not authorised]
+					#end
+				</xsl:when>
+			</xsl:choose>
+		</td>
+	</xsl:template>
+
+	<xsl:template name="list-field-inner">
+		<xsl:param name="entity"/>
+		<xsl:param name="property"/>
+		<xsl:param name="objectvar" select="instance"/>
+		<xsl:choose>
+			<xsl:when test="$property/@type = 'date'">
+				#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+				<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
+				#end
+			</xsl:when>
+			<xsl:when test="$property/@type='message'">
+				#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+				$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+				#end
+			</xsl:when>
+			<xsl:when test="$property/@type='entity'">
+				#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+				<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
+				#end
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<!-- generate head javascript for a form -->
+	<xsl:template name="generate-head-javascript">
+		<xsl:param name="form">
+			<!-- assumed to be an instance of adl:form -->
+		</xsl:param>
+		<script type='text/javascript' language='JavaScript1.2'>
+			var site-root = '$site-root';
+
+			function performInitialisation()
+			{
+			<xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
+				<xsl:variable name="propname" select="@name"/>
 				<xsl:choose>
-					<xsl:when test="$property/@type = 'date'">
-						#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-						<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
-						#end
+					<xsl:when test="$form/@properties='all'">
+						document.<xsl:value-of select="$form/@name"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
 					</xsl:when>
-					<xsl:when test="$property/@type='message'">
-						#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-						$t.Msg( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-						#end
+					<xsl:when test="$form//adl:field[@property=$propname]">
+						document.<xsl:value-of select="$form/@name"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
 					</xsl:when>
-					<xsl:when test="$property/@type='entity'">
-						#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
-						<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name, '.UserIdentifier')"/>
-						#end
+					<!-- if we're not doing all properties, and if this property is not the property of a field,
+						we /don't/ set up a submit handler. -->
+				</xsl:choose>
+			</xsl:for-each>
+			<xsl:if test="$form/adl:fieldgroup">
+				switchtab( '<xsl:value-of select="$form/adl:fieldgroup[1]/@name"/>');
+			</xsl:if>
+			}
+			var validator = new Validation('<xsl:value-of select="$form/name"/>', {immediate : true, useTitles : true});
+
+			<xsl:for-each select="//adl:typedef">
+				<xsl:variable name="errormsg">
+					<xsl:choose>
+						<xsl:when test="adl:help[@locale=$locale]">
+							<xsl:apply-templates select="adl:help[@locale=$locale]"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:call-template name="i18n-bad-format">
+								<xsl:with-param name="format-name" select="@name"/>
+							</xsl:call-template>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
+				Validation.add( '<xsl:value-of select="concat('validate-custom-', @name)"/>',
+				'<xsl:value-of select="normalize-space( $errormsg)"/>',
+				{
+				<xsl:choose>
+					<xsl:when test="@pattern">
+						pattern : new RegExp("<xsl:value-of select="@pattern"/>","gi")<xsl:if test="@size">
+							, maxLength : <xsl:value-of select="@size"/>
+						</xsl:if>
+					</xsl:when>
+					<xsl:when test="@minimum">
+						min : <xsl:value-of select="@minimum"/><xsl:if test="@maximum">
+							, max : <xsl:value-of select="@maximum"/>
+						</xsl:if>
+					</xsl:when>
+				</xsl:choose>
+				});
+			</xsl:for-each>
+		</script>
+	</xsl:template>
+
+	<!-- this template outputs MOST types of widget, but NOT shuffle widgets -->
+	<xsl:template name="property-widget">
+		<xsl:param name="property"/>
+		<xsl:param name="mode"/>
+		<xsl:variable name="base-type">
+			<xsl:call-template name="base-type">
+				<xsl:with-param name="property" select="$property"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="href">
+			<xsl:choose>
+				<xsl:when test="$property/@type='entity' and //adl:entity[@name=$property/@entity]/adl:form[@name='edit']">
+					<!-- if this is an entity property, and the entity which it wraps has an edit form -->
+					<xsl:variable name="keys">
+						<xsl:call-template name="entity-keys-fragment">
+							<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+							<xsl:with-param name="instance" select="concat( 'instance.', $property/@name)"/>
+						</xsl:call-template>
+					</xsl:variable>
+					<xsl:value-of select="concat( '../../', $property/@entity, '/edit.rails', $keys)"/>
+				</xsl:when>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="if-missing">
+			<xsl:choose>
+				<xsl:when test="$property/adl:if-missing[@locale = $locale]">
+					<xsl:value-of select="$property/adl:if-missing[@locale = $locale]"/>
+				</xsl:when>
+				<xsl:when test="$property/@required='true'">
+					<xsl:call-template name="i18n-value-required">
+						<xsl:with-param name="property-name" select="$property/@name"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:when test="$property/@type='defined'">
+					<xsl:call-template name="i18n-value-defined">
+						<xsl:with-param name="property-name" select="$property/@name"/>
+						<xsl:with-param name="definition-name" select="$property/@typedef"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:when test="$property/@type='entity'">
+					<xsl:call-template name="i18n-value-entity">
+						<xsl:with-param name="property-name" select="$property/@name"/>
+						<xsl:with-param name="entity-name" select="$property/@entity"/>
+					</xsl:call-template>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:call-template name="i18n-value-type">
+						<xsl:with-param name="property-name" select="$property/@name"/>
+						<xsl:with-param name="type-name" select="$property/@type"/>
+					</xsl:call-template>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="cssclass">
+			<xsl:if test="$property/@required='true'">required </xsl:if>
+			<xsl:choose>
+				<xsl:when test="$property/@type='defined'">
+					<xsl:choose>
+						<xsl:when test="//adl:typedef[@name=$property/@typedef]/@pattern">
+							<xsl:value-of select="concat( 'validate-custom-', $property/@typedef)"/>
+						</xsl:when>
+						<xsl:when test="//adl:typedef[@name=$property/@typedef]/@minimum">
+							<xsl:value-of select="concat( 'validate-custom-', $property/@typedef)"/>
+						</xsl:when>
+					</xsl:choose>
+				</xsl:when>
+				<xsl:when test="$base-type='integer'">validate-digits</xsl:when>
+				<xsl:when test="$base-type='real'">validate-number</xsl:when>
+				<xsl:when test="$base-type='money'">validate-number</xsl:when>
+				<xsl:when test="$base-type='date'">date-field validate-date</xsl:when>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="maxlength">
+			<xsl:call-template name="base-size">
+				<xsl:with-param name="property" select="$property"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:variable name="size">
+			<xsl:choose>
+				<xsl:when test="$maxlength &gt; $max-widget-width">
+					<xsl:value-of select="$max-widget-width"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="$maxlength"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="rows">
+			<xsl:choose>
+				<xsl:when test="$base-type = 'text'">8</xsl:when>
+				<xsl:otherwise>1</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:choose>
+			<xsl:when test="$property/adl:option">
+				<!-- emit a menu of options -->
+				<!-- it would be better to do this through a field helper but I haven't yet worked out how -->
+				<select>
+					<xsl:attribute name="name">
+						<xsl:value-of select="concat( 'instance.', $property/@name)"/>
+					</xsl:attribute>
+					<xsl:attribute name="id">
+						<xsl:value-of select="concat( 'instance_', $property/@name)"/>
+					</xsl:attribute>
+					<xsl:attribute name="class">
+						<xsl:value-of select="concat( 'instance.', $property/@name)"/>
+					</xsl:attribute>
+					<xsl:if test="not( $property/@required='true')">
+						<option value="'-1'">[unselected]</option>
+					</xsl:if>
+					<xsl:apply-templates select="$property/adl:option"/>
+				</select>
+				<script type="text/javascript" language="javascript">
+					// &lt;![CDATA[
+					#set ( <xsl:value-of select="concat( '$', $property/@name, '_sel_opt')"/>="<xsl:value-of select="concat( $property/@name, '-$instance.', $property/@name)"/>")
+					option = document.getElementById( "<xsl:value-of select="concat( '$', $property/@name, '_sel_opt')"/>");
+
+					if ( option != null)
+					{
+					option.selected = true;
+					}
+					// ]]&gt;
+				</script>
+
+			</xsl:when>
+			<xsl:when test="$property/@type = 'defined'">
+				<!-- it would be better to do this through a field helper but I haven't yet worked out how -->
+				<xsl:variable name="definition" select="//adl:typedef[@name=$property/@typedef]"/>
+				<xsl:variable name="minimum" select="$definition/@minimum"/>
+				<xsl:choose>
+					<xsl:when test="$base-type='string'">
+						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+					</xsl:when>
+					<xsl:when test="string-length($definition/@minimum) &gt; 0 and string-length( $definition/@maximum) &gt; 0">
+						<xsl:call-template name="slider-widget">
+							<xsl:with-param name="property" select="$property"/>
+							<xsl:with-param name="minimum" select="$definition/@minimum"/>
+							<xsl:with-param name="maximum" select="$definition/@maximum"/>
+						</xsl:call-template>
+						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="concat('slider, ', normalize-space($cssclass))"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 					</xsl:when>
 					<xsl:otherwise>
-						<xsl:value-of select="concat( '$!', $entity/@name, '.', $property/@name)"/>
+						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 					</xsl:otherwise>
 				</xsl:choose>
-				#else
-			</xsl:if>
-			[Not authorised]
-			<xsl:if test="exsl:node-set( $readgroups)/*">
-				#end
-			</xsl:if>
-		</td>
+			</xsl:when>
+			<xsl:otherwise>
+				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+			</xsl:otherwise>				
+		</xsl:choose>
+	</xsl:template>
+
+	<xsl:template name="slider-widget">
+		<xsl:param name="property"/>
+		<xsl:param name="minimum" select="0"/>
+		<xsl:param name="maximum" select="100"/>
+		<xsl:if test="string-length( $minimum) &gt; 0 and string-length( $maximum) &gt; 0">
+			<div style="width:200px; height:20px; background: transparent url(../images/slider-images-track-right.png) no-repeat top right;">
+				<xsl:attribute name="id">
+					<xsl:value-of select="concat( $property/@name, '-track')"/>
+				</xsl:attribute>
+				<div style="position: absolute; width: 5px; height: 20px; background: transparent url(../images/slider-images-track-left.png) no-repeat top left">
+					<xsl:attribute name="id">
+						<xsl:value-of select="concat( $property/@name, '-track-left')"/>
+					</xsl:attribute>
+				</div>
+				<div style="width:19px; height:20px;">
+					<xsl:attribute name="id">
+						<xsl:value-of select="concat( $property/@name, '-slider')"/>
+					</xsl:attribute>
+					<img src="../images/slider-images-handle.png" alt="" style="float: left;" />
+				</div>
+			</div>
+			<script type="text/javascript" language="javascript">
+				// &lt;![CDATA[
+				new Control.Slider('<xsl:value-of select="$property/@name"/>-slider','<xsl:value-of select="$property/@name"/>-track',{
+				onSlide:function(v){$('<xsl:value-of select="concat( 'instance_', $property/@name)"/>').value = <xsl:value-of select="$minimum"/>+ Math.floor(v*(<xsl:value-of select="$maximum - $minimum"/>))}
+				})
+				// ]]&gt;
+			</script>
+		</xsl:if>
 	</xsl:template>
 
 	<!-- assemble keys for this entity in a Velocity-friendly format, to splice into an HREF below -->
@@ -1505,7 +1661,9 @@
 					<xsl:with-param name="page" select="."/>
 				</xsl:call-template>
 			</xsl:variable>
-			#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+			<xsl:if test="$authentication-layer != 'Application'">
+				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+			</xsl:if>
 			<li class="navigation">
 				<a>
 					<xsl:attribute name="href">
@@ -1531,7 +1689,9 @@
 					<xsl:value-of select="@name"/>
 				</a>
 			</li>
-			#end
+			<xsl:if test="$authentication-layer != 'Application'">
+				#end
+			</xsl:if>
         </xsl:for-each>
       </ul>
     </xsl:if>
@@ -1551,7 +1711,7 @@
       </xsl:otherwise>
     </xsl:choose>
 	  <p class="product-version">
-		  <xsl:value-of select="$product-version"/>
+		  <xsl:value-of select="$product-version"/>; built with <xsl:value-of select="$authentication-layer"/>-layer authentication.
 	  </p>
   </xsl:template>
 
@@ -1590,189 +1750,6 @@
 	<xsl:template match="groups">
 		<xsl:apply-templates/>
 	</xsl:template>
-
-
-	<!-- collect all groups which can edit the specified property -->
-	<xsl:template name="property-edit-groups">
-		<xsl:param name="property"/>
-		<xsl:for-each select="//adl:group">
-			<xsl:variable name="perm">
-				<xsl:call-template name="property-permission">
-					<xsl:with-param name="property" select="$property"/>
-					<xsl:with-param name="groupname" select="@name"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:choose>
-				<xsl:when test="$perm='all'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='edit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:otherwise/>
-			</xsl:choose>
-		</xsl:for-each>
-	</xsl:template>
-
-	<!-- those groups which can insert -->
-	<xsl:template name="property-insert-groups">
-		<xsl:param name="property"/>
-		<xsl:for-each select="//adl:group">
-			<xsl:variable name="perm">
-				<xsl:call-template name="property-permission">
-					<xsl:with-param name="property" select="$property"/>
-					<xsl:with-param name="groupname" select="@name"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:choose>
-				<xsl:when test="$perm='all'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='edit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='insert'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='noedit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:otherwise/>
-			</xsl:choose>
-		</xsl:for-each>
-	</xsl:template>
-
-	<!-- those groups which can read -->
-	<xsl:template name="property-read-groups">
-		<xsl:param name="property"/>
-		<xsl:for-each select="//adl:group">
-			<xsl:variable name="perm">
-				<xsl:call-template name="property-permission">
-					<xsl:with-param name="property" select="$property"/>
-					<xsl:with-param name="groupname" select="@name"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:choose>
-				<xsl:when test="$perm='all'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='edit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='insert'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='noedit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='read'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:otherwise/>
-			</xsl:choose>
-		</xsl:for-each>
-	</xsl:template>
-
-	<!-- collect the groups which can read a page, form or list -->
-	<xsl:template name="page-read-groups">
-		<xsl:param name="page"/>
-		<xsl:for-each select="//adl:group">
-			<xsl:variable name="perm">
-				<xsl:call-template name="page-permission">
-					<xsl:with-param name="page" select="$page"/>
-					<xsl:with-param name="groupname" select="@name"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:choose>
-				<xsl:when test="$perm='all'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='edit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='insert'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='noedit'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:when test="$perm='read'">
-					<xsl:copy-of select="."/>
-				</xsl:when>
-				<xsl:otherwise/>
-			</xsl:choose>
-		</xsl:for-each>
-	</xsl:template>
-
-	<!-- find, as a string, the permission which applies to this property in the context of the named group.
-      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
-      page: a page, list or form element
-      groupname: a string, being the name of a group
-    -->
-	<xsl:template name="page-permission">
-		<xsl:param name="page"/>
-		<xsl:param name="groupname" select="'public'"/>
-		<xsl:choose>
-			<xsl:when test="$page/adl:permission[@group=$groupname]">
-				<xsl:value-of select="$page/adl:permission[@group=$groupname]/@permission"/>
-			</xsl:when>
-			<xsl:when test="$page/ancestor::adl:entity/adl:permission[@group=$groupname]">
-				<xsl:value-of select="$page/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
-			</xsl:when>
-			<xsl:when test="//adl:group[@name=$groupname]/@parent">
-				<xsl:call-template name="page-permission">
-					<xsl:with-param name="page" select="$page"/>
-					<xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
-				</xsl:call-template>
-			</xsl:when>
-			<xsl:otherwise>none</xsl:otherwise>
-		</xsl:choose>
-	</xsl:template>
-
-	<!-- find, as a string, the permission which applies to this property in the context of the named group.
-      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
-      property: a property element
-      groupname: a string, being the name of a group
-    -->
-	<xsl:template name="property-permission">
-		<xsl:param name="property"/>
-		<xsl:param name="groupname" select="'public'"/>
-		<xsl:choose>
-			<xsl:when test="$property/adl:permission[@group=$groupname]">
-				<xsl:value-of select="$property/adl:permission[@group=$groupname]/@permission"/>
-			</xsl:when>
-			<xsl:when test="$property/ancestor::adl:entity/adl:permission[@group=$groupname]">
-				<xsl:value-of select="$property/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
-			</xsl:when>
-			<xsl:when test="//adl:group[@name=$groupname]/@parent">
-				<xsl:call-template name="property-permission">
-					<xsl:with-param name="property" select="$property"/>
-					<xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
-				</xsl:call-template>
-			</xsl:when>
-			<xsl:otherwise>none</xsl:otherwise>
-		</xsl:choose>
-	</xsl:template>
-
-	<!-- find, as a string, the permission which applies to this field in the context of the named group
-      field: a field element
-      groupname: a string, being the name of a group
-    -->
-    <xsl:template name="field-permission">
-      <xsl:param name="field"/>
-      <xsl:param name="groupname"/>
-      <xsl:choose>
-        <xsl:when test="$field/adl:permission[@group=$groupname]">
-          <xsl:value-of select="$field/adl:permission[@group=$groupname]/@permission"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:call-template name="property-permission">
-            <xsl:with-param name="property" select="$field/ancestor::adl:entity//adl:property[@name=$field/@name]"/>
-            <xsl:with-param name="groupname" select="$groupname"/>
-          </xsl:call-template>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:template>
 
     <!-- just copy anything we can't match -->
   <xsl:template match="@* | node()">
