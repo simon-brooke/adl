@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.25 $
-    $Date: 2009-02-06 12:08:28 $
+    $Revision: 1.26 $
+    $Date: 2009-02-06 17:48:58 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -65,7 +65,7 @@
 	<xsl:param name="site-root"/>
 	<!-- Whether to authenticate at application or at database layer. 
     If not 'Application', then 'Database'. -->
-	<xsl:param name="authentication-layer" select="Application"/>
+	<xsl:param name="authentication-layer" select="'Application'"/>
 
 	<xsl:template match="adl:application">
 		<output>
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -429,28 +429,31 @@
 								<xsl:apply-templates select="$form/ancestor::adl:entity/adl:property"/>
 							</xsl:otherwise>
 						</xsl:choose>
-						<tr class="actionSafe">
-							<td class="actionSafe" colspan="2">
-								<xsl:call-template name='i18n-save-prompt'/>
-							</td>
-							<td class="actionSafe" style="text-align:right">
-								<button type="submit" name="command" value="store">Save this!</button>
-							</td>
-						</tr>
 						<xsl:choose>
 							<xsl:when test="$authentication-layer='Database'">
-								<xsl:variable name="deletegroups">
-									<xsl:call-template name="entity-delete-groups">
-										<xsl:with-param name="entity" select="."/>
+								<xsl:variable name="savegroups">
+									<xsl:call-template name="entity-save-groups">
+										<xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
 									</xsl:call-template>
 								</xsl:variable>
 								<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
 								cause the Velocity parser to break! -->
-								#if ( <xsl:for-each select="exsl:node-set( $deletegroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								#if ( <xsl:for-each select="exsl:node-set( $savegroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+								<xsl:call-template name="save-widget-row"/>
+								#end
+								<xsl:variable name="deletegroups">
+									<xsl:call-template name="entity-delete-groups">
+										<xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
+									</xsl:call-template>
+								</xsl:variable>
+								<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+								#if ( <xsl:for-each select="exsl:node-set( $deletegroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 								<xsl:call-template name="delete-widget-row"/>
 								#end
 							</xsl:when>
 							<xsl:when test="$authentication-layer='Application'">
+								<xsl:call-template name="save-widget-row"/>
 								<xsl:call-template name="delete-widget-row"/>
 							</xsl:when>
 						</xsl:choose>
@@ -460,6 +463,19 @@
 		</div>
 	</xsl:template>
 
+	<!-- output a complete table row containing a save widget -->
+	<xsl:template name="save-widget-row">
+		<tr class="actionSafe">
+			<td class="actionSafe" colspan="2">
+				<xsl:call-template name='i18n-save-prompt'/>
+			</td>
+			<td class="actionSafe" style="text-align:right">
+				<button type="submit" name="command" value="store">Save this!</button>
+			</td>
+		</tr>
+	</xsl:template>
+
+	<!-- output a complete table row containing a delete widget -->
 	<xsl:template name="delete-widget-row">
 		<tr align="left" valign="top" class="actionDangerous">
 			<td class="actionDangerous" colspan="2">
@@ -690,56 +706,30 @@
 				</xsl:call-template>")}
 			</td>
 			<td class="widget shuffle" colspan="2">
-				<xsl:variable name="property" select="."/>
-				<xsl:variable name="readgroups">
-					<xsl:call-template name="entity-read-groups">
-						<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
-					</xsl:call-template>
-				</xsl:variable>
-				<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
-								cause the Velocity parser to break! -->
-				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
-				<table class="shuffle">
-					<tr>
-						<td class="widget shuffle-all" rowspan="2">
-							${ShuffleWidgetHelper.UnselectedOptions( "<xsl:value-of select="concat( @name, '_unselected')"/>", <xsl:value-of select="concat( '$all_', @name)"/>, $instance.<xsl:value-of select="@name"/>)}
-						</td>
-						<td class="widget shuffle-action">
-							<input type="button" value="include &gt;&gt;">
-								<xsl:attribute name="onclick">
-									<xsl:value-of select="concat( 'shuffle(', @name, '_unselected, ', @name, ')')"/>
-								</xsl:attribute>
-							</input>
-						</td>
-						<td class="widget shuffle-selected" rowspan="2">
-							<xsl:variable name="entityname" select="@entity"/>
-							<xsl:variable name="foreignkey" select="@farkey"/>
-							<xsl:variable name="allow-shuffle-back">
-								<xsl:choose>
-									<xsl:when test="@type='list' and //adl:entity[@name=$entityname]//adl:property[@name=$foreignkey and @required='true']"> 
-										<xsl:value-of select="'false'"/> 
-									</xsl:when>
-									<xsl:otherwise>
-										<xsl:value-of select="'true'"/>
-									</xsl:otherwise>
-								</xsl:choose>
-							</xsl:variable>
-							${ShuffleWidgetHelper.SelectedOptions( "<xsl:value-of select="@name"/>", $instance.<xsl:value-of select="@name"/>, <xsl:value-of select="$allow-shuffle-back"/>)}
-						</td>
-					</tr>
-					<tr>
-						<td class="widget shuffle-action">
-							<input type="button" value="&lt;&lt; exclude">
-								<xsl:attribute name="onclick">
-									<xsl:value-of select="concat( 'shuffle(', @name, ', ', @name, '_unselected)')"/>
-								</xsl:attribute>
-							</input>
-						</td>
-					</tr>
-				</table>
-				#else
-				[Not authrised]
-				#end
+				<xsl:choose>
+					<xsl:when test="$authentication-layer = 'Database'">
+						<xsl:variable name="property" select="."/>
+						<xsl:variable name="readgroups">
+							<xsl:call-template name="entity-read-groups">
+								<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+							</xsl:call-template>
+						</xsl:variable>
+						<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
+						#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+						<xsl:call-template name="shuffle-widget">
+							<xsl:with-param name="property" select="."/>
+						</xsl:call-template>
+						#else
+						[Not authorised]
+						#end
+					</xsl:when>
+					<xsl:when test="$authentication-layer = 'Application'">
+						<xsl:call-template name="shuffle-widget">
+							<xsl:with-param name="property" select="."/>
+						</xsl:call-template>
+					</xsl:when>
+				</xsl:choose>
+
 			</td>
 		</tr>
 		<tr>
@@ -753,6 +743,48 @@
 				<xsl:apply-templates select="adl:help[@locale = $locale]"/>
 			</td>
 		</tr>
+	</xsl:template>
+
+	<xsl:template name="shuffle-widget">
+		<xsl:param name="property" select="."/>
+		<table class="shuffle">
+			<tr>
+				<td class="widget shuffle-all" rowspan="2">
+					${ShuffleWidgetHelper.UnselectedOptions( "<xsl:value-of select="concat( $property/@name, '_unselected')"/>", <xsl:value-of select="concat( '$all_', $property/@name)"/>, $instance.<xsl:value-of select="$property/@name"/>)}
+				</td>
+				<td class="widget shuffle-action">
+					<input type="button" value="include &gt;&gt;">
+						<xsl:attribute name="onclick">
+							<xsl:value-of select="concat( 'shuffle(', $property/@name, '_unselected, ', $property/@name, ')')"/>
+						</xsl:attribute>
+					</input>
+				</td>
+				<td class="widget shuffle-selected" rowspan="2">
+					<xsl:variable name="entityname" select="$property/@entity"/>
+					<xsl:variable name="foreignkey" select="$property/@farkey"/>
+					<xsl:variable name="allow-shuffle-back">
+						<xsl:choose>
+							<xsl:when test="$property/@type='list' and //adl:entity[@name=$entityname]//adl:property[@name=$foreignkey and @required='true']">
+								<xsl:value-of select="'false'"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="'true'"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					${ShuffleWidgetHelper.SelectedOptions( "<xsl:value-of select="$property/@name"/>", $instance.<xsl:value-of select="$property/@name"/>, <xsl:value-of select="$allow-shuffle-back"/>)}
+				</td>
+			</tr>
+			<tr>
+				<td class="widget shuffle-action">
+					<input type="button" value="&lt;&lt; exclude">
+						<xsl:attribute name="onclick">
+							<xsl:value-of select="concat( 'shuffle(', @name, ', ', @name, '_unselected)')"/>
+						</xsl:attribute>
+					</input>
+				</td>
+			</tr>
+		</table>
 	</xsl:template>
 
 	<xsl:template match="adl:property">
@@ -792,11 +824,11 @@
 								<xsl:with-param name="mode" select="'Editable'"/>
 							</xsl:call-template>
 						</xsl:when>
-						<xsl:otherwise>
+						<xsl:when test="$authentication-layer = 'Database'">
 							<xsl:if test="exsl:node-set( $editgroups)/*">
 								<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
 								cause the Velocity parser to break! -->
-								#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								#if ( <xsl:for-each select="exsl:node-set( $editgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 								<xsl:choose>
 									<xsl:when test="$property/@immutable='true'">
 										<xsl:call-template name="property-widget">
@@ -814,7 +846,7 @@
 								#else
 							</xsl:if>
 							<xsl:if test="exsl:node-set( $insertgroups)/*">
-								#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								#if ( <xsl:for-each select="exsl:node-set( $insertgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 								<xsl:call-template name="property-widget">
 									<xsl:with-param name="property" select="."/>
 									<xsl:with-param name="mode" select="'Immutable'"/>
@@ -822,7 +854,7 @@
 								#else
 							</xsl:if>
 							<xsl:if test="exsl:node-set( $readgroups)/*">
-								#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+								#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 								<xsl:call-template name="property-widget">
 									<xsl:with-param name="property" select="."/>
 									<xsl:with-param name="mode" select="'DisplayAndHidden'"/>
@@ -839,7 +871,7 @@
 							<xsl:if test="exsl:node-set( $editgroups)/*">
 								#end
 							</xsl:if>
-						</xsl:otherwise>
+						</xsl:when>
 					</xsl:choose>
 				</td>
 				<td class="help">
@@ -868,7 +900,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -931,7 +963,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.25 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1096,9 +1128,9 @@
 						  <xsl:with-param name="fields"	select="$fields"/>
 					  </xsl:call-template>
 				  </xsl:when>
-				  <xsl:when test="exsl:node-set( $readgroups)/*">
+				  <xsl:when test="$authentication-layer = 'Database'">
 					<!-- NOTE NOTE NOTE: This is whitespace-sensitive! -->
-					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 					<xsl:call-template name="internal-with-fields-rows">
 						<xsl:with-param name="instance-list" select="$instance-list"/>
 						<xsl:with-param name="entity" select="$entity"/>
@@ -1295,14 +1327,30 @@
 						<xsl:with-param name="objectvar" select="$objectvar"/>
 					</xsl:call-template>
 				</xsl:when>
-				<xsl:when test="exsl:node-set( $readgroups)/*">
+				<xsl:when test="$authentication-layer = 'Database'">
 					<!-- NOTE NOTE NOTE: This is whitespace-sensitive! -->
-					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+					#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+					<xsl:if test="$property/@type='entity'">
+						<!-- right, this is horrible. You can't read the field unless you can read the property; 
+						but even if you can read the property, if its an entity property you still can't read it
+						unless you can also read the entity -->
+						<xsl:variable name="entityreadgroups">
+							<xsl:call-template name="entity-read-groups">
+								<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+							</xsl:call-template>
+						</xsl:variable>
+						#if ( <xsl:for-each select="exsl:node-set( $entityreadgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+					</xsl:if>
 					<xsl:call-template name="list-field-inner">
 						<xsl:with-param name="entity" select="$entity"/>
 						<xsl:with-param name="property" select="$property"/>
 						<xsl:with-param name="objectvar" select="$objectvar"/>
 					</xsl:call-template>
+					<xsl:if test="$property/@type='entity'">
+						#else
+						[Not authorised]
+						#end
+					</xsl:if>
 					#else
 					[Not authorised]
 					#end
@@ -1545,6 +1593,20 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:when>
+			<xsl:when test="$property/@type = 'entity'">
+				<!-- once again, not only must you have access to the property but also to the entity -->
+				<xsl:variable name="readgroups">
+					<xsl:call-template name="entity-read-groups">
+						<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+					</xsl:call-template>
+				</xsl:variable>
+				<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
+				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+				#else
+				[Not authorised]
+				#end
+			</xsl:when>
 			<xsl:otherwise>
 				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 			</xsl:otherwise>				
@@ -1661,8 +1723,8 @@
 					<xsl:with-param name="page" select="."/>
 				</xsl:call-template>
 			</xsl:variable>
-			<xsl:if test="$authentication-layer != 'Application'">
-				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")}<xsl:if test="not( position() = last())"> || </xsl:if></xsl:for-each>)
+			<xsl:if test="$authentication-layer = 'Database'">
+				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
 			</xsl:if>
 			<li class="navigation">
 				<a>

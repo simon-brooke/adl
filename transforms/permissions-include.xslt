@@ -15,8 +15,8 @@
     Utility templates to find permissions on various things
     
     $Author: sb $
-    $Revision: 1.1 $
-    $Date: 2009-02-06 12:08:28 $
+    $Revision: 1.2 $
+    $Date: 2009-02-06 17:48:58 $
 	-->
 
 	<!-- collect all groups which can edit the specified property -->
@@ -127,6 +127,38 @@
 					<xsl:copy-of select="."/>
 				</xsl:when>
 				<xsl:when test="$perm='read'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
+
+	<!-- collect the groups which can save an entity -->
+	<xsl:template name="entity-save-groups">
+		<xsl:param name="entity"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="groupname" select="@name"/>
+			<xsl:variable name="perm">
+				<xsl:choose>
+					<xsl:when test="$entity/adl:permission[@group=$groupname]">
+						<xsl:value-of select="$entity/adl:permission[@group=$groupname]/@permission"/>
+					</xsl:when>
+					<xsl:otherwise>none</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='insert'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='noedit'">
 					<xsl:copy-of select="."/>
 				</xsl:when>
 				<xsl:otherwise/>
