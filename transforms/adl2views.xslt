@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.27 $
-    $Date: 2009-02-19 15:29:27 $
+    $Revision: 1.28 $
+    $Date: 2009-02-19 16:41:19 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -62,7 +62,7 @@
 	<!-- bug 1800 : the name of the area (i.e. URL path part) to use -->
 	<xsl:param name="area-name" select="auto"/>
 	<!-- the base url of the whole site -->
-	<xsl:param name="site-root"/>
+	<xsl:param name="site-root" select="'..'"/>
 	<!-- Whether to authenticate at application or at database layer. 
     If not 'Application', then 'Database'. -->
 	<xsl:param name="authentication-layer" select="'Application'"/>
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -900,7 +900,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -963,7 +963,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.28 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1739,10 +1739,10 @@
 							<xsl:when test="string-length( $site-root) &gt; 0">
 								<xsl:choose>
 									<xsl:when test="string-length( $area-name) &gt; 0">
-										<xsl:value-of select="concat( '$site-root', '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+										<xsl:value-of select="concat( $site-root, '/', $area-name, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
 									</xsl:when>
 									<xsl:otherwise>
-										<xsl:value-of select="concat( '$site-root', '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
+										<xsl:value-of select="concat( $site-root, '/', @name, '/', adl:list[position()=1]/@name, '.rails')"/>
 									</xsl:otherwise>
 								</xsl:choose>
 							</xsl:when>
