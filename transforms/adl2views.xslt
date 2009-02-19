@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.26 $
-    $Date: 2009-02-06 17:48:58 $
+    $Revision: 1.27 $
+    $Date: 2009-02-19 15:29:27 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -900,7 +900,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -963,7 +963,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.26 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.27 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1391,8 +1391,11 @@
 			<!-- assumed to be an instance of adl:form -->
 		</xsl:param>
 		<script type='text/javascript' language='JavaScript1.2'>
-			var site-root = '$site-root';
-
+			#if ( $site-root)
+			site-root = '$site-root';
+			#else
+			site-root = '/';
+			#end
 			function performInitialisation()
 			{
 			<xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
@@ -1408,9 +1411,6 @@
 						we /don't/ set up a submit handler. -->
 				</xsl:choose>
 			</xsl:for-each>
-			<xsl:if test="$form/adl:fieldgroup">
-				switchtab( '<xsl:value-of select="$form/adl:fieldgroup[1]/@name"/>');
-			</xsl:if>
 			}
 			var validator = new Validation('<xsl:value-of select="$form/name"/>', {immediate : true, useTitles : true});
 
@@ -1540,6 +1540,12 @@
 				<xsl:otherwise>1</xsl:otherwise>
 			</xsl:choose>
 		</xsl:variable>
+		<xsl:variable name="required">
+			<xsl:choose>
+				<xsl:when test="$property/@required='true'">true</xsl:when>
+				<xsl:otherwise>false</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
 		<xsl:choose>
 			<xsl:when test="$property/adl:option">
 				<!-- emit a menu of options -->
@@ -1578,7 +1584,7 @@
 				<xsl:variable name="minimum" select="$definition/@minimum"/>
 				<xsl:choose>
 					<xsl:when test="$base-type='string'">
-						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 					</xsl:when>
 					<xsl:when test="string-length($definition/@minimum) &gt; 0 and string-length( $definition/@maximum) &gt; 0">
 						<xsl:call-template name="slider-widget">
@@ -1589,7 +1595,7 @@
 						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="concat('slider, ', normalize-space($cssclass))"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 					</xsl:when>
 					<xsl:otherwise>
-						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+						${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:when>
@@ -1602,13 +1608,13 @@
 				</xsl:variable>
 				<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
 				#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
-				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 				#else
 				[Not authorised]
 				#end
 			</xsl:when>
 			<xsl:otherwise>
-				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
 			</xsl:otherwise>				
 		</xsl:choose>
 	</xsl:template>
