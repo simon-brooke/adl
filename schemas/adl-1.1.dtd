@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.4 $
+        $Revision: 1.5 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -83,22 +83,27 @@ that we can allow HTML block level entities within content elements -->
 	data types which can be used in a typedef to provide validation - 
 	e.g. a string can be used with a regexp or a scalar can be used with 
 	min and max values 
-	string: 		  varchar		java.sql.Types.VARCHAR
-	integer:		  int			  java.sql.Types.INTEGER
-	real:			    double		java.sql.Types.DOUBLE
-	money:			  money		  java.sql.Types.INTEGER
-	date:			    date		  java.sql.Types.DATE
-	time:			    time		  java.sql.Types.TIME
+	string: 		varchar		java.sql.Types.VARCHAR
+	integer:		int			java.sql.Types.INTEGER
+	real:			double		java.sql.Types.DOUBLE
+	money:			money		java.sql.Types.INTEGER
+	date:			date		java.sql.Types.DATE
+	time:			time		java.sql.Types.TIME
 	timestamp:		timestamp	java.sql.Types.TIMESTAMP
+	uploadable:		varchar		java.sql.Types.VARCHAR 
+	image:			varchar		java.sql.Types.VARCHAR
+	
+	uploadable is as string but points to an uploaded file; image is as
+	uploadable but points to an uploadable graphical image file
 -->
-<!ENTITY % DefinableDataTypes "string|integer|real|money|date|time|timestamp" >
+<!ENTITY % DefinableDataTypes "string|integer|real|money|date|time|timestamp|uploadable" >
 
 <!-- 
 	data types which are fairly straightforward translations of JDBC data types
 	boolean:		boolean or	java.sql.Types.BIT
-					    char(1)		  java.sql.Types.CHAR
-	text:			  text or		  java.sql.Types.LONGVARCHAR 
-					    memo		    java.sql.Types.CLOB
+					char(1)		java.sql.Types.CHAR
+	text:			text or		java.sql.Types.LONGVARCHAR 
+					memo		java.sql.Types.CLOB
 -->
 <!ENTITY % SimpleDataTypes "%DefinableDataTypes;|boolean|text" >
 

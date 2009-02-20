@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.29 $
-    $Date: 2009-02-19 17:37:05 $
+    $Revision: 1.30 $
+    $Date: 2009-02-20 10:31:03 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -400,6 +400,19 @@
 				</xsl:attribute>
 				<xsl:attribute name="id">
 					<xsl:value-of select="$form/@name"/>
+				</xsl:attribute>
+				<xsl:attribute name="enctype">
+					<xsl:choose>
+						<xsl:when test="$form/ancestor::adl:entity//adl:property[@type='uploadable']">
+							<xsl:value-of select="multipart/form-data"/>
+						</xsl:when>
+						<xsl:when test="$form/ancestor::adl:entity//adl:property[@type='image']">
+							<xsl:value-of select="multipart/form-data"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="'application/x-www-form-urlencoded'"/>
+						</xsl:otherwise>
+					</xsl:choose>
 				</xsl:attribute>
 				<input type="hidden" name="currentpane" value="$!currentpane" />
 				<xsl:for-each select="$form/ancestor::adl:entity/adl:key/adl:property">
@@ -900,7 +913,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -963,7 +976,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.29 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
