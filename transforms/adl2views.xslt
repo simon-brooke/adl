@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.30 $
-    $Date: 2009-02-20 10:31:03 $
+    $Revision: 1.31 $
+    $Date: 2009-02-20 15:25:29 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -404,10 +404,10 @@
 				<xsl:attribute name="enctype">
 					<xsl:choose>
 						<xsl:when test="$form/ancestor::adl:entity//adl:property[@type='uploadable']">
-							<xsl:value-of select="multipart/form-data"/>
+							<xsl:value-of select="'multipart/form-data'"/>
 						</xsl:when>
 						<xsl:when test="$form/ancestor::adl:entity//adl:property[@type='image']">
-							<xsl:value-of select="multipart/form-data"/>
+							<xsl:value-of select="'multipart/form-data'"/>
 						</xsl:when>
 						<xsl:otherwise>
 							<xsl:value-of select="'application/x-www-form-urlencoded'"/>
@@ -582,31 +582,32 @@
 				</td>
 			</tr>
 		</xsl:if>
+		<tr>
+			<td>
+				<xsl:attribute name="colspan">
+					<xsl:value-of select="count( field)"/>
+				</xsl:attribute>
 
-		<td>
-			<xsl:attribute name="colspan">
-				<xsl:value-of select="count( field)"/>
-			</xsl:attribute>
-
-			<xsl:choose>
-				<xsl:when test="@properties='listed'">
-					<xsl:comment>auxlist with listed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
-					<xsl:call-template name="internal-with-fields-list">
-						<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
-						<xsl:with-param name="fields" select="adl:field"/>
-						<xsl:with-param name="instance-list" select="concat( 'instance.', $listprop)"/>
-					</xsl:call-template>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:comment>auxlist with computed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
-					<xsl:call-template name="internal-with-properties-list">
-						<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
-						<xsl:with-param name="properties" select="//adl:entity[@name=$farent]//adl:property[(@distinct='user' or @distinct='all') and not( @type='link' or @type='list')]"/>
-						<xsl:with-param name="instance-list" select="concat( 'instance.', $listprop)"/>
-					</xsl:call-template>
-				</xsl:otherwise>
-			</xsl:choose>
-		</td>
+				<xsl:choose>
+					<xsl:when test="@properties='listed'">
+						<xsl:comment>auxlist with listed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
+						<xsl:call-template name="internal-with-fields-list">
+							<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
+							<xsl:with-param name="fields" select="adl:field"/>
+							<xsl:with-param name="instance-list" select="concat( 'instance.', $listprop)"/>
+						</xsl:call-template>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:comment>auxlist with computed fields: <xsl:value-of select="$farent/@name"/></xsl:comment>
+						<xsl:call-template name="internal-with-properties-list">
+							<xsl:with-param name="entity" select="//adl:entity[@name=$farent]"/>
+							<xsl:with-param name="properties" select="//adl:entity[@name=$farent]//adl:property[(@distinct='user' or @distinct='all') and not( @type='link' or @type='list')]"/>
+							<xsl:with-param name="instance-list" select="concat( 'instance.', $listprop)"/>
+						</xsl:call-template>
+					</xsl:otherwise>
+				</xsl:choose>
+			</td>
+		</tr>
 	</xsl:template>
 
 	<xsl:template match="adl:verb">
@@ -913,7 +914,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -976,7 +977,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.30 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.31 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1404,6 +1405,12 @@
 			<!-- assumed to be an instance of adl:form -->
 		</xsl:param>
 		<script type='text/javascript' language='JavaScript1.2'>
+			#if ( ${site-root})
+			var siteRoot = '$siteRoot';
+			#else
+			var siteRoot = '<xsl:value-of select='$site-root'/>';
+			#end
+
 			function performInitialisation()
 			{
 			<xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
@@ -1419,8 +1426,8 @@
 						we /don't/ set up a submit handler. -->
 				</xsl:choose>
 			</xsl:for-each>
+			var validator = new Validation('<xsl:value-of select="$form/@name"/>', {immediate : true, useTitles : true});
 			}
-			var validator = new Validation('<xsl:value-of select="$form/name"/>', {immediate : true, useTitles : true});
 
 			<xsl:for-each select="//adl:typedef">
 				<xsl:variable name="errormsg">
@@ -1683,6 +1690,10 @@
 	<!-- overall page layout -->
 
 	<xsl:template match="adl:content"/>
+
+	<xsl:template match="adl:help">
+		<xsl:apply-templates/>
+	</xsl:template>
 
 	<!-- assuming an empty layout, install all the standard scripts 
     which an ADL page may need -->
