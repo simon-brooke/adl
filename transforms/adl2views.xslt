@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.33 $
-    $Date: 2009-03-05 10:59:39 $
+    $Revision: 1.34 $
+    $Date: 2009-03-05 13:12:19 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -320,7 +320,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -617,6 +617,8 @@
 				<xsl:otherwise>actionSafe</xsl:otherwise>
 			</xsl:choose>
 		</xsl:variable>
+		<!-- don't emit a verb unless there is an instance for it to act on -->
+		#if( $instance)
 		<tr>
 			<xsl:attribute name="class">
 				<xsl:value-of select="$class"/>
@@ -642,6 +644,7 @@
 				</button>
 			</td>
 		</tr>
+		#end
 	</xsl:template>
 
 	<xsl:template match="adl:field">
@@ -914,7 +917,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -977,7 +980,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.33 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.34 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1272,6 +1275,9 @@
 							</xsl:if>
 						</td>
 					</xsl:for-each>
+					<td>
+						<input type="submit" value="Search!"/>
+					</td>
 				</tr>
 			</xsl:if>
 			#foreach( <xsl:value-of select="concat( '$', $entity/@name)"/> in <xsl:value-of select="concat('$', $instance-list)"/>)
@@ -1381,6 +1387,31 @@
 		<xsl:param name="property"/>
 		<xsl:param name="objectvar" select="instance"/>
 		<xsl:choose>
+			<xsl:when test="$property/adl:option">
+				<xsl:for-each select="$property/adl:option">
+					<xsl:variable name="val">
+						<xsl:variable name="base-type">
+							<xsl:call-template name="base-type">
+								<xsl:with-param name="property" select="$property"/>
+							</xsl:call-template>
+						</xsl:variable>
+						<xsl:choose>
+							<xsl:when test="$base-type = 'string'">
+								<xsl:value-of select="concat( '&#34;', @value, '&#34;')"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:value-of select="@value"/>
+							</xsl:otherwise>
+						</xsl:choose>
+					</xsl:variable>
+					#if( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/> == <xsl:value-of select="$val"/>)
+					<xsl:call-template name="showprompt">
+						<xsl:with-param name="node" select="."/>
+						<xsl:with-param name="fallback" select="@value"/>
+					</xsl:call-template>
+					#end
+				</xsl:for-each>
+			</xsl:when> 
 			<xsl:when test="$property/@type = 'date'">
 				#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
 				<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
