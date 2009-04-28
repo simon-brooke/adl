@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.37 $
-    $Date: 2009-04-27 16:29:40 $
+    $Revision: 1.38 $
+    $Date: 2009-04-28 13:34:14 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -124,7 +124,7 @@
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 		</xsl:comment>
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
@@ -161,7 +161,7 @@
 						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
 						generated from ADL.
 
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 
 						<xsl:value-of select="/adl:application/@revision"/>
 					</xsl:comment>
@@ -244,7 +244,7 @@
 			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -258,16 +258,22 @@
 			<xsl:value-of select="/adl:application/@revision"/>
 		</xsl:comment>
 		#capturefor( title)
-		#if ( $instance)
+    #if ( $instance)
+		#if ( ! $instance.IsNew)
 		<xsl:value-of select="concat( 'Edit ', ' ', ancestor::adl:entity/@name)"/> $instance.UserIdentifier
 		#else
 		<xsl:call-template name="i18n-add-a-new">
 			<xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
 		</xsl:call-template>
-		#end
-		#end
-		#capturefor( headextras)
-		<xsl:call-template name="head"/>
+    #end
+    #else
+    <xsl:call-template name="i18n-add-a-new">
+      <xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
+    </xsl:call-template>
+    #end
+    #end
+    #capturefor( headextras)
+    <xsl:call-template name="head"/>
 		<xsl:call-template name="generate-head-javascript">
 			<xsl:with-param name="form" select="."/>
 		</xsl:call-template>
@@ -304,14 +310,20 @@
 		</xsl:text>
 		<html>
 			<xsl:comment>
-				#if ( $instance)
+        #if ( $instance)
+				#if ( ! $instance.IsNew)
 				#set( $title = "<xsl:value-of select="concat( 'Edit ', ' ', ancestor::adl:entity/@name)"/> $instance.UserIdentifier")
 				#else
 				#set( $title = "<xsl:call-template name="i18n-add-a-new">
 					<xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
 				</xsl:call-template>")
-				#end
-			</xsl:comment>
+        #end
+        #else
+        #set( $title = "<xsl:call-template name="i18n-add-a-new">
+          <xsl:with-param name="entity-name" select="ancestor::adl:entity/@name"/>
+        </xsl:call-template>")
+        #end
+      </xsl:comment>
 			<head>
 				<xsl:call-template name="head"/>
 				<xsl:comment>
@@ -320,7 +332,7 @@
 					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					generated from ADL.
 
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 					Generation parameters were:
 					locale: <xsl:value-of select="$locale"/>
 					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -619,6 +631,7 @@
 		</xsl:variable>
 		<!-- don't emit a verb unless there is an instance for it to act on -->
 		#if( $instance)
+    #if( ! $instance.IsNew)
 		<tr>
 			<xsl:attribute name="class">
 				<xsl:value-of select="$class"/>
@@ -644,6 +657,7 @@
 				</button>
 			</td>
 		</tr>
+    #end
 		#end
 	</xsl:template>
 
@@ -765,6 +779,7 @@
 	<xsl:template name="shuffle-widget">
 		<xsl:param name="property" select="."/>
     #if ( $instance)
+    #if ( ! $instance.IsNew)
 		<table class="shuffle">
 			<tr>
 				<td class="widget shuffle-all" rowspan="2">
@@ -805,6 +820,7 @@
 		</table>
     #else
     <i>You must create your <xsl:value-of select="$property/ancestor::adl:entity/@name"/> record before you can add <xsl:value-of select="$property/@name"/> to it</i>
+    #end
     #end
 	</xsl:template>
 
@@ -921,7 +937,7 @@
 			Auto generated Velocity list for <xsl:value-of select="@name"/>,
 			generated from ADL.
 
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 			Generation parameters were:
 			locale: <xsl:value-of select="$locale"/>
 			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -984,7 +1000,7 @@
 					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
 					  generated from ADL.
 
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.37 $', 10)"/>
+					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.38 $', 10)"/>
 					  Generation parameters were:
 					  locale: <xsl:value-of select="$locale"/>
 					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
@@ -1678,7 +1694,7 @@
 			</xsl:when>
 			<xsl:otherwise>
 				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',cols='<xsl:value-of select="normalize-space($cols)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
-			</xsl:otherwise>				
+      </xsl:otherwise>				
 		</xsl:choose>
 	</xsl:template>
 
@@ -1707,8 +1723,8 @@
 				// &lt;![CDATA[
 				new Control.Slider('<xsl:value-of select="$property/@name"/>-slider','<xsl:value-of select="$property/@name"/>-track',{
 				onSlide:function(v){$('<xsl:value-of select="concat( 'instance_', $property/@name)"/>').value = <xsl:value-of select="$minimum"/>+ Math.floor(v*(<xsl:value-of select="$maximum - $minimum"/>))}
-				})
-				// ]]&gt;
+        });
+        // ]]&gt;
 			</script>
 		</xsl:if>
 	</xsl:template>
