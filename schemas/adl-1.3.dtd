@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.1 $
+        $Revision: 1.2 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -320,7 +320,7 @@ that we can allow HTML block level entities within content elements -->
               committed to persistent store, the value which it holds before
               it has been committed
 -->
-<!ELEMENT property ( documentation?, generator?, permission*, option*, prompt*, help*, ifmissing*)>
+<!ELEMENT property ( documentation?, generator?, (permission|option|prompt|help|ifmissing)*)>
 
 <!ATTLIST property 
 	name 		    CDATA 					#REQUIRED
@@ -502,7 +502,7 @@ that we can allow HTML block level entities within content elements -->
   a group of fields and other controls within a form or list, which the 
   renderer might render as a single pane in a tabbed display, for example.
   -->
-<!ELEMENT fieldgroup (documentation?, (prompt|%FieldStuff;)*)>
+<!ELEMENT fieldgroup (documentation?, (prompt|permission|%FieldStuff;)*)>
 <!ATTLIST fieldgroup
   name        CDATA           #REQUIRED>
 
@@ -511,14 +511,14 @@ that we can allow HTML block level entities within content elements -->
 
   property:   the property which this field displays/edits
   -->
-<!ELEMENT field (documentation?, prompt*, help*, permission*) >
+<!ELEMENT field (documentation?, (prompt|help|permission)*) >
 <!ATTLIST field 
   property    CDATA           #REQUIRED >
 
 <!-- a verb is something that may be done through a form. Probably the verbs 'store' 
   and 'delete' are implied, but maybe they need to be explicitly declared. The 'verb'
   attribute of the verb is what gets returned to the controller -->
-<!ELEMENT verb (documentation?, prompt*, help*, permission*) >
+<!ELEMENT verb (documentation?, (prompt|help|permission)*) >
 <!ATTLIST verb
   verb        CDATA           #REQUIRED
   dangerous   %Boolean;       #REQUIRED>
