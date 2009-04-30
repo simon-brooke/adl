@@ -15,8 +15,8 @@
     Utility templates to find permissions on various things
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2009-04-28 13:53:17 $
+    $Revision: 1.4 $
+    $Date: 2009-04-30 08:56:33 $
 	-->
 
 	<!-- collect all groups which can edit the specified property -->
@@ -220,7 +220,61 @@
 		</xsl:for-each>
 	</xsl:template>
 
-	<!-- find, as a string, the permission which applies to this property in the context of the named group.
+  <!-- collect the groups which can read a fieldgroup -->
+  <xsl:template name="fieldgroup-read-groups">
+    <xsl:param name="fieldgroup"/>
+    <xsl:for-each select="//adl:group">
+      <xsl:variable name="perm">
+        <xsl:call-template name="fieldgroup-permission">
+          <xsl:with-param name="fieldgroup" select="$fieldgroup"/>
+          <xsl:with-param name="groupname" select="@name"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$perm='all'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:when test="$perm='edit'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:when test="$perm='insert'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:when test="$perm='noedit'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:when test="$perm='read'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:otherwise/>
+      </xsl:choose>
+    </xsl:for-each>
+  </xsl:template>
+
+
+  <!-- collect the groups which can execute a verb -->
+  <xsl:template name="verb-execute-groups">
+    <xsl:param name="verb"/>
+    <xsl:for-each select="//adl:group">
+      <xsl:variable name="perm">
+        <xsl:call-template name="verb-permission">
+          <xsl:with-param name="verb" select="$verb"/>
+          <xsl:with-param name="groupname" select="@name"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:choose>
+        <xsl:when test="$perm='all'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:when test="$perm='edit'">
+          <xsl:copy-of select="."/>
+        </xsl:when>
+        <xsl:otherwise/>
+      </xsl:choose>
+    </xsl:for-each>
+  </xsl:template>
+
+  <!-- find, as a string, the permission which applies to this page in the context of the named group.
       NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
       page: a page, list or form element
       groupname: a string, being the name of a group
@@ -245,7 +299,37 @@
 		</xsl:choose>
 	</xsl:template>
 
-	<!-- find, as a string, the permission which applies to this property in the context of the named group.
+
+  <!-- find, as a string, the permission which applies to this fieldgroup in the context of the named group.
+      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
+      page: a page, list or form element
+      groupname: a string, being the name of a group
+    -->
+  <xsl:template name="fieldgroup-permission">
+    <xsl:param name="fieldgroup"/>
+    <xsl:param name="groupname" select="'public'"/>
+    <xsl:choose>
+      <xsl:when test="$fieldgroup/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$fieldgroup/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="$fieldgroup/ancestor::adl:page/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$fieldgroup/ancestor::adl:page/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="$fieldgroup/ancestor::adl:entity/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$fieldgroup/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="//adl:group[@name=$groupname]/@parent">
+        <xsl:call-template name="fieldgroup-permission">
+          <xsl:with-param name="fieldgroup" select="$fieldgroup"/>
+          <xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>none</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+
+  <!-- find, as a string, the permission which applies to this property in the context of the named group.
       NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
       property: a property element
       groupname: a string, being the name of a group
@@ -270,7 +354,38 @@
 		</xsl:choose>
 	</xsl:template>
 
-	<!-- find, as a string, the permission which applies to this field in the context of the named group
+  <!-- find, as a string, the permission which applies to this property in the context of the named group.
+      NOTE: recurses up the group hierarchy - if it has cycles that's your problem, buster.
+      NOTE: this is practically identical to property-permission - to the extent it might be 
+      possible/desirable to combine the two.
+      verb: a verb element
+      groupname: a string, being the name of a group
+    -->
+  <xsl:template name="verb-permission">
+    <xsl:param name="verb"/>
+    <xsl:param name="groupname" select="'public'"/>
+    <xsl:choose>
+      <xsl:when test="$verb/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$verb/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="$verb/ancestor::adl:form/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$verb/ancestor::adl:form/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="$verb/ancestor::adl:entity/adl:permission[@group=$groupname]">
+        <xsl:value-of select="$verb/ancestor::adl:entity/adl:permission[@group=$groupname]/@permission"/>
+      </xsl:when>
+      <xsl:when test="//adl:group[@name=$groupname]/@parent">
+        <xsl:call-template name="verb-permission">
+          <xsl:with-param name="verb" select="$verb"/>
+          <xsl:with-param name="groupname" select="//adl:group[@name=$groupname]/@parent"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>none</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+
+  <!-- find, as a string, the permission which applies to this field in the context of the named group
       field: a field element
       groupname: a string, being the name of a group
     -->
@@ -280,6 +395,12 @@
       <xsl:choose>
         <xsl:when test="$field/adl:permission[@group=$groupname]">
           <xsl:value-of select="$field/adl:permission[@group=$groupname]/@permission"/>
+        </xsl:when>
+        <xsl:when test="$field/ancestor::adl:fieldgroup/adl:permission[@group=$groupname]">
+          <xsl:value-of select="$field/ancestor::adl:fieldgroup/adl:permission[@group=$groupname]/@permission"/>
+        </xsl:when>
+        <xsl:when test="$field/ancestor::adl:form/adl:permission[@group=$groupname]">
+          <xsl:value-of select="$field/ancestor::adl:form/adl:permission[@group=$groupname]/@permission"/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:call-template name="property-permission">

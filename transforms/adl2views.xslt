@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.39 $
-    $Date: 2009-04-28 13:44:51 $
+    $Revision: 1.40 $
+    $Date: 2009-04-30 08:56:33 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -66,6 +66,11 @@
 	<!-- Whether to authenticate at application or at database layer. 
     If not 'Application', then 'Database'. -->
 	<xsl:param name="authentication-layer" select="'Application'"/>
+
+  <!-- bug 2847: how long to wait on a page before it auto-redirects to the default URL -->
+  <xsl:param name="page-timeout" select="300"/>
+  <!-- bug 2847: the default URL, probably a 'please login' screen -->
+  <xsl:param name="default-url" select="'../default.aspx'"/>
 
 	<xsl:template match="adl:application">
 		<output>
@@ -118,14 +123,12 @@
 			<xsl:call-template name="i18n-really-delete"/>
 		</xsl:variable>
 		#set( $title = "<xsl:value-of select="concat( $really-delete, ' ', @name)"/> $instance.UserIdentifier")
-		<xsl:comment>
-			<xsl:value-of select="$product-version"/>
-
+    #capturefor( headextras)
+    <xsl:comment>
 			Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
-			generated from ADL.
-
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
 		</xsl:comment>
+    <xsl:call-template name="head"/>
+    #end
 		<xsl:call-template name="maybe-delete">
 			<xsl:with-param name="entity" select="."/>
 		</xsl:call-template>
@@ -156,15 +159,10 @@
 				</xsl:variable>
 				#set( $title = "<xsl:value-of select="concat( $really-delete, ' ', @name)"/> $instance.UserIdentifier")
 				<head>
-					<xsl:call-template name="head"/>
-					<xsl:comment>
-						Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
-						generated from ADL.
-
-						Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
-
-						<xsl:value-of select="/adl:application/@revision"/>
-					</xsl:comment>
+          <xsl:comment>
+            Auto generated Velocity maybe-delete form for <xsl:value-of select="@name"/>,
+          </xsl:comment>
+          <xsl:call-template name="head"/>
 					<xsl:call-template name="install-scripts"/>
 				</head>
 				<body>
@@ -237,26 +235,7 @@
 		</xsl:text>
 		<xsl:comment>[ cut here: next file '<xsl:value-of select="concat( ancestor::adl:entity/@name, '/', @name)"/>.auto.vm' ]</xsl:comment>
 		<xsl:text>
-      </xsl:text>
-		<xsl:comment>
-			<xsl:value-of select="$product-version"/>
-
-			Auto generated Velocity <xsl:value-of select="@name"/> form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
-			generated from ADL.
-
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
-			Generation parameters were:
-			locale: <xsl:value-of select="$locale"/>
-			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
-			show-errors: <xsl:value-of select="$show-errors"/>
-			show-messages: <xsl:value-of select="$show-messages"/>
-			max-widget-width: <xsl:value-of select="$max-widget-width"/>
-			product-version: <xsl:value-of select="$product-version"/>
-			layout-name: <xsl:value-of select="$layout-name"/>
-			area-name: <xsl:value-of select="$area-name"/>
-
-			<xsl:value-of select="/adl:application/@revision"/>
-		</xsl:comment>
+    </xsl:text>
 		#capturefor( title)
     #if ( $instance)
 		#if ( ! $instance.IsNew)
@@ -273,6 +252,9 @@
     #end
     #end
     #capturefor( headextras)
+    <xsl:comment>
+      Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
+    </xsl:comment>
     <xsl:call-template name="head"/>
 		<xsl:call-template name="generate-head-javascript">
 			<xsl:with-param name="form" select="."/>
@@ -325,26 +307,18 @@
         #end
       </xsl:comment>
 			<head>
-				<xsl:call-template name="head"/>
-				<xsl:comment>
-					<xsl:value-of select="$product-version"/>
-
-					Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
-					generated from ADL.
-
-					Generated using adl2views.xsl <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
-					Generation parameters were:
-					locale: <xsl:value-of select="$locale"/>
-					generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
-					show-errors: <xsl:value-of select="$show-errors"/>
-					show-messages: <xsl:value-of select="$show-messages"/>
-					max-widget-width: <xsl:value-of select="$max-widget-width"/>
-					product-version: <xsl:value-of select="$product-version"/>
-					layout-name: <xsl:value-of select="$layout-name"/>
-					area-name: <xsl:value-of select="$area-name"/>
-					<xsl:value-of select="/adl:application/@revision"/>
-				</xsl:comment>
-				<xsl:call-template name="install-scripts"/>
+        <xsl:comment>
+          Auto generated Velocity form for <xsl:value-of select="ancestor::adl:entity/@name"/>,
+        </xsl:comment>
+        <xsl:call-template name="head"/>
+        <xsl:if test="$page-timeout &gt; 0">
+          <meta http-equiv="refresh" content="5; URL=http://www.cryer.co.uk">
+            <xsl:attribute name="content">
+              <xsl:value-of select="concat($page-timeout, '; URL=', $default-url)"/>
+            </xsl:attribute>
+          </meta>
+        </xsl:if>
+        <xsl:call-template name="install-scripts"/>
 				<xsl:call-template name="generate-head-javascript">
 					<xsl:with-param name="form" select="."/>
 				</xsl:call-template>
@@ -525,7 +499,19 @@
 	</xsl:template>
 
 	<xsl:template match="adl:fieldgroup">
-		<div class="tab-pane">
+    <xsl:if test="$authentication-layer = 'Database'">
+      <xsl:variable name="property" select="."/>
+      <xsl:variable name="readgroups">
+        <xsl:call-template name="fieldgroup-read-groups">
+          <xsl:with-param name="fieldgroup" select="."/>
+        </xsl:call-template>
+      </xsl:variable>
+      <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
+      <xsl:comment>If the user can't read the fieldgroup, don't output it at all.</xsl:comment>
+      #if ( <xsl:for-each select="exsl:node-set( $readgroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+    </xsl:if>
+
+    <div class="tab-pane">
 			<xsl:attribute name="id">
 				<xsl:value-of select="concat( @name, 'pane')"/>
 			</xsl:attribute>
@@ -547,6 +533,9 @@
 				<xsl:apply-templates select="adl:field|adl:verb|adl:auxlist"/>
 			</table>
 		</div>
+    <xsl:if test="$authentication-layer = 'Database'">
+      #end
+    </xsl:if>
 	</xsl:template>
 
 	<xsl:template match="adl:auxlist">
@@ -623,7 +612,15 @@
 	</xsl:template>
 
 	<xsl:template match="adl:verb">
-		<xsl:variable name="class">
+    <xsl:variable name="executegroups">
+      <xsl:call-template name="verb-execute-groups">
+        <xsl:with-param name="verb" select="."/>
+      </xsl:call-template>
+    </xsl:variable>
+    <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+    #if ( <xsl:for-each select="exsl:node-set( $executegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+    <xsl:variable name="class">
 			<xsl:choose>
 				<xsl:when test="@dangerous='true'">actionDangerous</xsl:when>
 				<xsl:otherwise>actionSafe</xsl:otherwise>
@@ -658,8 +655,9 @@
 			</td>
 		</tr>
     #end
-		#end
-	</xsl:template>
+    #end
+    #end
+  </xsl:template>
 
 	<xsl:template match="adl:field">
 		<xsl:variable name="propname">
@@ -726,7 +724,17 @@
       it may be we need to add a mode to indicate this! -->
 		<!-- for links and lists we implement a shuffle widget, which extends over both columns -->
 		<xsl:param name="oddness" select="odd"/>
-		<tr>
+    <xsl:if test="$authentication-layer = 'Database'">
+      <xsl:variable name="property" select="."/>
+      <xsl:variable name="readgroups">
+        <xsl:call-template name="entity-read-groups">
+          <xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
+      #if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
+    </xsl:if>
+    <tr>
 			<xsl:attribute name="class">
 				<xsl:value-of select="$oddness"/>
 			</xsl:attribute>
@@ -736,33 +744,12 @@
 					<xsl:with-param name="fallback" select="@name"/>
 				</xsl:call-template>")}
 			</td>
-			<td class="widget shuffle" colspan="2">
-				<xsl:choose>
-					<xsl:when test="$authentication-layer = 'Database'">
-						<xsl:variable name="property" select="."/>
-						<xsl:variable name="readgroups">
-							<xsl:call-template name="entity-read-groups">
-								<xsl:with-param name="entity" select="//adl:entity[@name=$property/@entity]"/>
-							</xsl:call-template>
-						</xsl:variable>
-						<!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause cause the Velocity parser to break! -->
-						#if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
-						<xsl:call-template name="shuffle-widget">
-							<xsl:with-param name="property" select="."/>
-						</xsl:call-template>
-						#else
-						[Not authorised]
-						#end
-					</xsl:when>
-					<xsl:when test="$authentication-layer = 'Application'">
-						<xsl:call-template name="shuffle-widget">
-							<xsl:with-param name="property" select="."/>
-						</xsl:call-template>
-					</xsl:when>
-				</xsl:choose>
-
-			</td>
-		</tr>
+      <td class="widget shuffle" colspan="2">
+        <xsl:call-template name="shuffle-widget">
+          <xsl:with-param name="property" select="."/>
+        </xsl:call-template>
+      </td>
+    </tr>
 		<tr>
 			<xsl:attribute name="class">
 				<xsl:choose>
@@ -774,6 +761,9 @@
 				<xsl:apply-templates select="adl:help[@locale = $locale]"/>
 			</td>
 		</tr>
+    <xsl:if test="$authentication-layer = 'Database'">
+      #end
+    </xsl:if>
 	</xsl:template>
 
 	<xsl:template name="shuffle-widget">
@@ -844,7 +834,19 @@
 				<xsl:with-param name="property" select="$property"/>
 			</xsl:call-template>
 		</xsl:variable>
-			<tr>
+    <xsl:if test="$authentication-layer = 'Database'">
+      <xsl:choose>
+        <xsl:when test="exsl:node-set( $readgroups)/*">
+          <xsl:comment>if the user can't even read the field, don't output it at all.</xsl:comment>
+          #if ( <xsl:for-each select="exsl:node-set( $readgroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:comment>we haven't found any group of users who are entitled to see this field.</xsl:comment>
+          #if ( false)
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
+      <tr>
 				<xsl:attribute name="class">
 					<xsl:value-of select="$oddness"/>
 				</xsl:attribute>
@@ -915,7 +917,11 @@
 					<xsl:apply-templates select="adl:help[@locale = $locale]"/>
 				</td>
 			</tr>
-	</xsl:template>
+    <xsl:if test="$authentication-layer = 'Database'">
+        #end
+    </xsl:if>
+
+  </xsl:template>
 
 
 	<!-- layout of lists -->
@@ -931,29 +937,15 @@
 				<xsl:with-param name="noun" select="ancestor::adl:entity/@name"/>
 			</xsl:call-template>
 		</xsl:variable>
-		<xsl:comment>
-			<xsl:value-of select="$product-version"/>
 
-			Auto generated Velocity list for <xsl:value-of select="@name"/>,
-			generated from ADL.
-
-			Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
-			Generation parameters were:
-			locale: <xsl:value-of select="$locale"/>
-			generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
-			show-errors: <xsl:value-of select="$show-errors"/>
-			show-messages: <xsl:value-of select="$show-messages"/>
-			max-widget-width: <xsl:value-of select="$max-widget-width"/>
-			product-version: <xsl:value-of select="$product-version"/>
-			layout-name: <xsl:value-of select="$layout-name"/>
-			area-name: <xsl:value-of select="$area-name"/>
-		</xsl:comment>
-
-		#capturefor( title)
-		<xsl:value-of select="normalize-space( concat( 'List ', $withpluralsuffix))"/>
-		#end
-		#capturefor( headextras)
-		<xsl:call-template name="head"/>
+    #capturefor( title)
+    <xsl:value-of select="normalize-space( concat( 'List ', $withpluralsuffix))"/>
+    #end
+    #capturefor( headextras)
+    <xsl:comment>
+      Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
+    </xsl:comment>
+    <xsl:call-template name="head"/>
 		#end
 		<xsl:call-template name="top"/>
 		<xsl:call-template name="list">
@@ -994,23 +986,10 @@
 			<html>
 			  <head>
 				  #set( $title = "<xsl:value-of select="normalize-space( concat( 'List ', $withpluralsuffix))"/>")
-				  <xsl:call-template name="head"/>
-				  <xsl:comment>
-					  <xsl:value-of select="$product-version"/>
-					  Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
-					  generated from ADL.
-
-					  Generated using adl2listview.xsl <xsl:value-of select="substring( '$Revision: 1.39 $', 10)"/>
-					  Generation parameters were:
-					  locale: <xsl:value-of select="$locale"/>
-					  generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
-					  show-errors: <xsl:value-of select="$show-errors"/>
-					  show-messages: <xsl:value-of select="$show-messages"/>
-					  max-widget-width: <xsl:value-of select="$max-widget-width"/>
-					  product-version: <xsl:value-of select="$product-version"/>
-					  layout-name: <xsl:value-of select="$layout-name"/>
-					  area-name: <xsl:value-of select="$area-name"/>
-				  </xsl:comment>
+          <xsl:comment>
+            Auto generated Velocity list for <xsl:value-of select="ancestor::adl:entity/@name"/>,
+          </xsl:comment>
+          <xsl:call-template name="head"/>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
 			  <body>
@@ -1776,7 +1755,33 @@
 		${ScriptsHelper.InstallScript( "Panes")}
 	</xsl:template>
 
+  <!-- standard header material - auto-timeout, etc -->
 	<xsl:template name="head">
+    <xsl:comment>
+      <xsl:value-of select="/adl:application/@name"/> <xsl:value-of select="$product-version"/> - <xsl:value-of select="/adl:application/@revision"/>
+      Auto generated Velocity macro for <xsl:value-of select="@name"/>,
+      generated from ADL.
+
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.40 $', 10)"/>
+      Generation parameters were:
+      area-name: <xsl:value-of select="$area-name"/>
+      default-url: <xsl:value-of select="$default-url"/>
+      generate-site-navigation: <xsl:value-of select="$generate-site-navigation"/>
+      layout-name: <xsl:value-of select="$layout-name"/>
+      locale: <xsl:value-of select="$locale"/>
+      max-widget-width: <xsl:value-of select="$max-widget-width"/>
+      product-version: <xsl:value-of select="$product-version"/>
+      page-timeout: <xsl:value-of select="$page-timeout"/>
+      show-errors: <xsl:value-of select="$show-errors"/>
+      show-messages: <xsl:value-of select="$show-messages"/>
+    </xsl:comment>
+    <xsl:if test="$page-timeout &gt; 0">
+      <meta http-equiv="refresh">
+        <xsl:attribute name="content">
+          <xsl:value-of select="concat($page-timeout, '; URL=', $default-url)"/>
+        </xsl:attribute>
+      </meta>
+    </xsl:if>
     <xsl:choose>
       <xsl:when test="adl:head">
         <xsl:for-each select="adl:head/*">
@@ -1791,6 +1796,7 @@
     </xsl:choose>
   </xsl:template>
   
+  <!-- standard top area content on all pages (navigation, etc) -->
   <xsl:template name="top">
     <xsl:choose>
       <xsl:when test="adl:top">
@@ -1848,6 +1854,7 @@
     </xsl:if>
   </xsl:template>
 
+  <!-- standard footer on all pages; product identifier and version -->
   <xsl:template name="foot">
     <xsl:choose>
       <xsl:when test="adl:foot">
