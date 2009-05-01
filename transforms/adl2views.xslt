@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.41 $
-    $Date: 2009-04-30 17:04:00 $
+    $Revision: 1.42 $
+    $Date: 2009-05-01 08:46:45 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1753,7 +1753,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.41 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.42 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
@@ -1801,6 +1801,10 @@
         </xsl:for-each>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:if test="$authentication-layer = 'Database'">
+      #if ( ${SecurityHelper.GetUserName()})
+      <!-- the #else and #end of this #if is generated in the foot template -->
+    </xsl:if>
     <xsl:variable name="current-entity" select="ancestor::adl:entity/@name"/>
     <xsl:if test="$generate-site-navigation = 'true'">
       <ul class="generatednav">
@@ -1857,6 +1861,16 @@
 
   <!-- standard footer on all pages; product identifier and version -->
   <xsl:template name="foot">
+    <xsl:if test="$authentication-layer = 'Database'">
+      <!-- the #if for this #else and #end is generated in the head template -->
+      #else
+      <div class="content">
+        <p>
+          To view this page you must first <a href="../dblogin/login.rails">Log in</a>
+        </p>
+      </div>
+      #end
+    </xsl:if>
     <xsl:choose>
       <xsl:when test="adl:foot">
         <xsl:for-each select="adl:foot/*">
