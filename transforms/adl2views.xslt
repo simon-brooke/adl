@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.47 $
-    $Date: 2009-05-01 15:52:40 $
+    $Revision: 1.48 $
+    $Date: 2009-05-01 15:55:07 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1242,7 +1242,7 @@
 								<xsl:choose>
 									<xsl:when test="@type='string'">
 										<xsl:choose>
-											<xsl:when test="@size &gt; 20">20</xsl:when>
+											<xsl:when test="@size &gt; 8">8</xsl:when>
 											<xsl:otherwise>
 												<xsl:value-of select="@size"/>
 											</xsl:otherwise>
@@ -1252,7 +1252,7 @@
 									<xsl:when test="@type='real'">8</xsl:when>
 									<xsl:when test="@type='money'">8</xsl:when>
 									<!-- xsl:when test="@type='message'">20</xsl:when doesn't work yet -->
-									<xsl:when test="@type='text'">20</xsl:when>
+									<xsl:when test="@type='text'">8</xsl:when>
 									<!-- xsl:when test="@type='enity'">20</xsl:when doesn't work yet -->
 									<xsl:otherwise>0</xsl:otherwise>
 								</xsl:choose>
@@ -1273,7 +1273,7 @@
 						</td>
 					</xsl:for-each>
 					<td>
-						<input type="submit" name="search-button" value="Search"/>
+						<input type="submit" name="search-button" size="8" value="Search"/>
 					</td>
 				</tr>
 			</xsl:if>
@@ -1761,7 +1761,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.47 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.48 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
