@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.44 $
-    $Date: 2009-05-01 10:02:08 $
+    $Revision: 1.45 $
+    $Date: 2009-05-01 11:18:39 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -434,6 +434,7 @@
 						</xsl:choose>
           </table>
           <ul class="verbs">
+            <xsl:apply-templates select="adl:verb"/>
             <xsl:choose>
               <xsl:when test="$authentication-layer='Database'">
                 <xsl:variable name="deletegroups">
@@ -633,7 +634,7 @@
 		<!-- don't emit a verb unless there is an instance for it to act on -->
     #if( $instance)
     #if( ! $instance.IsNew)
-    <ul>
+    <li>
       <xsl:attribute name="class">
         <xsl:value-of select="concat( 'custom-verb ', $class)"/>
       </xsl:attribute>
@@ -649,7 +650,7 @@
           <xsl:with-param name="fallback" select="@verb"/>
         </xsl:call-template>
       </button>
-    </ul>
+    </li>
     #end
     #end
     #end
@@ -1760,7 +1761,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.44 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.45 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
