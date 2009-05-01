@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.42 $
-    $Date: 2009-05-01 08:46:45 $
+    $Revision: 1.43 $
+    $Date: 2009-05-01 08:58:44 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -166,12 +166,14 @@
 					<xsl:call-template name="install-scripts"/>
 				</head>
 				<body>
-					<xsl:call-template name="top"/>
-					<xsl:call-template name="maybe-delete">
-						<xsl:with-param name="entity" select="."/>
-					</xsl:call-template>
-					<xsl:call-template name="foot"/>
-				</body>
+          <div id="page">
+            <xsl:call-template name="top"/>
+            <xsl:call-template name="maybe-delete">
+              <xsl:with-param name="entity" select="."/>
+            </xsl:call-template>
+            <xsl:call-template name="foot"/>
+          </div>
+        </body>
 			</html>
 		</xsl:template>
 
@@ -337,12 +339,14 @@
 				</style>
 			</head>
 			<body onload="performInitialisation()">
-				<xsl:call-template name="top"/>
-				<xsl:call-template name="form-content">
-					<xsl:with-param name="form" select="."/>
-				</xsl:call-template>
-				<xsl:call-template name="foot"/>
-			</body>
+        <div id="page">
+          <xsl:call-template name="top"/>
+          <xsl:call-template name="form-content">
+            <xsl:with-param name="form" select="."/>
+          </xsl:call-template>
+          <xsl:call-template name="foot"/>
+        </div>
+      </body>
 		</html>
 	</xsl:template>
 
@@ -983,14 +987,16 @@
           <xsl:call-template name="head"/>
 				  <xsl:call-template name="install-scripts"/>
 			  </head>
-			  <body>
-				  <xsl:call-template name="top"/>
-				  <xsl:call-template name="list">
-					  <xsl:with-param name="list" select="."/>
-				  </xsl:call-template>
-				  <xsl:call-template name="foot"/>
-			  </body>
-		  </html>
+        <body>
+          <div id="page">
+            <xsl:call-template name="top"/>
+            <xsl:call-template name="list">
+              <xsl:with-param name="list" select="."/>
+            </xsl:call-template>
+            <xsl:call-template name="foot"/>
+          </div>
+        </body>
+      </html>
 	  </xsl:template>
 
 	  <!-- layout the content of a list, whether or not the layout is empty -->
@@ -1753,7 +1759,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.42 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.43 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
