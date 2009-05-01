@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.45 $
-    $Date: 2009-05-01 11:18:39 $
+    $Revision: 1.46 $
+    $Date: 2009-05-01 15:30:46 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -486,13 +486,13 @@
     <li class="standard-verb actionDangerous">
       #if ( $instance)
       #if ( $instance.NoDeleteReason)
-      <button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this!</button>
+      <button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this</button>
       #else
       <button type="submit" name="command" value="delete">
         <xsl:attribute name="title">
           <xsl:call-template name="i18n-delete-prompt"/>
         </xsl:attribute>
-        Delete this!
+        Delete this
       </button>
       #end
       #end
@@ -1123,7 +1123,7 @@
 						  </td>
 					  </xsl:for-each>
 					  <td>
-						  <input type="submit" name="search-button" value="Search!"/>
+						  <input type="submit" name="search-button" value="Search"/>
 					  </td>
 				  </tr>
 			  </xsl:if>
@@ -1273,7 +1273,7 @@
 						</td>
 					</xsl:for-each>
 					<td>
-						<input type="submit" name="search-button" value="Search!"/>
+						<input type="submit" name="search-button" value="Search"/>
 					</td>
 				</tr>
 			</xsl:if>
@@ -1319,7 +1319,7 @@
 							<xsl:attribute name="href">
 								<xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
 							</xsl:attribute>
-							<xsl:value-of select="@name"/>!
+							<xsl:value-of select="@name"/>
 						</a>
 					</td>
 				</xsl:for-each>
@@ -1761,7 +1761,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.45 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.46 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
