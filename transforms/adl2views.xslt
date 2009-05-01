@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.46 $
-    $Date: 2009-05-01 15:30:46 $
+    $Revision: 1.47 $
+    $Date: 2009-05-01 15:52:40 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1195,7 +1195,7 @@
 						<xsl:attribute name="href">
 							<xsl:value-of select="concat( '../', $entity/@name, '/', @name, '.rails', $keys)"/>
 						</xsl:attribute>
-						<xsl:value-of select="@name"/>!
+						<xsl:value-of select="@name"/>
 					</a>
 				</td>
 			</xsl:for-each>
@@ -1761,7 +1761,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.46 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.47 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
