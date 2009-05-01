@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.43 $
-    $Date: 2009-05-01 08:58:44 $
+    $Revision: 1.44 $
+    $Date: 2009-05-01 10:02:08 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1065,7 +1065,7 @@
 			ought to be replaced with a single template, but that template proves to be extremely hard to get 
 			right -->
 		  <xsl:param name="can-search"/>
-		  <table>
+		  <table class="sortable">
 			  <tr>
 				  <xsl:for-each select="$fields">
 					  <xsl:variable name="field" select="."/>
@@ -1217,7 +1217,7 @@
 			ought to be replaced with a single template, but that template proves to be extremely hard to get 
 			right -->
 		<xsl:param name="can-search"/>
-		<table>
+		<table class="sortable">
 			<tr>
 				<xsl:for-each select="$properties">
 					<th>
@@ -1738,19 +1738,20 @@
 	<!-- assuming an empty layout, install all the standard scripts 
     which an ADL page may need -->
 	<xsl:template name="install-scripts">
-		${ScriptsHelper.InstallScript( "ShuffleWidget")}
+    ${ScriptsHelper.InstallScript( "ShuffleWidget")}
 
-		${Ajax.InstallScripts()}
-		${FormHelper.InstallScripts()}
-		${Validation.InstallScripts()}
-		${Scriptaculous.InstallScripts()}
-		${DateTimeHelper.InstallScripts()}
+    ${Ajax.InstallScripts()}
+    ${FormHelper.InstallScripts()}
+    ${Validation.InstallScripts()}
+    ${Scriptaculous.InstallScripts()}
+    ${DateTimeHelper.InstallScripts()}
 
-		${ScriptsHelper.InstallScript( "Sitewide")}
-		${ScriptsHelper.InstallScript( "Behaviour")}
-		${ScriptsHelper.InstallScript( "Epoch")}
-		${ScriptsHelper.InstallScript( "Panes")}
-	</xsl:template>
+    ${ScriptsHelper.InstallScript( "Sitewide")}
+    ${ScriptsHelper.InstallScript( "Behaviour")}
+    ${ScriptsHelper.InstallScript( "Epoch")}
+    ${ScriptsHelper.InstallScript( "Panes")}
+    ${ScriptsHelper.InstallScript( "SortTable")}
+  </xsl:template>
 
   <!-- standard header material - auto-timeout, etc -->
 	<xsl:template name="head">
@@ -1759,7 +1760,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.43 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.44 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
