@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.50 $
-    $Date: 2009-05-04 11:00:05 $
+    $Revision: 1.51 $
+    $Date: 2009-05-04 13:53:18 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1449,19 +1449,23 @@
 
 			function performInitialisation()
 			{
+			#if ( $instance)
+			#if ( ! $instance.IsNew)
 			<xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
 				<xsl:variable name="propname" select="@name"/>
 				<xsl:choose>
 					<xsl:when test="$form/@properties='all'">
-						document.<xsl:value-of select="$form/@name"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
+						<xsl:value-of select="concat( 'document.',$form/@name, '.', @name, '.submitHandler = shuffleSubmitHandler;')"/>
 					</xsl:when>
 					<xsl:when test="$form//adl:field[@property=$propname]">
-						document.<xsl:value-of select="$form/@name"/>.<xsl:value-of select="@name"/>.submitHandler = shuffleSubmitHandler;
+						<xsl:value-of select="concat( 'document.',$form/@name, '.', @name, '.submitHandler = shuffleSubmitHandler;')"/>
 					</xsl:when>
 					<!-- if we're not doing all properties, and if this property is not the property of a field,
 						we /don't/ set up a submit handler. -->
 				</xsl:choose>
 			</xsl:for-each>
+			#end
+			#end
 			var validator = new Validation('<xsl:value-of select="$form/@name"/>', {immediate : true, useTitles : true});
 			}
 
@@ -1766,7 +1770,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.50 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.51 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
