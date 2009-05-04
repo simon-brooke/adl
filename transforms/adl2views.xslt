@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.49 $
-    $Date: 2009-05-01 15:58:21 $
+    $Revision: 1.50 $
+    $Date: 2009-05-04 11:00:05 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -437,16 +437,6 @@
             <xsl:apply-templates select="adl:verb"/>
             <xsl:choose>
               <xsl:when test="$authentication-layer='Database'">
-                <xsl:variable name="deletegroups">
-                  <xsl:call-template name="entity-delete-groups">
-                    <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
-                  </xsl:call-template>
-                </xsl:variable>
-                <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
-								cause the Velocity parser to break! -->
-                #if ( <xsl:for-each select="exsl:node-set( $deletegroups)/*">${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
-                <xsl:call-template name="delete-widget-row"/>
-                #end
                 <xsl:variable name="savegroups">
                   <xsl:call-template name="entity-save-groups">
                     <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
@@ -457,10 +447,20 @@
                 #if ( <xsl:for-each select="exsl:node-set( $savegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
                 <xsl:call-template name="save-widget-row"/>
                 #end
+                <xsl:variable name="deletegroups">
+                  <xsl:call-template name="entity-delete-groups">
+                    <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
+                  </xsl:call-template>
+                </xsl:variable>
+                <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+								cause the Velocity parser to break! -->
+                #if ( <xsl:for-each select="exsl:node-set( $deletegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
+                <xsl:call-template name="delete-widget-row"/>
+                #end
               </xsl:when>
               <xsl:when test="$authentication-layer='Application'">
-                <xsl:call-template name="delete-widget-row"/>
                 <xsl:call-template name="save-widget-row"/>
+                <xsl:call-template name="delete-widget-row"/>
               </xsl:when>
             </xsl:choose>
           </ul>
@@ -1766,7 +1766,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.49 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.50 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
