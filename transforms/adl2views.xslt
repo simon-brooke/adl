@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: dmcnicol $
-    $Revision: 1.53 $
-    $Date: 2009-05-05 11:21:19 $
+    $Revision: 1.54 $
+    $Date: 2009-05-05 11:48:42 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -223,7 +223,7 @@
               </select>
             </td>
             <td class="actionDangerous" style="text-align:right">
-              <input type="submit" name="command" value="Go!" />
+              <input type="submit" name="command" value="Go" />
             </td>
           </tr>
         </table>
@@ -1787,7 +1787,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.53 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.54 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
