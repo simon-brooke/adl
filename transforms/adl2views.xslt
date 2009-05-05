@@ -14,9 +14,9 @@
     
     Transform ADL into velocity view templates
     
-    $Author: sb $
-    $Revision: 1.51 $
-    $Date: 2009-05-04 13:53:18 $
+    $Author: dmcnicol $
+    $Revision: 1.52 $
+    $Date: 2009-05-05 08:25:53 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -381,7 +381,7 @@
 					#end
 				#end
 			</xsl:if>
-			<form method="post" onsubmit="invokeSubmitHandlers( this)"  class="tabbed">
+			<form method="post" onsubmit="invokeSubmitHandlers( this);return trapEnterSubmissions(event, this);"  class="tabbed">
 				<xsl:attribute name="action">
 					<xsl:value-of select="concat( $form/@name, 'SubmitHandler.rails')"/>
 				</xsl:attribute>
@@ -1445,13 +1445,13 @@
 			var siteRoot = '$siteRoot';
 			#else
 			var siteRoot = '<xsl:value-of select='$site-root'/>';
-			#end
+      #end
 
-			function performInitialisation()
-			{
-			#if ( $instance)
-			#if ( ! $instance.IsNew)
-			<xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
+      function performInitialisation()
+      {
+      #if ( $instance)
+      #if ( ! $instance.IsNew)
+      <xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
 				<xsl:variable name="propname" select="@name"/>
 				<xsl:choose>
 					<xsl:when test="$form/@properties='all'">
@@ -1467,9 +1467,26 @@
 			#end
 			#end
 			var validator = new Validation('<xsl:value-of select="$form/@name"/>', {immediate : true, useTitles : true});
-			}
+      }
 
-			<xsl:for-each select="//adl:typedef">
+      var enterPressed = false;
+
+      function trapKeyPress(event, form){
+      if(event.which == 13){
+      enterPressed = true;
+      } else {
+      enterPressed = false;
+      }
+      }
+
+      function trapEnterSubmissions(event, form){
+      if(enterPressed){
+      enterPressed = false; //we have trapped this, can stand down
+      return false;
+      }
+      }
+
+      <xsl:for-each select="//adl:typedef">
 				<xsl:variable name="errormsg">
 					<xsl:choose>
 						<xsl:when test="adl:help[@locale=$locale]">
@@ -1770,7 +1787,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.51 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.52 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
