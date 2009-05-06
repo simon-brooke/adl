@@ -14,9 +14,9 @@
     
     Transform ADL into velocity view templates
     
-    $Author: dmcnicol $
-    $Revision: 1.54 $
-    $Date: 2009-05-05 11:48:42 $
+    $Author: sb $
+    $Revision: 1.55 $
+    $Date: 2009-05-06 17:25:55 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -485,6 +485,7 @@
   <xsl:template name="delete-widget-row">
     <li class="standard-verb actionDangerous">
       #if ( $instance)
+	  #if ( !$instance.IsNew)
       #if ( $instance.NoDeleteReason)
       <button type="submit" disabled="disabled" title="$instance.NoDeleteReason"  name="command" value="delete">Delete this</button>
       #else
@@ -496,6 +497,7 @@
       </button>
       #end
       #end
+	  #end
     </li>
   </xsl:template>
 
@@ -1787,7 +1789,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.54 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.55 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
