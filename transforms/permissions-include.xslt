@@ -15,8 +15,8 @@
     Utility templates to find permissions on various things
     
     $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2009-04-30 08:56:33 $
+    $Revision: 1.5 $
+    $Date: 2009-05-06 18:02:35 $
 	-->
 
 	<!-- collect all groups which can edit the specified property -->
@@ -165,6 +165,32 @@
 			</xsl:choose>
 		</xsl:for-each>
 	</xsl:template>
+
+	<!-- collect the groups which can save an entity -->
+	<xsl:template name="entity-update-groups">
+		<xsl:param name="entity"/>
+		<xsl:for-each select="//adl:group">
+			<xsl:variable name="groupname" select="@name"/>
+			<xsl:variable name="perm">
+				<xsl:choose>
+					<xsl:when test="$entity/adl:permission[@group=$groupname]">
+						<xsl:value-of select="$entity/adl:permission[@group=$groupname]/@permission"/>
+					</xsl:when>
+					<xsl:otherwise>none</xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:choose>
+				<xsl:when test="$perm='all'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:when test="$perm='edit'">
+					<xsl:copy-of select="."/>
+				</xsl:when>
+				<xsl:otherwise/>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
+
 
 	<!-- collect the groups which can delete an entity -->
 	<xsl:template name="entity-delete-groups">

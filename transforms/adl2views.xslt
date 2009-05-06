@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.55 $
-    $Date: 2009-05-06 17:25:55 $
+    $Revision: 1.56 $
+    $Date: 2009-05-06 18:02:35 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -442,12 +442,30 @@
                     <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
                   </xsl:call-template>
                 </xsl:variable>
-                <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
+				  <xsl:variable name="updategroups">
+					  <xsl:call-template name="entity-update-groups">
+						  <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
+					  </xsl:call-template>
+				  </xsl:variable>
+				  <!-- NOTE! NOTE! NOTE! Whitespace is significant - any linefeeds inside the #if ( ) clause
 								cause the Velocity parser to break! -->
-                #if ( <xsl:for-each select="exsl:node-set( $savegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
-                <xsl:call-template name="save-widget-row"/>
-                #end
-                <xsl:variable name="deletegroups">
+				#if ( $instance)
+				  #if ( $instance.IsNew)
+				    #if ( <xsl:for-each select="exsl:node-set( $savegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} ||</xsl:for-each> false)
+                    <xsl:call-template name="save-widget-row"/>
+				    #end
+				  #else
+				    #if ( <xsl:for-each select="exsl:node-set( $updategroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
+				    <xsl:call-template name="save-widget-row"/>
+				    #end
+				  #end
+				#else
+				<!-- for application-layer authentication, we may not actually have an instance at this stage -->
+				  #if ( <xsl:for-each select="exsl:node-set( $savegroups)/*"> ${SecurityHelper.InGroup( "<xsl:value-of select="./@name"/>")} || </xsl:for-each> false)
+				  <xsl:call-template name="save-widget-row"/>
+				  #end
+				#end
+				  <xsl:variable name="deletegroups">
                   <xsl:call-template name="entity-delete-groups">
                     <xsl:with-param name="entity" select="$form/ancestor::adl:entity"/>
                   </xsl:call-template>
@@ -1789,7 +1807,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.55 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.56 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
