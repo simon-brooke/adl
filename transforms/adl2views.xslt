@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.56 $
-    $Date: 2009-05-06 18:02:35 $
+    $Revision: 1.57 $
+    $Date: 2009-05-07 08:42:01 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -381,7 +381,7 @@
 					#end
 				#end
 			</xsl:if>
-			<form method="post" onsubmit="return trapEnterSubmissions(event, this);invokeSubmitHandlers(this);" onkeypress="trapKeyPress(event, this)" class="tabbed">
+			<form method="post" onsubmit="invokeSubmitHandlers(this);return trapEnterSubmissions(event, this);" onkeypress="trapKeyPress(event, this)" class="tabbed">
 				<xsl:attribute name="action">
 					<xsl:value-of select="concat( $form/@name, 'SubmitHandler.rails')"/>
 				</xsl:attribute>
@@ -1807,7 +1807,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.56 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.57 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
