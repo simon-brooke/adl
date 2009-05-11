@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.57 $
-    $Date: 2009-05-07 08:42:01 $
+    $Revision: 1.58 $
+    $Date: 2009-05-11 15:01:49 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1026,11 +1026,22 @@
 		  <xsl:param name="list"/>
 		  <div class="content">
 			  <div class="controls">
-				  <span class="pagination status">
-					  Showing $instances.FirstItem - $instances.LastItem of $instances.TotalItems
-				  </span>
+          <span class="pagination status">
+            Showing $instances.FirstItem - $instances.LastItem of $instances.TotalItems
+          </span>
+          #if (  <xsl:for-each select="adl:field">
+            <xsl:variable name="field" select="."/>
+            <xsl:variable name="search-name"
+                          select="concat('$search_', ancestor::adl:entity//adl:property[@name=$field/@property]/@name)"/>
+            <xsl:value-of select="$search-name"/>
+            <xsl:if test="not( position() = last())">||</xsl:if>
+          </xsl:for-each> )
+          <xsl:comment>Suppressing pagination in favour of search</xsl:comment>
+          #else
 				  <span class="pagination control">
-					  #if($instances.HasFirst) $PaginationHelper.CreatePageLink( 1, "&lt;&lt;" ) #end
+					  #if($instances.HasFirst) 
+            $PaginationHelper.CreatePageLink( 1, "&lt;&lt;" ) 
+            #end
 					  #if(!$instances.HasFirst) &lt;&lt; #end
 				  </span>
 				  <span class="pagination control">
@@ -1045,6 +1056,7 @@
 					  #if($instances.HasLast) $PaginationHelper.CreatePageLink( $instances.LastIndex, "&gt;&gt;" ) #end
 					  #if(!$instances.HasLast) &gt;&gt; #end
 				  </span>
+          #end
 				  <xsl:if test="$list/../adl:form">
 					  <span class="add">
 						  <a>
@@ -1129,8 +1141,9 @@
 							  </xsl:variable>
 							  <xsl:if test="$size != 0">
 								  <input>
+                    <xsl:variable name="search-name" select="concat('search_',$entity//adl:property[@name=$field/@property]/@name)"/>
 									  <xsl:attribute name="name">
-										  <xsl:value-of select="concat('search_',$entity//adl:property[@name=$field/@property]/@name)"/>
+										  <xsl:value-of select="$search-name"/>
 									  </xsl:attribute>
 									  <xsl:attribute name="size">
                       <xsl:choose>
@@ -1141,7 +1154,7 @@
                       </xsl:choose>	  
 									  </xsl:attribute>
 									  <xsl:attribute name="value">
-										  <xsl:value-of select="concat( '$!search_', $entity//adl:property[@name=$field/@property]/@name)"/>
+										  <xsl:value-of select="concat( '$!', $search-name)"/>
 									  </xsl:attribute>
 								  </input>
 							  </xsl:if>
@@ -1807,7 +1820,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.57 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.58 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
@@ -1973,6 +1986,20 @@
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
+
+  <!-- compose the list of search parameters to append to a pagination request; note that this does
+  not currently work but I have some hopes that in future it will and in the meantime it costs us
+  little -->
+  <xsl:template name="pagination-search-params">
+    <xsl:param name="form" select="."/>
+    "%{<xsl:for-each select="$form/adl:field">
+      <xsl:variable name="field" select="."/>
+      <xsl:variable name="search-name"
+                    select="concat('search_',$form/ancestor::adl:entity//adl:property[@name=$field/@property]/@name)"/>
+      <xsl:value-of select="concat( $search-name, '=$', $search-name)"/>
+      <xsl:if test="not( position() = last())">,</xsl:if>
+    </xsl:for-each>}"
+  </xsl:template>
 
 	<xsl:template match="groups">
 		<xsl:apply-templates/>
