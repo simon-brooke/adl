@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.59 $
-    $Date: 2009-05-12 14:29:12 $
+    $Revision: 1.60 $
+    $Date: 2009-05-12 15:43:18 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -129,10 +129,10 @@
 		</xsl:comment>
     <xsl:call-template name="head"/>
     #end
-		<xsl:call-template name="maybe-delete">
-			<xsl:with-param name="entity" select="."/>
-		</xsl:call-template>
-	</xsl:template>
+    <xsl:call-template name="maybe-delete">
+      <xsl:with-param name="entity" select="."/>
+    </xsl:call-template>
+  </xsl:template>
 
 	<!-- generate views for an entity, assuming an empty layout 
 			(i.e. I'm responsible for html, head and body tags) -->
@@ -181,6 +181,32 @@
   <xsl:template name="maybe-delete">
     <xsl:param name="entity"/>
     <div class="content">
+      <xsl:if test="$show-errors = 'true'">
+        #if ( $errors)
+        #if ( $errors.Count != 0)
+        <ul class="errors">
+          #foreach($e in $errors)
+          #if($e.Message)
+          <li>$t.Error($e)</li>
+          #else
+          <li>$t.Enc($e)</li>
+          #end
+          #end
+        </ul>
+        #end
+        #end
+      </xsl:if>
+      <xsl:if test="$show-messages = 'true'">
+        #if( $messages)
+        #if ( $messages.Count != 0)
+        <ul class="information">
+          #foreach ( $message in $messages)
+          <li>$message</li>
+          #end
+        </ul>
+        #end
+        #end
+      </xsl:if>
       <form action="delete.rails" method="post">
         <xsl:for-each select="$entity/adl:key/adl:property">
           <xsl:choose>
@@ -1822,7 +1848,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.59 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.60 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
