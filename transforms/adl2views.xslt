@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.58 $
-    $Date: 2009-05-11 15:01:49 $
+    $Revision: 1.59 $
+    $Date: 2009-05-12 14:29:12 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -178,8 +178,9 @@
 		</xsl:template>
 
 		<!-- the guts of the maybe-delete form, whether or not we're using an empty layout -->
-    <xsl:template name="maybe-delete">
-      <xsl:param name="entity"/>
+  <xsl:template name="maybe-delete">
+    <xsl:param name="entity"/>
+    <div class="content">
       <form action="delete.rails" method="post">
         <xsl:for-each select="$entity/adl:key/adl:property">
           <xsl:choose>
@@ -210,16 +211,16 @@
         <table>
           <tr align="left" valign="top" class="actionDangerous">
             <td class="actionDangerous">
-				<xsl:call-template name="i18n-really-delete"/>
-			</td>
+              <xsl:call-template name="i18n-really-delete"/>
+            </td>
             <td class="widget">
               <select name="reallydelete">
                 <option value="false">
-					<xsl:call-template name="i18n-really-delete-no"/>
-				</option>
+                  <xsl:call-template name="i18n-really-delete-no"/>
+                </option>
                 <option value="true">
-					<xsl:call-template name="i18n-really-delete-yes"/>
-				</option>
+                  <xsl:call-template name="i18n-really-delete-yes"/>
+                </option>
               </select>
             </td>
             <td class="actionDangerous" style="text-align:right">
@@ -228,7 +229,8 @@
           </tr>
         </table>
       </form>
-    </xsl:template>
+    </div>
+  </xsl:template>
 
   <!-- layout of forms -->
 	<xsl:template match="adl:form" mode="non-empty-layout">
@@ -1820,7 +1822,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.58 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.59 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
