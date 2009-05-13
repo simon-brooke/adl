@@ -15,27 +15,26 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.60 $
-    $Date: 2009-05-12 15:43:18 $
+    $Revision: 1.61 $
+    $Date: 2009-05-13 17:52:33 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
 
 	<xsl:include href="base-type-include.xslt"/>
 	<xsl:include href="permissions-include.xslt"/>
+  <!-- bug 1896 : boilerplate text in views should be tailored to the locale of
+		the expected user. Unfortunately I haven't yet worked out how to do
+		conditional includes in XSLT, so this is a step on the way to a solution,
+		not a solution in itself. -->
+  <xsl:include href="i18n-en-GB-include.xslt"/>
 
-	<xsl:output method="xml" indent="yes" encoding="UTF-8" omit-xml-declaration="yes"/>
+  <xsl:output method="xml" indent="yes" encoding="UTF-8" omit-xml-declaration="yes"/>
 
 	<!-- The locale for which these views are generated 
       TODO: we need to generate views for each available locale, but this is not
       yet implemented. When it is we will almost certainly still need a 'default locale' -->
 	<xsl:param name="locale" select="en-GB"/>
-
-	<!-- bug 1896 : boilerplate text in views should be tailored to the locale of
-		the expected user. Unfortunately I haven't yet worked out how to do
-		conditional includes in XSLT, so this is a step on the way to a solution,
-		not a solution in itself. -->
-	<xsl:include href="i18n-en-GB-include.xslt"/>
 
 	<!-- whether or not to auto-generate site navigation - by default, don't -->
 	<xsl:param name="generate-site-navigation" select="'false'"/>
@@ -288,6 +287,7 @@
     <xsl:call-template name="head"/>
 		<xsl:call-template name="generate-head-javascript">
 			<xsl:with-param name="form" select="."/>
+      <xsl:with-param name="locale" select="$locale"/>
 		</xsl:call-template>
 
 		${StylesHelper.InstallStylesheet( "Epoch")}
@@ -351,6 +351,7 @@
         <xsl:call-template name="install-scripts"/>
 				<xsl:call-template name="generate-head-javascript">
 					<xsl:with-param name="form" select="."/>
+          <xsl:with-param name="locale" select="$locale"/>
 				</xsl:call-template>
 
 				${StylesHelper.InstallStylesheet( "Epoch")}
@@ -1501,6 +1502,7 @@
 		<xsl:param name="form">
 			<!-- assumed to be an instance of adl:form -->
 		</xsl:param>
+    <xsl:param name="locale"/>
 		<script type='text/javascript' language='JavaScript1.2'>
 			#if ( ${site-root})
 			var siteRoot = '$siteRoot';
@@ -1848,7 +1850,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.60 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.61 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
