@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.62 $
-    $Date: 2009-05-21 10:07:00 $
+    $Revision: 1.63 $
+    $Date: 2009-05-21 12:46:06 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1852,7 +1852,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.62 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.63 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
@@ -1970,21 +1970,23 @@
       </div>
       #end
     </xsl:if>
-    <xsl:choose>
-      <xsl:when test="adl:foot">
-        <xsl:for-each select="adl:foot/*">
-					<xsl:apply-templates select="."/>
-        </xsl:for-each>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:for-each select="//adl:content/adl:foot/*">
-					<xsl:apply-templates select="."/>
-        </xsl:for-each>
-      </xsl:otherwise>
-    </xsl:choose>
-	  <p class="product-version">
-		  <xsl:value-of select="$product-version"/>; built with <xsl:value-of select="$authentication-layer"/>-layer authentication.
-	  </p>
+    <div class="pagefoot">
+      <xsl:choose>
+        <xsl:when test="adl:foot">
+          <xsl:for-each select="adl:foot/*">
+            <xsl:apply-templates select="."/>
+          </xsl:for-each>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:for-each select="//adl:content/adl:foot/*">
+            <xsl:apply-templates select="."/>
+          </xsl:for-each>
+        </xsl:otherwise>
+      </xsl:choose>
+      <p class="product-version">
+        <xsl:value-of select="$product-version"/>; built with <xsl:value-of select="$authentication-layer"/>-layer authentication.
+      </p>
+    </div>
   </xsl:template>
 
 	<!-- if this node (default to current node) has a child of type prompt for the current locale, 
