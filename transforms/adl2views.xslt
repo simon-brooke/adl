@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.61 $
-    $Date: 2009-05-13 17:52:33 $
+    $Revision: 1.62 $
+    $Date: 2009-05-21 10:07:00 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1151,6 +1151,8 @@
 						  <td class="search">
 							  <xsl:variable name="size">
 								  <xsl:choose>
+                    <!-- can't search non-concrete fields -->
+                    <xsl:when test="$entity//adl:property[@name=$field/@property]/@concrete='false'">0</xsl:when>
 									  <xsl:when test="$entity//adl:property[@name=$field/@property]/@type='string'">
 										  <xsl:choose>
 											  <xsl:when test="$entity//adl:property[@name=$field/@property]/@size &gt; 20">20</xsl:when>
@@ -1850,7 +1852,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.61 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.62 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
