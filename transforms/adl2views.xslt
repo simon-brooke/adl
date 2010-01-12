@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.63 $
-    $Date: 2009-05-21 12:46:06 $
+    $Revision: 1.64 $
+    $Date: 2010-01-12 11:48:19 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -181,6 +181,11 @@
     <xsl:param name="entity"/>
     <div class="content">
       <xsl:if test="$show-errors = 'true'">
+        #if ( $instance.NoDeleteReason)
+        <ul class="errors">
+          <li>$instance.NoDeleteReason</li>
+        </ul>
+        #end
         #if ( $errors)
         #if ( $errors.Count != 0)
         <ul class="errors">
@@ -384,7 +389,12 @@
 		<!-- an entity of type form -->
 		<xsl:param name="form"/>
 		<div class="content">
-			<xsl:if test="$show-errors = 'true'">
+      #if ( $instance.NoDeleteReason)
+      <ul class="errors">
+        <li>$instance.NoDeleteReason</li>
+      </ul>
+      #end
+      <xsl:if test="$show-errors = 'true'">
 				#if ( $errors)
 					#if ( $errors.Count != 0)
 						<ul class="errors">
@@ -1852,7 +1862,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.63 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.64 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>
