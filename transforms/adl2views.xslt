@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0"
-	xmlns="http://libs.cygnets.co.uk/adl/1.3/"
-	xmlns:adl="http://libs.cygnets.co.uk/adl/1.3/"
+	xmlns="http://libs.cygnets.co.uk/adl/1.4/"
+	xmlns:adl="http://libs.cygnets.co.uk/adl/1.4/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt"
 				xmlns:exsl="urn:schemas-microsoft-com:xslt"
@@ -15,8 +15,8 @@
     Transform ADL into velocity view templates
     
     $Author: sb $
-    $Revision: 1.64 $
-    $Date: 2010-01-12 11:48:19 $
+    $Revision: 1.65 $
+    $Date: 2010-01-12 17:20:17 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1075,7 +1075,7 @@
             <xsl:value-of select="$search-name"/>
             <xsl:if test="not( position() = last())">||</xsl:if>
           </xsl:for-each> )
-          <xsl:comment>Suppressing pagination in favour of search</xsl:comment>
+          <span class="pagination status">(Suppressing pagination in favour of search)</span>
           #else
 				  <span class="pagination control">
 					  #if($instances.HasFirst) 
@@ -1137,7 +1137,7 @@
 			ought to be replaced with a single template, but that template proves to be extremely hard to get 
 			right -->
 		  <xsl:param name="can-search"/>
-		  <table class="sortable">
+		  <table class="sortable" id="concat($entity/@name, '-list')">
 			  <tr>
 				  <xsl:for-each select="$fields">
 					  <xsl:variable name="field" select="."/>
@@ -1151,11 +1151,11 @@
 					  </th>
 				  </xsl:for-each>
 				  <xsl:for-each select="$entity/adl:form">
-					  <th>-</th>
+					  <th class="unsortable">-</th>
 				  </xsl:for-each>
 			  </tr>
 			  <xsl:if test="$can-search = 'true'">
-				  <tr class="search">
+				  <tr class="search sorttop">
 					  <xsl:for-each select="$fields">
 						  <xsl:variable name="field" select="."/>
 						  <td class="search">
@@ -1862,7 +1862,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.64 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.65 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>

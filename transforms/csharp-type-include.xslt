@@ -10,13 +10,13 @@
     one place for ease of maintenance
     
     $Author: sb $
-    $Revision: 1.3 $
-    $Date: 2009-04-28 13:53:17 $
+    $Revision: 1.4 $
+    $Date: 2010-01-12 17:20:17 $
   -->
 
 <xsl:stylesheet version="1.0"
-  xmlns="http://libs.cygnets.co.uk/adl/1.3/"
-  xmlns:adl="http://libs.cygnets.co.uk/adl/1.3/"
+  xmlns="http://libs.cygnets.co.uk/adl/1.4/"
+  xmlns:adl="http://libs.cygnets.co.uk/adl/1.4/"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   exclude-result-prefixes="adl">
 

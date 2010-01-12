@@ -1,6 +1,6 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     <!--						    											                                  -->
-    <!--	adl-1.3.dtd    			    										                          -->
+    <!--	adl-1.4.dtd    			    										                          -->
     <!--																		                                    -->
     <!--	Purpose:															                                -->
     <!--	Document Type Description for Application Description				          -->
@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.1 $
+        $Revision: 1.2 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -477,7 +477,7 @@ that we can allow HTML block level entities within content elements -->
 <!ELEMENT page (documentation?, ( %PageStuff;)*)>
 <!ATTLIST page %PageAttrs;>
 
-<!ELEMENT order (documentation)>
+<!ELEMENT order (documentation?)>
 <!ATTLIST order
       property  CDATA       #REQUIRED
       sequence  %Sequences;  #IMPLIED>
