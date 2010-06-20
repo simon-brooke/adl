@@ -13,7 +13,7 @@
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.3 $
+        $Revision: 1.4 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
@@ -480,7 +480,7 @@ that we can allow HTML block level entities within content elements -->
 <!ELEMENT order (documentation?)>
 <!ATTLIST order
       property  CDATA       #REQUIRED
-      sequence  %Sequences;  #IMPLIED>
+      sequence  (%Sequences;)  #IMPLIED>
 
 <!-- 
 	a list on which entities of a given type are listed
