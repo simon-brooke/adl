@@ -14,9 +14,9 @@
     
     Transform ADL into velocity view templates
     
-    $Author: sb $
-    $Revision: 1.65 $
-    $Date: 2010-01-12 17:20:17 $
+    $Author: simon $
+    $Revision: 1.66 $
+    $Date: 2010-07-20 19:53:40 $
 	-->
 	<!-- WARNING WARNING WARNING: Do NOT reformat this file! 
 		Whitespace (or lack of it) is significant! -->
@@ -1487,7 +1487,16 @@
 					</xsl:call-template>
 					#end
 				</xsl:for-each>
-			</xsl:when> 
+			</xsl:when>
+      <xsl:when test="$property/@type = 'image'">
+        #if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
+        <img class="thumbnail" alt="thumbnail">
+          <xsl:attribute name="src">
+            <xsl:value-of select="normalize-space(concat( '../Uploads/$', $entity/@name, '.', $property/@name))"/>
+          </xsl:attribute>
+        </img>
+        #end
+      </xsl:when>
 			<xsl:when test="$property/@type = 'date'">
 				#if ( <xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>)
 				<xsl:value-of select="concat( '$', $entity/@name, '.', $property/@name)"/>.ToString( 'd')
@@ -1543,7 +1552,7 @@
       {
       #if ( $instance)
       #if ( ! $instance.IsNew)
-      <xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link']">
+      <xsl:for-each select="$form/ancestor::adl:entity/adl:property[@type='link' or @type='list']">
 				<xsl:variable name="propname" select="@name"/>
 				<xsl:choose>
 					<xsl:when test="$form/@properties='all'">
@@ -1771,7 +1780,7 @@
 				#end
 			</xsl:when>
 			<xsl:otherwise>
-				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(')"/> "<xsl:value-of select="concat( 'instance.', $property/@name)"/>", "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',cols='<xsl:value-of select="normalize-space($cols)"/>',href='<xsl:value-of select="normalize-space($href)"/>'}")}
+				${<xsl:value-of select="concat( $property/ancestor::adl:entity/@name, 'FieldHelper', '.', $mode, '(', '&quot;instance.', $property/@name, '&quot;')"/>, "%{class='<xsl:value-of select="normalize-space($cssclass)"/>',required='<xsl:value-of select="normalize-space( $required)"/>',title='<xsl:value-of select="normalize-space($if-missing)"/>',size='<xsl:value-of select="normalize-space($size)"/>',maxlength='<xsl:value-of select="normalize-space($maxlength)"/>',rows='<xsl:value-of select="normalize-space($rows)"/>',cols='<xsl:value-of select="normalize-space($cols)"/>',href='<xsl:value-of select="normalize-space($href)"/>',adltype='<xsl:value-of select="$property/@type"/>'}")}
       </xsl:otherwise>				
 		</xsl:choose>
 	</xsl:template>
@@ -1862,7 +1871,7 @@
       Auto generated Velocity macro for <xsl:value-of select="@name"/>,
       generated from ADL.
 
-      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.65 $', 10)"/>
+      Generated using adl2views.xslt <xsl:value-of select="substring( '$Revision: 1.66 $', 10)"/>
       Generation parameters were:
       area-name: <xsl:value-of select="$area-name"/>
       default-url: <xsl:value-of select="$default-url"/>

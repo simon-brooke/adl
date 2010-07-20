@@ -9,9 +9,9 @@
     intended to keep lookup of the C# type from ADL properties in
     one place for ease of maintenance
     
-    $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2010-01-12 17:20:17 $
+    $Author: simon $
+    $Revision: 1.5 $
+    $Date: 2010-07-20 19:53:40 $
   -->
 
 <xsl:stylesheet version="1.0"
@@ -77,6 +77,7 @@
       <xsl:when test="$base-type = 'time'">DateTime</xsl:when>
       <xsl:when test="$base-type = 'string'">String</xsl:when>
       <xsl:when test="$base-type = 'text'">String</xsl:when>
+      <xsl:when test="$base-type = 'image'">String</xsl:when>
       <xsl:when test="$base-type = 'boolean'">Boolean</xsl:when>
       <xsl:when test="$base-type = 'timestamp'">DateTime</xsl:when>
       <xsl:when test="$base-type = 'integer'">int</xsl:when>

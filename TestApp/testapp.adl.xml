@@ -1,115 +1,82 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<!-- DOCTYPE application PUBLIC "-//CYGNETS//DTD ADL 0.1//EN" "http://www.cygnets.co.uk/schemas/adl-0.1.1.dtd" -->
-<!-- DOCTYPE application SYSTEM "file:/C:/Projects/ADL/schemas/adl-0.dtd" -->
-
-<!-- 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC "-//JOURNEYMAN//DTD ADL 1.4//EN"
+                             "http://bowyer.journeyman.cc/adl/stable/adl/schemas/adl-1.4.dtd">
+<!--  
 	Application Description Language framework
 	testapp.adl.xml
 	
 	the object of this file is to exercise as many aspects of ADL as possible;
-	it isn't expected to describe an application which does anything useful
+	in the first instance, this is an attempt to recreate PRES in ADL
 	
-	Copyright (c) 2008 Cygnet Solutions Ltd
-	
-	$Author: sb $
-	$Revision: 1.2 $
-	$Date: 2008-07-01 16:08:17 $
--->
-
-<application name="ADLTestApp" xmlns="http://cygnets.co.uk/schemas/adl-1.2">
-	<content>
-		<head>
-			
-		</head>
-		<top>
-			
-		</top>
-		<foot>
-			
-		</foot>
-	</content>
-	<typedef name="postcode" type="string" size="10" 
-			 pattern="^([A-PR-UWYZ0-9][A-HK-Y0-9][AEHMNPRTVXY0-9]?[ABEHMNPRVWXY0-9]? {1,2}[0-9][ABD-HJLN-UW-Z]{2}|GIR 0AA)$">
-		<documentation>
-			a postcode follows arcane rules; this specification from
-			http://regexlib.com/REDetails.aspx?regexp_id=260.
+	$Author: simon $
+	$Revision: 1.3 $
+	$Date: 2010-07-20 19:53:40 $
+ -->
+<application name="pres" xmlns="http://bowyer.journeyman.cc/adl/stable/">
+    <specification abbr="regexplib" name="RegexpLib.com" url="http://regexlib.com/"/>
+    <content>
+        <head/>
+        <top/>
+        <foot/>
+    </content>
+    <typedef name="postcode"
+        pattern="^([A-PR-UWYZ0-9][A-HK-Y0-9][AEHMNPRTVXY0-9]?[ABEHMNPRVWXY0-9]? {1,2}[0-9][ABD-HJLN-UW-Z]{2}|GIR 0AA)$"
+        size="10" type="string">
+        <documentation>
+            <reference abbr="regexplib" section="REDetails.aspx?regexp_id=260"/>
+			a postcode follows arcane rules.
 		</documentation>
-	</typedef>
-	<typedef name="age" type="integer" minimum="0" maximum="120">
-		<documentation>
+    </typedef>
+    <typedef maximum="120" minimum="0" name="age" type="integer">
+        <documentation>
 			We don't believe people who claim to be over 120.
 		</documentation>
-	</typedef>
-	<group name="public"/>
-	<group name="admin" parent="public"/>
-	<entity name="Person">
-		<property name="LastName" type="string" required="true" size="100" distinct="user">
-			<prompt locale="en-UK" prompt="Surname"/>
-		</property>
-		<property name="ForeNames" type="string" required="true" size="100" distinct="user">
-			<prompt locale="en-UK" prompt="Fore names"/>
-		</property>
-		<property name="Partner" type="entity" entity="Person"/>
-		<property name="Gender" type="string" size="1" required="true">
-			<option value="M">
-				<prompt locale="en-GB" prompt="Male"/>
-			</option>
-			<option value="F">
-				<prompt locale="en-GB" prompt="Female"/>
-			</option> 
-		</property>
-		<property name="age" type="defined" typedef="age"/>
-		<property name="Address" type="entity" entity="Address" distinct="user"/> 
-		<property name="Friends" type="link" entity="Person"/>
-		<form name="edit" properties="listed">
-			<fieldgroup name="Personal Data">
-				<documentation>
-					Basic data about the person
-				</documentation>
-				<field property="ForeNames">
-					<prompt locale="en-GB" prompt="Fore names"/>
-				</field>
-				<field property="LastName">
-					<prompt locale="en-GB" prompt="Surname"/>
-					<help locale="en-GB">
-						Family name of this person, conventionally their last name
-					</help>
-				</field>
-				<field property="Partner"/>
-				<field property="Gender"/>
-				<field property="Address"/>
-			</fieldgroup>
-			<fieldgroup name="Community">
-				<field property="Friends"/>
-			</fieldgroup>
-		</form>
-	</entity>
-	<entity name="Address">
-		<key>
-			<property name="Number" type="string" size="8" distinct="all">
-				<prompt locale="en-GB" prompt="House number"/>
-				<help locale="en-GB">
-					House or building number
-				</help>
-			</property>
-			<property name="Postcode" type="defined" typedef="postcode" required="false" distinct="all">
-				<prompt locale="en-UK" prompt="Post code"/>
-			</property>
-		</key>
-		<property name="Address1" type="string" required="true" size="255">
-			<prompt locale="en-UK" prompt="Address"/>
-		</property>
-		<property name="Address2" type="string" required="false" size="255">
-			<prompt locale="en-UK" prompt="Line 2"/>
-		</property>
-		<property name="Address3" type="string" required="false" size="255">
-			<prompt locale="en-UK" prompt="Line 3"/>
-		</property>
-		<property name="City" type="string" required="false" size="255">
-			<prompt locale="en-UK" prompt="Post town"/>
-		</property>
-		<property name="County" type="string" required="false" size="255" />
-		<form name="edit" properties="all"/>
-		<list name="list" properties="user-distinct"/>
-	</entity>
+    </typedef>
+    <typedef name="email"
+        pattern="^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$" size="128">
+        <documentation>
+            <reference abbr="regexplib" section="REDetails.aspx?regexp_id=26"/>
+        </documentation>
+    </typedef>
+    <group name="public"/>
+    <group name="admin" parent="public"/>
+    <entity name="Actor">
+        <documentation>
+		A real (administrative) user of this system with a first-class, database layer login, 
+		as opposed to a Subscriber with a second-class, application layer login.
+	</documentation>
+        <property name="Name" size="64" type="string"/>
+        <property name="EMail" type="defined" typedef="email"/>
+        <property name="Approved" type="boolean"/>
+    </entity>
+    <entity name="Article">
+        <property name="Created" type="date"/>
+        <property name="Embargo" type="date"/>
+        <property entity="Category" name="Category" type="entity"/>
+        <property name="Title" size="128" type="string"/>
+        <property entity="Actor" name="Author" type="entity"/>
+	<property name="Location" type="entity" entity="Location"/>
+    </entity>
+    <entity name="Author">
+        <property name="CanonicalName" size="128" type="string"/>
+        <property entity="NomDePlume" name="NomsDePlume" type="list"/>
+        <property name="Disambiguation" size="256" type="string">
+            <documentation>
+		If the canonical name is a common one, or there are known to be two or more authors 
+		with the same canonical name, some brief text about the author to disambiguate.
+	</documentation>
+        </property>
+    </entity>
+    <entity name="Book">
+        <property entity="Article" name="Article" type="entity"/>
+        <property name="AuthorAsEntered" size="128" type="string">
+            <documentation>The name of the author as entered by the original user, prior to being resolved against known authors</documentation>
+        </property>
+        <property entity="Author" name="Authors" type="link"/>
+        <property name="Title" size="128" type="string"/>
+    </entity>
+    <entity name="NomDePlume">
+        <property name="Name" size="128" type="string"/>
+        <property entity="Author" name="Author" type="entity"/>
+    </entity>
 </application>

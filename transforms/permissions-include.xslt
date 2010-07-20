@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0"
-	xmlns="http://libs.cygnets.co.uk/adl/1.4/"
-	xmlns:adl="http://libs.cygnets.co.uk/adl/1.4/"
+	xmlns="http://bowyer.journeyman.cc/adl/1.4/"
+	xmlns:adl="http://bowyer.journeyman.cc/adl/1.4/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt"
 				xmlns:exsl="urn:schemas-microsoft-com:xslt"
@@ -14,9 +14,9 @@
     
     Utility templates to find permissions on various things
     
-    $Author: sb $
-    $Revision: 1.6 $
-    $Date: 2010-01-12 17:20:17 $
+    $Author: simon $
+    $Revision: 1.7 $
+    $Date: 2010-07-20 19:53:40 $
 	-->
 
 	<!-- collect all groups which can edit the specified property -->

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0"
-	xmlns="http://libs.cygnets.co.uk/adl/1.4/"
-	xmlns:adl="http://libs.cygnets.co.uk/adl/1.4/"
+	xmlns="http://bowyer.journeyman.cc/adl/1.4/"
+	xmlns:adl="http://bowyer.journeyman.cc/adl/1.4/"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt">
 	
@@ -21,9 +21,9 @@
 	(iii) take arguments which are strings only, not nodesets.
 	Templates are listed in alphabetical order.
     
-    $Author: sb $
-    $Revision: 1.7 $
-    $Date: 2010-01-12 17:20:17 $
+    $Author: simon $
+    $Revision: 1.8 $
+    $Date: 2010-07-20 19:53:40 $
 	-->
 
 	<xsl:template name="i18n-add-a-new">

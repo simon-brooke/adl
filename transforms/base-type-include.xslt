@@ -9,9 +9,9 @@
     intended to keep lookup of the ADL base type from ADL properties in
     one place for ease of maintenance
     
-    $Author: sb $
-    $Revision: 1.4 $
-    $Date: 2010-01-12 17:20:17 $
+    $Author: simon $
+    $Revision: 1.5 $
+    $Date: 2010-07-20 19:53:40 $
   -->
 
 <xsl:stylesheet version="1.0"

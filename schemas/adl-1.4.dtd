@@ -6,24 +6,19 @@
     <!--	Document Type Description for Application Description				          -->
     <!--	Language. Normative for now; will be replaced by a schema.     	   `  -->
     <!--																		                                    -->
-    <!--	Author:		Simon Brooke <stillyet@journeyman.cc>			  			            -->
+    <!--	Author:		Simon Brooke <simon@cygnets.co.uk>			  			            -->
     <!--	Created:	24th January 2006				                                    -->
     <!--	Copyright:	(c) 2007 Cygnet Solutions								                  -->
     <!--      							      		                                          -->
     <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
     
     <!--
-        $Revision: 1.4 $
+        $Revision: 1.5 $
  	    -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
 <!--  Before we start: import XHTML	for use in documentation sections			-->
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
-<!--  doesn't work yet  -->
-<!-- ENTITY  % XHTML PUBLIC
-   "-//W3C//DTD XHTML 1.0 Transitional//EN"
-   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-%XHTML; -->
 
 <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
 <!--  Before we start: some useful definitions					                -->
@@ -477,6 +472,10 @@ that we can allow HTML block level entities within content elements -->
 <!ELEMENT page (documentation?, ( %PageStuff;)*)>
 <!ATTLIST page %PageAttrs;>
 
+<!-- an ordering or records in a list 
+	property:	the property on which to order
+	sequence:	the sequence in which to order
+-->
 <!ELEMENT order (documentation?)>
 <!ATTLIST order
       property  CDATA       #REQUIRED
@@ -587,7 +586,8 @@ that we can allow HTML block level entities within content elements -->
 <!ATTLIST specification
 		url			CDATA	#IMPLIED
 		name		CDATA	#REQUIRED
-		abbr		CDATA	#REQUIRED>
+		abbr		CDATA	#REQUIRED
+		>
 
 <!-- 
 	The 'specification' and 'reference' elements are for documentation only,
@@ -610,5 +610,6 @@ that we can allow HTML block level entities within content elements -->
 		abbr		CDATA	#IMPLIED
 		section		CDATA	#IMPLIED
 		entity		CDATA	#IMPLIED
-		property	CDATA	#IMPLIED>
+		property	CDATA	#IMPLIED
+		>
 
