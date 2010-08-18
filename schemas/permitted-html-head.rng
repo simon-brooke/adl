@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes" 
+  ns="http://www.w3.org/2002/06/xhtml2/">
+
+    <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+    <!--                                      -->
+    <!--  permitted-xhtml-head.rng                          -->
+    <!--                                    -->
+    <!--  Purpose:                              -->
+    <!--  Specify subset of XHTML grammar permitted in the headmatter of    -->
+    <!--   ADL documents.                             -->
+    <!--                                    -->
+    <!--  Author:    Simon Brooke <stillyet@googlemail.com>            -->
+    <!--  Created:  23rd July 2010                                        -->
+    <!--  Copyright:  (c) 2010 Simon Brooke                  -->
+    <!--                                    -->
+    <!--  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::  -->
+
+  <start>
+    <ref name="permitted-xhtml-head" />
+  </start>
+
+  <define name="permitted-xhtml-head">
+    <zeroOrMore>
+      <choice>
+        <element name="content">
+          <externalRef href="xhtml-2/xhtml-scripting.rng" />
+          <externalRef href="xhtml-2/xhtml-link.rng" />
+          <externalRef href="xhtml-2/xhtml-meta.rng" />
+          <externalRef href="xhtml-2/xhtml-style.rng" />
+        </element>
+      </choice>
+    </zeroOrMore>
+  </define>
+</grammar>

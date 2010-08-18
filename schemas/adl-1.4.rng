@@ -1,0 +1,1116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!---->
+<!-- adl-1.4.dtd -->
+<!---->
+<!-- Purpose: -->
+<!-- Document Type Description for Application Description -->
+<!-- Language. Normative for now; will be replaced by a schema.     	   ` -->
+<!---->
+<!-- Author:		Simon Brooke <simon@cygnets.co.uk> -->
+<!-- Created:	24th January 2006 -->
+<!-- Copyright:	(c) 2007 Cygnet Solutions -->
+<!---->
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!-- $Revision: 1.1 $ -->
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!-- Before we start: import XHTML	for use in documentation sections -->
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!-- Before we start: some useful definitions -->
+<!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+<!--
+  some basic character entities inherited from HTML. Actually we probably ought to 
+  import all the HTML4 character entity files, and possibly the HTML4 Strict DTD (so 
+  that we can allow HTML block level entities within content elements
+-->
+<!-- boolean means true or false -->
+<grammar xmlns="http://relaxng.org/ns/structure/1.0" 
+	datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+	ns="http://bowyer.journeyman.cc/adl/unstable/adl/">
+  <define name="Boolean">
+    <choice>
+      <value>true</value>
+      <value>false</value>
+    </choice>
+  </define>
+  <!--
+    Locale is a string comprising an ISO 639 language code followed by a space
+    followed by an ISO 3166 country code, or else the string 'default'. See:
+    <URL:http://www.ics.uci.edu/pub/ietf/http/related/iso639.txt>
+    <URL:http://www.chemie.fu-berlin.de/diverse/doc/ISO_3166.html>
+  -->
+  <define name="Locale">
+    <data type="string"/>
+  </define>
+  <!--
+    permissions a group may have on an entity, list, page, form or field
+    permissions are deemed to increase as you go right. A group cannot 
+    have greater permission on a field than on the form it is in, or
+    greater permission on form than the entity it belongs to
+    
+    none:			none
+    read:			select
+    insert:			insert
+    noedit:			select, insert
+    edit:			select, insert, update
+    all:			select, insert, update, delete
+  -->
+  <define name="Permissions">
+    <choice>
+      <value>none</value>
+      <value>read</value>
+      <value>insert</value>
+      <value>noedit</value>
+      <value>edit</value>
+      <value>all</value>
+    </choice>
+  </define>
+  <!--
+    actions which should be cascaded to dependent objects. All these values except
+    'manual' are taken from Hibernate and should be passed through the adl2hibernate 
+    mapping transparently. Relevent only for properties with type='entity', type='link'
+    and type='list'
+    
+    all :       cascade delete, save and update
+    all-delete-orphan : see hibernate documentation; relates to transient objects only
+    delete :    cascade delete actions, but not save and update
+    manual :    cascading will be handled in manually managed code, code to
+                handle cascading should not be generated
+    save-update : cascade save and update actions, but not delete.
+  -->
+  <define name="CascadeActions">
+    <choice>
+      <value>all</value>
+      <value>all-delete-orphan</value>
+      <value>delete</value>
+      <value>manual</value>
+      <value>save-update</value>
+    </choice>
+  </define>
+  <!--
+    data types which can be used in a typedef to provide validation - 
+    e.g. a string can be used with a regexp or a scalar can be used with 
+    min and max values 
+    string: 		varchar		java.sql.Types.VARCHAR
+    integer:		int			java.sql.Types.INTEGER
+    real:			double		java.sql.Types.DOUBLE
+    money:			money		java.sql.Types.INTEGER
+    date:			date		java.sql.Types.DATE
+    time:			time		java.sql.Types.TIME
+    timestamp:		timestamp	java.sql.Types.TIMESTAMP
+    uploadable:		varchar		java.sql.Types.VARCHAR 
+    image:			varchar		java.sql.Types.VARCHAR
+    
+    uploadable is as string but points to an uploaded file; image is as
+    uploadable but points to an uploadable graphical image file
+  -->
+  <define name="DefinableDataTypes">
+    <choice>
+      <value>string</value>
+      <value>integer</value>
+      <value>real</value>
+      <value>money</value>
+      <value>date</value>
+      <value>time</value>
+      <value>timestamp</value>
+      <value>uploadable</value>
+    </choice>
+  </define>
+  <!--
+    data types which are fairly straightforward translations of JDBC data types
+    boolean:		boolean or	java.sql.Types.BIT
+    				char(1)		java.sql.Types.CHAR
+    text:			text or		java.sql.Types.LONGVARCHAR 
+    				memo		java.sql.Types.CLOB
+  -->
+  <define name="SimpleDataTypes">
+    <choice>
+      <ref name="DefinableDataTypes"/>
+      <value>boolean</value>
+      <value>text</value>
+    </choice>
+  </define>
+  <!--
+    data types which are more complex than SimpleDataTypes...
+    entity : 		a foreign key link to another entity (i.e. the 'many' end of a 
+    				one-to-many link);
+    list :			a list of some other entity that links to me (i.e. the 'one' end of
+    				a one-to-many link);
+    link : 			a many to many link (via a link table);
+    defined : 		a type defined by a typedef.
+  -->
+  <define name="ComplexDataTypes">
+    <choice>
+      <value>entity</value>
+      <value>link</value>
+      <value>list</value>
+      <value>defined</value>
+    </choice>
+  </define>
+  <!--
+    data types which require special handling - which don't simply map onto 
+    common SQL data types
+    geopos :    a latitude/longitude pair (experimental and not yet implemented)
+    image :     a raster image file, in jpeg|gif|png format (experimental, not yet implemented)
+    message :   an internationalised message, having different translations for different locales
+  -->
+  <define name="SpecialDataTypes">
+    <choice>
+      <value>geopos</value>
+      <value>image</value>
+      <value>message</value>
+    </choice>
+  </define>
+  <!-- all data types -->
+  <define name="AllDataTypes">
+    <choice>
+      <ref name="ComplexDataTypes"/>
+      <ref name="SimpleDataTypes"/>
+      <ref name="SpecialDataTypes"/>
+    </choice>
+  </define>
+    
+  <!-- content, for things like pages (i.e. forms, lists, pages) -->
+  <define name="Content">
+    <choice>
+      <ref name="headmatter"/>
+      <ref name="topmatter"/>
+      <ref name="footmatter"/>
+    </choice>
+  </define>
+  <define name="FieldStuff">
+    <choice>
+      <ref name="field"/>
+      <ref name="fieldgroup"/>
+      <ref name="auxlist"/>
+      <ref name="verb"/>
+    </choice>
+  </define>
+  <define name="PageContent">
+    <choice>
+      <ref name="Content"/>
+      <ref name="FieldStuff"/>
+    </choice>
+  </define>
+  <define name="PageStuff">
+    <choice>
+      <ref name="PageContent"/>
+      <ref name="permission"/>
+      <ref name="pragma"/>
+    </choice>
+  </define>
+  <!--
+    Properties for pages:
+    name:               obviously, the name (URL stub) of the page
+    properties:         the properties of the entity the page describes to be shown
+                        as fields on the page
+        all:            obviously, all properties (except the abstract primary key, if
+                        present)
+        user-distinct:  all properties which are user-distinct (NOTE: Not yet implemented)
+        listed:         only those properties for which fields are explicitly listed
+  -->
+  <define name="PageAttrs">
+    <attribute name="name"/>
+    <attribute name="properties">
+      <choice>
+        <value>all</value>
+        <value>user-distinct</value>
+        <value>listed</value>
+      </choice>
+    </attribute>
+  </define>
+  <!--
+    Actions for generators (mainly for keyfields - see entity 'generator', below
+    assigned:           In manually-maintained code, you contract to assign a value 
+                        to this property before it is persisted.
+    guid:               The system will supply a unique GUid value to this field 
+                        before it is persisted.
+    mannual:            You contract to supply a generatos class in manually maintained
+                        code.
+    native:             The database will supply a unique value to this field when it
+                        is persisted; the value will be an integer. RECOMMENDED!
+  -->
+  <define name="GeneratorActions">
+    <choice>
+      <value>assigned</value>
+      <value>guid</value>
+      <value>manual</value>
+      <value>native</value>
+    </choice>
+  </define>
+  <!--
+    sequences for orderings of lists - see entity 'order'
+    canonical:          Whatever the normal canonical ordering for this datatype is -
+                        typically alpha-numeric, except for dates, etc.
+    reverse-canonical:  The reverse of the above
+    
+    possibly there should be some further values but I have no idea what these are
+  -->
+  <define name="Sequences">
+    <choice>
+      <value>canonical</value>
+      <value>reverse-canonical</value>
+    </choice>
+  </define>
+  <!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+  <!-- Elements -->
+  <!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+  <!--
+    the application that the document describes: required top level element
+    
+    name:     the name of this application
+    version:  the version number of this application
+    revision:	the revision of the ADL document
+    currency: the base monetary currency, in the form of an ISO 4217 three-letter code
+    xmlns:    XML namespace, in case required
+  -->
+  <define name="application">
+    <element name="application">
+      <ref name="attlist.application"/>
+      <zeroOrMore>
+        <ref name="specification"/>
+      </zeroOrMore>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <optional>
+        <ref name="content"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="typedef"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="group"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="entity"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.application" combine="interleave">
+    <attribute name="name"/>
+    <optional>
+      <attribute name="version"/>
+    </optional>
+    <optional>
+      <attribute name="revision"/>
+    </optional>
+    <optional>
+      <attribute name="currency"/>
+    </optional>
+  </define>
+  <!--
+          the definition of a defined type. At this stage a defined type is either
+          a string		in which case it must have size and pattern, or
+          a scalar		in which case it must have minimum and/or maximum
+          pattern must be a regular expression as interpreted by org.apache.regexp.RE
+          minimum and maximum must be of appropriate format for the datatype specified.
+          Validation may be done client-side and/or server-side at application layer
+          and/or server side at database layer.
+    
+    name:     the name of this typedef
+    type:     the simple type on which this defined type is based; must be
+    	  present unless in-implementation children are supplied
+    size:     the data size of this defined type
+    pattern:  a regular expression which values for this type must match
+    minimum:  the minimum value for this type (if base type is scalar)
+    maximum:  the maximum value for this type (if base type is scalar)
+  -->
+  <define name="typedef">
+    <element name="typedef">
+      <ref name="attlist.typedef"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="in-implementation"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="help"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.typedef" combine="interleave">
+    <attribute name="name"/>
+    <optional>
+      <attribute name="type">
+        <choice>
+          <ref name="DefinableDataTypes"/>
+        </choice>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="size"/>
+    </optional>
+    <optional>
+      <attribute name="pattern"/>
+    </optional>
+    <optional>
+      <attribute name="minimum"/>
+    </optional>
+    <optional>
+      <attribute name="maximum"/>
+    </optional>
+  </define>
+  <!--
+    information about how to translate a type into types known to different target
+    languages. TODO: Once again I'm not wholly comfortable with the name; I'm not 
+    really comfortable that this belongs in ADL at all.
+    
+    target:     the target language
+    value:      the type to use in that target language
+    kind:       OK, I confess I don't understand this, but Andrew needs it... 
+  -->
+  <define name="in-implementation">
+    <element name="in-implementation">
+      <ref name="attlist.in-implementation"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.in-implementation" combine="interleave">
+    <attribute name="target"/>
+    <attribute name="value"/>
+    <optional>
+      <attribute name="kind"/>
+    </optional>
+  </define>
+  <!--
+    a group of people with similar permissions to one another 
+    
+    name: the name of this group
+    parent: the name of a group of which this group is subset
+  -->
+  <define name="group">
+    <element name="group">
+      <ref name="attlist.group"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.group" combine="interleave">
+    <attribute name="name"/>
+    <optional>
+      <attribute name="parent"/>
+    </optional>
+  </define>
+  <!--
+          an entity which has properties and relationships; maps onto a database
+          table or a Java serialisable class - or, of course, various other things
+    
+    name:         obviously, the name of this entity
+    natural-key:  if present, the name of a property of this entity which forms
+    	      a natural primary key [NOTE: Only partly implemented. NOTE: much of
+    	      the present implementation assumes all primary keys will be 
+    	      integers. This needs to be fixed!] DEPRECATED: remove; replace with the
+    	      'key' element, below.
+    table:        the name of the table in which this entity is stored. Defaults to same
+    	      as name of entity. Strongly recommend this is not used unless it needs
+    	      to be different from the name of the entity
+    foreign:      this entity is part of some other system; no code will be generated
+    	      for it, although code which links to it will be generated
+  -->
+  <define name="entity">
+    <element name="entity">
+      <ref name="attlist.entity"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="prompt"/>
+      </zeroOrMore>
+      <optional>
+        <ref name="content"/>
+      </optional>
+      <optional>
+        <ref name="key"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="property"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="permission"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <choice>
+          <ref name="form"/>
+          <ref name="page"/>
+          <ref name="list"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.entity" combine="interleave">
+    <attribute name="name"/>
+    <optional>
+      <attribute name="natural-key"/>
+    </optional>
+    <optional>
+      <attribute name="table"/>
+    </optional>
+    <optional>
+      <attribute name="foreign">
+        <ref name="Boolean"/>
+      </attribute>
+    </optional>
+  </define>
+  <!--
+    contains documentation on the element which immediately contains it. TODO:
+    should HTML markup within a documentation element be allowed? If so, are
+    there restrictions?
+  -->
+  <define name="documentation">
+    <element name="documentation">
+      <ref name="attlist.documentation"/>
+      <zeroOrMore>
+        <choice>
+          <text/>
+          <ref name="reference"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.documentation" combine="interleave">
+    <empty/>
+  </define>
+  <!-- an explicit primary key, possibly compound -->
+  <define name="key">
+    <element name="key">
+      <ref name="attlist.key"/>
+      <zeroOrMore>
+        <ref name="property"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.key" combine="interleave">
+    <empty/>
+  </define>
+  <!--
+    a property (field) of an entity (table) 
+    
+    name:			  the name of this property.
+    type:			  the type of this property.
+    default:		the default value of this property. There will probably be 
+    				    magic values of this!
+    typedef:	  name of the typedef to use, it type = 'defined'.
+    distinct:		distinct='system' required that every value in the system 
+    				    will be distinct (i.e. natural primary key);
+    				    distinct='user' implies that the value may be used by users 
+    				    in distinguishing entities even if values are not formally 
+    				    unique; 
+    				    distinct='all' implies that the values are formally unique 
+    				    /and/ are user friendly (NOTE: not implemented).
+    entity:	if type='entity', the name of the entity this property is 
+    				    a foreign key link to.
+          if type='list', the name of the entity that has a foreign 
+          key link to this entity
+    farkey:   if type='list', the name of farside key in the listed 
+          entity; if type='entity' and the farside field to join to 
+          is not the farside primary key, then the name of that
+          farside field
+    required:		whether this propery is required (i.e. 'not null').
+    immutable:		if true, once a value has been set it cannot be changed.
+    size: 			fieldwidth of the property if specified.
+    concrete: if set to 'false', this property is not stored in the 
+          database but must be computed (manually written code must
+          be provided to support this)
+    cascade:  what action(s) on the parent entity should be cascaded to
+          entitie(s) linked on this property. Valid only if type='entity',
+          type='link' or type='list'.
+    column:   name of the column in a SQL database table in which this property
+          is stored. TODO: Think about this.
+    unsaved-value:
+          of a property whose persistent value is set on first being 
+          committed to persistent store, the value which it holds before
+          it has been committed
+  -->
+  <define name="property">
+    <element name="property">
+      <ref name="attlist.property"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <optional>
+        <ref name="generator"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="permission"/>
+          <ref name="option"/>
+          <ref name="prompt"/>
+          <ref name="help"/>
+          <ref name="ifmissing"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.property" combine="interleave">
+    <attribute name="name"/>
+    <attribute name="type">
+      <choice>
+        <ref name="AllDataTypes"/>
+      </choice>
+    </attribute>
+    <optional>
+      <attribute name="default"/>
+    </optional>
+    <optional>
+      <attribute name="typedef"/>
+    </optional>
+    <optional>
+      <attribute name="distinct">
+        <choice>
+          <value>none</value>
+          <value>all</value>
+          <value>user</value>
+          <value>system</value>
+        </choice>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="entity"/>
+    </optional>
+    <optional>
+      <attribute name="farkey"/>
+    </optional>
+    <optional>
+      <attribute name="required">
+        <ref name="Boolean"/>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="immutable">
+        <ref name="Boolean"/>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="size"/>
+    </optional>
+    <optional>
+      <attribute name="column"/>
+    </optional>
+    <optional>
+      <attribute name="concrete">
+        <ref name="Boolean"/>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="cascade">
+        <choice>
+          <ref name="CascadeActions"/>
+        </choice>
+      </attribute>
+    </optional>
+  </define>
+  <!--
+    marks a property which is auto-generated by some part of the system. 
+    This is based on the Hibernate construct, except that the Hibernate 
+    implementation folds both its internal generators and custom generators 
+    onto the same attribute. This separates them onto two attributes so we 
+    can police values for Hibernate's 'builtin' generators.
+    
+    action:       one of the supported Hibernate builtin generators, or 
+                  'manual'. 'native' is strongly recommended in most instances
+    class:        if action is 'manual', the name of a manually maintained 
+                  class conforming to the Hibernate IdentifierGenerator 
+                  interface, or its equivalent in other languages
+  -->
+  <define name="generator">
+    <element name="generator">
+      <ref name="attlist.generator"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="param"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.generator" combine="interleave">
+    <attribute name="action">
+      <choice>
+        <ref name="GeneratorActions"/>
+      </choice>
+    </attribute>
+    <optional>
+      <attribute name="class"/>
+    </optional>
+  </define>
+  <!--
+    A parameter passed to the generator. Again, based on the Hibernate 
+    implementation. TODO: #PCDATA is wrong as the content model, as embedded
+    markup is definitely not allowed!
+    
+    name:   the name of this parameter
+    
+    TODO: This needs to be renamed or removed because it conflicts with the
+    XHTML element of the same name. In fact it could be simply removed since 
+    our usage is compatible with the XHTML usage, but it might be less 
+    ambiguous to rename it.
+  -->
+  <define name="param">
+    <element name="param">
+      <ref name="attlist.param"/>
+      <text/>
+    </element>
+  </define>
+  <define name="attlist.param" combine="interleave">
+    <attribute name="name"/>
+  </define>
+  <!--
+    one of an explicit list of optional values a property may have 
+    NOTE: whether options get encoded at application layer or at database layer 
+    is UNDEFINED; either behaviour is correct. If at database layer it's also 
+    UNDEFINED whether they're encoded as a single reference data table or as 
+    separate reference data tables for each property.
+    
+    value:	the value of this option
+    
+    TODO: This needs to be renamed or removed because it conflicts with the
+    XHTML element of the same name. In fact it could be simply removed since 
+    our usage is compatible with the XHTML usage, but it might be less 
+    ambiguous to rename it.
+  -->
+  <define name="option">
+    <element name="option">
+      <ref name="attlist.option"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="prompt"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <!-- if the value is different from the prompt the user sees, specify it -->
+  <define name="attlist.option" combine="interleave">
+    <optional>
+      <attribute name="value"/>
+    </optional>
+  </define>
+  <!--
+    permissions policy on an entity, a page, form, list or field 
+    
+    group: 			the group to which permission is granted
+    permission:		the permission which is granted to that group
+  -->
+  <define name="permission">
+    <element name="permission">
+      <ref name="attlist.permission"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.permission" combine="interleave">
+    <attribute name="group"/>
+    <attribute name="permission">
+      <choice>
+        <ref name="Permissions"/>
+      </choice>
+    </attribute>
+  </define>
+  <!--
+    pragmatic advice to generators of lists and forms, in the form of 
+    name/value pairs which may contain anything. Over time some pragmas
+    will become 'well known', but the whole point of having a pragma
+    architecture is that it is extensible.
+  -->
+  <define name="pragma">
+    <element name="pragma">
+      <ref name="attlist.pragma"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.pragma" combine="interleave">
+    <attribute name="name"/>
+    <attribute name="value"/>
+  </define>
+  <!--
+          a prompt for a property or field; used as the prompt text for a widget 
+          which edits it. Typically there will be only one of these per property
+    per locale; if there are more than one all those matching the locale may
+    be concatenated, or just one may be used.
+    
+          prompt:			the prompt to use
+          locale:			the locale in which to prefer this prompt	
+  -->
+  <define name="prompt">
+    <element name="prompt">
+      <ref name="attlist.prompt"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.prompt" combine="interleave">
+    <attribute name="prompt"/>
+    <attribute name="locale">
+      <ref name="Locale"/>
+    </attribute>
+  </define>
+  <!--
+          helptext about a property of an entity, or a field of a page, form or 
+          list, or a typedef. Typically there will be only one of these per property
+    per locale; if there are more than one all those matching the locale may
+    be concatenated, or just one may be used.
+    
+          locale:			the locale in which to prefer this prompt	
+  -->
+  <define name="help">
+    <element name="help">
+      <ref name="attlist.help"/>
+      <text/>
+    </element>
+  </define>
+  <define name="attlist.help" combine="interleave">
+    <attribute name="locale">
+      <ref name="Locale"/>
+    </attribute>
+  </define>
+  <!--
+    helpful text to be shown if a property value is missing, typically when 
+    a form is submitted. Typically there will be only one of these per property
+    per locale; if there are more than one all those matching the locale may
+    be concatenated, or just one may be used. Later there may be more sophisticated
+    behaviour here.
+  -->
+  <define name="ifmissing">
+    <element name="ifmissing">
+      <ref name="attlist.ifmissing"/>
+      <text/>
+    </element>
+  </define>
+  <define name="attlist.ifmissing" combine="interleave">
+    <attribute name="locale">
+      <ref name="Locale"/>
+    </attribute>
+  </define>
+  <!--
+    a form through which an entity may be added or edited
+    
+    TODO: This needs to be renamed because it conflicts with the
+    XHTML element of the same name. 
+  -->
+  <define name="form">
+    <element name="form">
+      <ref name="attlist.form"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="PageStuff"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.form" combine="interleave">
+    <ref name="PageAttrs"/>
+  </define>
+  <!-- a page on which an entity may be displayed -->
+  <define name="page">
+    <element name="page">
+      <ref name="attlist.page"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="PageStuff"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.page" combine="interleave">
+    <ref name="PageAttrs"/>
+  </define>
+  <!--
+    an ordering or records in a list 
+    property:	the property on which to order
+    sequence:	the sequence in which to order
+  -->
+  <define name="order">
+    <element name="order">
+      <ref name="attlist.order"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.order" combine="interleave">
+    <attribute name="property"/>
+    <optional>
+      <attribute name="sequence">
+        <choice>
+          <ref name="Sequences"/>
+        </choice>
+      </attribute>
+    </optional>
+  </define>
+  <!--
+    a list on which entities of a given type are listed
+    
+    onselect:		name of form/page/list to go to when
+    				    a selection is made from the list 
+  -->
+  <define name="list">
+    <element name="list">
+      <ref name="attlist.list"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="PageStuff"/>
+          <ref name="order"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.list" combine="interleave">
+    <ref name="PageAttrs"/>
+    <optional>
+      <attribute name="onselect"/>
+    </optional>
+  </define>
+  <!--
+    a subsidiary list, on which entities related to primary
+    entities in the enclosing page or list are listed
+    
+    property:   the property of the enclosing entity that this
+                list displays (obviously, must be of type='list')
+    onselect:   the form or page of the listed entity to call
+                when an item from the list is selected
+    canadd:     true if the user should be able to add records
+                to this list
+  -->
+  <define name="auxlist">
+    <element name="auxlist">
+      <ref name="attlist.auxlist"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="prompt"/>
+          <ref name="FieldStuff"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.auxlist" combine="interleave">
+    <ref name="PageAttrs"/>
+    <attribute name="property"/>
+    <optional>
+      <attribute name="onselect"/>
+    </optional>
+    <optional>
+      <attribute name="canadd">
+        <ref name="Boolean"/>
+      </attribute>
+    </optional>
+  </define>
+  <!--
+    a group of fields and other controls within a form or list, which the 
+    renderer might render as a single pane in a tabbed display, for example.
+  -->
+  <define name="fieldgroup">
+    <element name="fieldgroup">
+      <ref name="attlist.fieldgroup"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="prompt"/>
+          <ref name="permission"/>
+          <ref name="FieldStuff"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.fieldgroup" combine="interleave">
+    <attribute name="name"/>
+  </define>
+  <!--
+    a field in a form or page
+    
+    property:   the property which this field displays/edits
+  -->
+  <define name="field">
+    <element name="field">
+      <ref name="attlist.field"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="prompt"/>
+          <ref name="help"/>
+          <ref name="permission"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.field" combine="interleave">
+    <attribute name="property"/>
+  </define>
+  <!--
+    a verb is something that may be done through a form. Probably the verbs 'store' 
+    and 'delete' are implied, but maybe they need to be explicitly declared. The 'verb'
+    attribute of the verb is what gets returned to the controller
+  -->
+  <define name="verb">
+    <element name="verb">
+      <ref name="attlist.verb"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <choice>
+          <ref name="prompt"/>
+          <ref name="help"/>
+          <ref name="permission"/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.verb" combine="interleave">
+    <attribute name="verb"/>
+    <attribute name="dangerous">
+      <ref name="Boolean"/>
+    </attribute>
+  </define>
+  <!-- a container for global content -->
+  <define name="content">
+    <element name="content">
+      <ref name="attlist.content"/>
+      <zeroOrMore>
+        <ref name="Content"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.content" combine="interleave">
+    <empty/>
+  </define>
+  <!--
+    content to place in the head of the generated document; this is #PCDATA 
+    because it will almost certainly belong to a different namespace 
+    (usually HTML)
+    
+    TODO: This needs to be renamed or removed because it conflicts with the
+    XHTML element of the same name. In fact it could be simply removed since 
+    our usage is compatible with the XHTML usage, but it might be less 
+    ambiguous to rename it.
+  -->
+  <define name="headmatter">
+    <element name="headmatter">
+      <ref name="attlist.headmatter"/>
+      <externalRef href="permitted-html-head.rng"/>
+    </element>
+  </define>
+  <define name="attlist.headmatter" combine="interleave">
+    <empty/>
+  </define>
+  <!--
+    content to place in the top of the body of the generated document; 
+    this is %Flow; which is any HTML block or inline level element.
+  -->
+  <define name="topmatter">
+    <element name="topmatter">
+      <ref name="attlist.topmatter"/>
+      <externalRef href="permitted-html.rng"/>
+    </element>
+  </define>
+  <define name="attlist.topmatter" combine="interleave">
+    <empty/>
+  </define>
+  <!--
+    content to place at the foot of the body of the generated document; 
+    this is %Flow; which is any HTML block or inline level element.
+  -->
+  <define name="footmatter">
+    <element name="footmatter">
+      <ref name="attlist.footmatter"/>
+      <externalRef href="permitted-html.rng"/>
+    </element>
+  </define>
+  <define name="attlist.footmatter" combine="interleave">
+    <empty/>
+  </define>
+  <!--
+    The 'specification' and 'reference' elements are for documentation only,
+    and do not contribute to the engineering of the application described.
+    
+    A specification element is intended chiefly to declare the reference
+    documents which may be used in documentation elements later in the 
+    document. 
+    
+    url:		The URL from which the document referenced can be retrieved
+    name:		The full name (title) given to this document
+    abbr:		A convenient abbreviated name
+  -->
+  <define name="specification">
+    <element name="specification">
+      <ref name="attlist.specification"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+      <zeroOrMore>
+        <ref name="reference"/>
+      </zeroOrMore>
+    </element>
+  </define>
+  <define name="attlist.specification" combine="interleave">
+    <optional>
+      <attribute name="url"/>
+    </optional>
+    <attribute name="name"/>
+    <attribute name="abbr"/>
+  </define>
+  <!--
+    The 'specification' and 'reference' elements are for documentation only,
+    and do not contribute to the engineering of the application described.
+    
+    A reference element is a reference to a specifying document. 
+    
+    abbr:		The abbreviated name of the specification to which this
+    			reference refers
+    section:	The 'anchor part' (part following a hash character) which,
+    			when appended to the URL, will locate the exact section
+    			referenced.
+    entity:		A reference to another entity within this ADL document
+    property:	A reference to another property within this ADL document;
+    			if entity is also specified then of that entity, else of
+    			the ancestor entity if any
+  -->
+  <define name="reference">
+    <element name="reference">
+      <ref name="attlist.reference"/>
+      <optional>
+        <ref name="documentation"/>
+      </optional>
+    </element>
+  </define>
+  <define name="attlist.reference" combine="interleave">
+    <optional>
+      <attribute name="abbr"/>
+    </optional>
+    <optional>
+      <attribute name="section"/>
+    </optional>
+    <optional>
+      <attribute name="entity"/>
+    </optional>
+    <optional>
+      <attribute name="property"/>
+    </optional>
+  </define>
+  <start>
+    <choice>
+      <ref name="application"/>
+    </choice>
+  </start>
+</grammar>

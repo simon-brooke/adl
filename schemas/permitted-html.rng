@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+	datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes" 
+	ns="http://www.w3.org/2002/06/xhtml2/">
+
+	<start>
+		<ref name="permitted-xhtml" />
+	</start>
+
+	<define name="permitted-xhtml">
+		<zeroOrMore>
+			<choice>
+				<element name="content">
+					<externalRef href="xhtml-2/xhtml-block.rng" />
+					<externalRef href="xhtml-2/xhtml-inline.rng" />
+				</element>
+			</choice>
+		</zeroOrMore>
+	</define>
+</grammar>
