@@ -1,43 +1,169 @@
- /******************************************************
-  *    Application Description Language framework
-  *    adl2documentation.xslt
-  *    
-  *    (c) 2007 Cygnet Solutions Ltd
-  *    
-  *    Produce basic documentation of an ADL file
-  *    
-  *    $Author: sb $
-  *    $Revision: 1.2 $
-  *
-  ******************************************************/
-  
-BODY 
+/************************************************************************\
+ *                                                                      *
+ *      weft.css                                                    	  *
+ *                                                                      *
+ *      Purpose: rational reconstruction of the lost Weft stylesheet.	  *
+ *                                                                      *
+ *      Author:    Simon Brooke                                         *
+ *      Created:   2nd November 2013                                    *
+ *                                                                      *
+\************************************************************************/
+
+body
 {
-	color: Black;
-	background-color: White;
-	font-family: Sans-Serif;
-}
-  
-TD, TH 
-{
-	text-align: left;
-	vertical-align: top;
-	padding: 0.1em 0.5em;
+  background: white;
+  color: black;
+  font-family: helvetica, gill, ariel, sans-serif;
+  margin: 3em 20% 5em 20%;
+  width: 60%;
 }
 
-.documentation
+
+a:link
 {
-	font-style: italic;
+  color: rgb( 64, 64, 64);
 }
 
-.odd
+a:hover, a:active
 {
-	color: Black;
-	background-color: rgb( 240, 240, 256);
+  background: silver;
 }
 
-.even
+a:visited
 {
-	color: Black;
-	background-color: rgb( 240, 256, 240);
+  color: rgb( 128,128,192);
 }
+
+blockquote
+{
+  font-family: 'URW Chancery L', 'Monotype Corsiva', 'Apple Chancery', 'ITC Zapf Chancery', cursive;
+  font-weight: lighter;
+  font-style: italic;
+  color:  rgb( 128,128,192);
+  margin-left: 0.5em;
+  margin-right: 1em;
+}
+
+footer {
+  font-size: smaller;
+  text-align: center;
+  bottom: 0;
+}
+
+header {
+  top: 0;
+}
+
+header, footer {
+  width: 100%;
+  position: fixed;
+  z-index: 149;
+  background-color: rgba( 255, 255, 255, 0.8);
+}
+
+h1 {
+  text-indent: -3em;
+  padding-left: 3em;
+  line-height: 130%;
+}
+
+h1, h2, h3, h4, h5, dt
+{
+  font-family: "Arial Black", Impact, sans-serif;
+  color: rgb( 128, 128, 128);
+  text-align: left;
+  margin-left: 0.5em;
+  margin-right: 1em;
+  font-weight: 900;
+}
+
+h1 em {
+  font-size: 200%;
+  vertical-align: top;
+}
+
+h1 strong {
+  font-size: 250%;
+}
+
+h1 em, h2 em, h3 em, h4 em, h5 em {
+  font-family: 'URW Chancery L', 'Monotype Corsiva', 'Apple Chancery', 'ITC Zapf Chancery', cursive;
+  font-weight: lighter;
+  font-style: italic;
+  color: rgb( 128,128,192);
+}
+
+h1, h2, h3, h4, h5 {
+}
+
+hr
+{
+  margin-left: 1em;
+  margin-right: 1em;
+  height: 1px;
+}
+
+p
+{
+  margin-left: 1em;
+  margin-right: 2em;
+  text-align: justify;
+  font-family: helvetica, gill, ariel, sans-serif;
+}
+
+ul.navbox {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.copyright
+{
+  color: rgb( 128,128,192);
+  font-size: x-small;
+  text-align: center;
+}
+
+.logo
+{
+  color:  rgb( 128,128,192);
+  font-style: normal;
+  float: left;
+}
+
+.help
+{
+  font-style: italic;
+  background: silver;
+}
+
+.daynum
+{
+  color: white;
+  background: rgb( 128,128,192);
+  font-weight: bold;
+}
+
+#nav {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background:rgba(255,255,255,0.8);
+}
+
+#nav ul li {
+  padding: 0;
+  margin: 0;
+  display: inline;
+}
+
+#nav ul li a {
+  text-decoration: none;
+  font-weight: bold;
+  padding: 0.1em 0.75em;
+  margin: 0;
+}
+
+#nav ul li.active a { background: silver;}
+#nav ul li a:hover { background: silver; }
+#nav ul li a:active { background: gray; color: white; }
