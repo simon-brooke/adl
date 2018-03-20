@@ -56,7 +56,4 @@ I will happily accept pull requests for new XSL transforms (although I'd like so
 
 Copyright © Simon Brooke 2007-2018
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
-
-Note that you are also entitled to use this project under the terms of the Gnu GPL version 2 or any later version; I generally prefer GPL, but I know that if this project is to be useful to folk it has to be relatively uncomplicated to use in commercial projects.
+Distributed under the Gnu GPL version 2 or any later version; I am open to licensing this project under additional licences if required.

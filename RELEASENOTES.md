@@ -1,0 +1,4 @@
+# Release 1.4
+
+Release 1.4 adds an 'order' element as a possible child of the 'list' element, in order to specify
+the default order of lists. Otherwise unchanged from 1.3.
