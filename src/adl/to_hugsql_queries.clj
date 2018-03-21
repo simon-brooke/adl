@@ -38,7 +38,7 @@
     (str
      "WHERE " entity-name "."
      (s/join
-      (str " AND\n\t" entity-name ".")
+      (str "\n\tAND " entity-name ".")
       (map
        #(let [target (keyword (-> % :attrs :name))]
           (str
@@ -63,9 +63,15 @@
      "ORDER BY " entity-name "."
      (s/join
       (str ",\n\t" entity-name ".")
-      (doall (flatten (cons preferred (filter
-                                       #(not (#{"all", "user"} %))
-                                       (key-names entity-map)))))))))
+      (doall
+       (flatten
+        (cons
+         preferred
+         (map
+          #(-> % :attrs :name)
+          (filter
+           #(not (#{"all", "user"} (-> % :attrs :distinct)))
+           (key-properties entity-map))))))))))
 
 
 (defn insert-query [entity-map]
