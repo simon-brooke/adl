@@ -4,7 +4,7 @@
             [adl.to-hugsql-queries :refer :all]
             [adl.utils :refer :all]))
 
-(defn string-equal-ignore-whitespace
+(defn string-equal-ignore-whitespace?
   "I don't want unit tests to fail just because emitted whitespace changes."
   [a b]
   (if
@@ -51,19 +51,19 @@
             address.postcode,
             address.id"
             actual (order-by-clause xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "keys name extraction"
       (let [expected '("id")
             actual (key-names xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "primary key test"
       (let [expected true
             actual (has-primary-key? xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "non-key properties test"
       (let [expected true
             actual (has-non-key-properties? xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query generation"
       (let [expected "-- :name create-addres! :! :n
             -- :doc creates a new addres record
@@ -75,11 +75,11 @@
               ':postcode')
             returning id\n\n"
             actual (:query (first (vals (insert-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query signature"
       (let [expected ":! :n"
             actual (:signature (first (vals (insert-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query generation"
       (let [expected "-- :name update-addres! :! :n
             -- :doc updates an existing addres record
@@ -88,11 +88,11 @@
               postcode = :postcode
             WHERE address.id = :id\n\n"
             actual (:query (first (vals (update-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query signature"
       (let [expected ":! :n"
             actual (:signature (first (vals (update-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query generation"
       (let [expected "-- :name search-strings-addres :? :1
             -- :doc selects existing address records having any string field matching `:pattern` by substring match
@@ -106,22 +106,22 @@
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
             actual (:query (first (vals (search-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query signature"
       (let [expected ":? :1"
             actual (:signature (first (vals (search-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "select query generation"
       (let [expected "-- :name get-addres :? :1
             -- :doc selects an existing addres record
             SELECT * FROM address
             WHERE address.id = :id\n\n"
             actual (:query (first (vals (select-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "select query signature"
       (let [expected ":? :1"
             actual (:signature (first (vals (select-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "list query generation"
       (let [expected "-- :name list-address :? :*
             -- :doc lists all existing addres records
@@ -132,22 +132,22 @@
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
             actual (:query (first (vals (list-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "list query signature"
       (let [expected ":? :*"
             actual (:signature (first (vals (list-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation"
       (let [expected "-- :name delete-addres! :! :n
             -- :doc updates an existing addres record
             DELETE FROM address
             WHERE address.id = :id\n\n"
             actual (:query (first (vals (delete-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query signature"
       (let [expected ":! :n"
             actual (:signature (first (vals (delete-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
 
   ))
 
@@ -192,11 +192,11 @@
             address.postcode,
             address.id"
             actual (order-by-clause xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "keys name extraction"
       (let [expected '("id" "postcode")
             actual (key-names xml)]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query generation - compound key, non system generated field in key"
       (let [expected "-- :name create-addres! :! :n
             -- :doc creates a new addres record
@@ -209,7 +209,7 @@
             returning id,
             postcode\n\n"
             actual (:query (first (vals (insert-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query generation - compound key"
       (let [expected "-- :name update-addres! :! :n
             -- :doc updates an existing addres record
@@ -219,7 +219,7 @@
             WHERE address.id = :id
               AND address.postcode = ':postcode'\n\n"
             actual (:query (first (vals (update-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query generation - user-distinct field in key"
       (let [expected  "-- :name search-strings-addres :? :1
             -- :doc selects existing address records having any string field matching `:pattern` by substring match
@@ -233,7 +233,7 @@
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
             actual (:query (first (vals (search-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))
+        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation - compound key"
       (let [expected "-- :name delete-addres! :! :n
             -- :doc updates an existing addres record
@@ -241,5 +241,5 @@
             WHERE address.id = :id
               AND address.postcode = ':postcode'\n\n"
             actual (:query (first (vals (delete-query xml))))]
-        (is (string-equal-ignore-whitespace actual expected))))))
+        (is (string-equal-ignore-whitespace? actual expected))))))
 
