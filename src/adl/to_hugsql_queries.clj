@@ -31,22 +31,23 @@
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 (defn key-names [entity-map]
+  (let [k (first (filter #(= (:tag %) :key) (:content entity-map)))]
   (remove
     nil?
     (map
       #(:name (:attrs %))
-      (vals (:content (:key (:content entity-map)))))))
+      (filter #(= (:tag %) :property) (:content k))))))
 
 
 (defn has-primary-key? [entity-map]
-  (> (count (key-names entity-map)) 0))
+  (not (empty? (key-names entity-map))))
 
 
 (defn has-non-key-properties? [entity-map]
-  (>
-    (count (vals (:properties (:content entity-map))))
-    (count (key-names entity-map))))
+  (not
+   (empty? (filter #(= (:tag %) :property) (:content entity-map)))))
 
 
 (defn where-clause [entity-map]
@@ -63,22 +64,26 @@
   (let
     [entity-name (:name (:attrs entity-map))
      preferred (map
-                 #(:name (:attrs %))
-                 (filter #(= (-> % :attrs :distinct) "user")
-                         (-> entity-map :content :properties vals)))]
+                #(:name (:attrs %))
+                (filter #(and
+                          (= (-> % :attrs :distinct) "user")
+                          (= (-> % :tag) :property))
+                        (-> entity-map :content)))]
     (str
-      "ORDER BY " entity-name "."
-      (s/join
-        (str ",\n\t" entity-name ".")
-        (doall (flatten (cons preferred (key-names entity-map))))))))
+     "ORDER BY " entity-name "."
+     (s/join
+      (str ",\n\t" entity-name ".")
+      (doall (flatten (cons preferred (key-names entity-map))))))))
 
+(defn property-names [entity-map]
+  (map #(:name (:attrs %)) (filter #(= (-> % :tag) :property) (:content entity-map))))
 
 (defn insert-query [entity-map]
   (let [entity-name (:name (:attrs entity-map))
         pretty-name (singularise entity-name)
-        all-property-names (map #(:name (:attrs %)) (vals (:properties (:content entity-map))))
+        all-property-names (property-names entity-map)
         query-name (str "create-" pretty-name "!")
-        signature " :! :n"]
+        signature ":! :n"]
     (hash-map
       (keyword query-name)
       {:name query-name
@@ -106,11 +111,7 @@
       (has-non-key-properties? entity-map))
     (let [entity-name (:name (:attrs entity-map))
           pretty-name (singularise entity-name)
-          property-names (remove
-                           nil?
-                           (map
-                             #(if (= (:tag %) :property) (:name (:attrs %)))
-                             (vals (:properties (:content entity-map)))))
+          property-names (property-names entity-map)
           query-name (str "update-" pretty-name "!")
           signature ":! :n"]
       (hash-map
@@ -137,8 +138,10 @@
         query-name (str "search-strings-" pretty-name)
         signature ":? :1"
         string-fields (filter
-                       #(= (-> % :attrs :type) "string")
-                       (-> entity-map :content :properties vals))]
+                       #(and
+                         (= (-> % :attrs :type) "string")
+                         (= (:tag %) :property))
+                       (-> entity-map :content))]
     (if
       (empty? string-fields)
       {}
@@ -184,8 +187,6 @@
               "-- :doc selects an existing " pretty-name " record\n"
               "SELECT * FROM " entity-name "\n"
               (where-clause entity-map)
-              "\n"
-              (order-by-clause entity-map)
               "\n\n")}))
     {}))
 
