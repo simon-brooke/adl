@@ -6,7 +6,7 @@
             [clojure.string :as s]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer [singularise is-link-table?]]))
+            [adl.utils :refer [has-non-key-properties? has-primary-key? is-link-table? key-names singularise]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -30,23 +30,6 @@
 ;;;; Copyright (C) 2018 Simon Brooke
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn key-names [entity-map]
-  (remove
-    nil?
-    (map
-      #(:name (:attrs %))
-      (vals (:content (:key (:content entity-map)))))))
-
-
-(defn has-primary-key? [entity-map]
-  (> (count (key-names entity-map)) 0))
-
-
-(defn has-non-key-properties? [entity-map]
-  (>
-    (count (vals (:properties (:content entity-map))))
-    (count (key-names entity-map))))
 
 
 (defn where-clause [entity-map]

@@ -652,3 +652,8 @@
                          entity-validations)]]})
 
 
+(defn valid-adl? [src]
+  (b/valid? src application-validations))
+
+(defn validate-adl [src]
+  (b/validate src application-validations))
