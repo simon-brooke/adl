@@ -1,9 +1,10 @@
-(ns ^{:doc "Application Description Language: generate RING routes for REST requests."
+(ns ^{;; :doc "Application Description Language - generate RING routes for REST requests."
       :author "Simon Brooke"}
   adl.to-selmer-templates
   (:require [adl.utils :refer :all]
             [clojure.java.io :refer [file]]
             [clojure.math.combinatorics :refer [combinations]]
+            [clojure.pprint :as p]
             [clojure.string :as s]
             [clojure.xml :as x]
             [clj-time.core :as t]
@@ -34,13 +35,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(def ^:dynamic  *locale* "en-GB")
+(def ^:dynamic  *locale*
+  "The locale for which files will be generated."
+  "en-GB")
 
-(defn file-header []
-  "{% extends \"templates/base.html\" %}\n{% block content %}")
+(def ^:dynamic *output-path*
+  "The path to which generated files will be written."
+  "resources/auto/")
 
-(defn file-footer []
-  "{% endblock %}")
+(defn file-header
+  "Generate a header for a template file."
+  [filename]
+  (str
+    "{% extends \"templates/base.html\" %}\n\n"
+    "<!-- File "
+    filename
+    " generated "
+    (t/now)
+    " by adl.to-selmer-templates.\n"
+    "See [Application Description Language](https://github.com/simon-brooke/adl)."
+    "-->\n\n"
+    "{% block content %}"))
+
+(defn file-footer
+  "Generate a header for a template file."
+  [filename]
+  "{% endblock %}\n")
 
 
 (defn prompt
@@ -56,32 +76,6 @@
            (= (:tag %) :prompt)
            (= (:locale :attrs %) *locale*))))
     (:name (:attrs field-or-property))))
-
-
-(defn permission
-  [property form entity application]
-  (or
-    (children property #(= (:tag %) :permission))
-    (children entity :permission)))
-
-
-(defn visible?
-  "Return `true` if this property is not `system`-distinct, and is readable
-  to the `public` group; else return a list of groups to which it is readable,
-  given these `permissions`."
-  [property permissions]
-  (let [attributes (attributes property)]
-    (if
-      (not
-        (and
-          ;; if it's immutable and system distinct, the user should not need to see it.
-          (= (:immutable attributes) "true")
-          (= (:distinct attributes) "system")))
-      (map
-        #(if
-           (some #{"read" "insert" "noedit" "edit" "all"} (:permission (:attrs %)))
-           (:group (:attrs %)))
-        permissions))))
 
 
 (defn csrf-widget
@@ -145,6 +139,20 @@
     "</option>%{ endfor %}"))
 
 
+(defn typedef
+  "If this `property` is of type `defined`, return its type definition from
+  this `application`, else nil."
+  [property application]
+  (if
+    (= (:type (:attrs property)) "defined")
+    (first
+      (children
+        application
+        #(and
+           (= (:tag %) :typedef)
+           (= (:name (:attrs %)) (:typedef (:attrs property))))))))
+
+
 (defn widget
   "Generate a widget for this `field-or-property` of this `form` for this `entity`
   taken from within this `application`."
@@ -160,10 +168,13 @@
                     #(and
                        (= (:tag %) :property)
                        (= (:name (:attrs %)) (:property (:attrs field-or-property)))))))
-     permissions (permission property form entity application)
-     show? (visible? property permissions)
-     is-select? false]
+     permissions (permissions property entity application)
+     typedef
+     show? true ;;(visible? property permissions)
+     select? (some #{"entity" "list" "link"} (:type (:attrs property)))]
     ;; TODO: deal with disabling/hiding if no permission
+    (println "Property:")
+    (p/pprint property)
     (if
       show?
       {:tag :p
@@ -172,7 +183,7 @@
                   :attrs {:for name}
                   :content [(prompt field-or-property form entity application)]}
                  (if
-                   is-select?
+                   select?
                    {:tag :select
                     :attrs {:id name
                             :name name}
@@ -180,7 +191,7 @@
                    {:tag :input
                     :attrs {:id name
                             :name name
-                            :type :text ;; TODO - or other things
+                            :type "text" ;; TODO - or other things
                             :value (str "{{record." name "}}")}})]}
       {:tag :input
        :attrs {:id name
@@ -205,7 +216,7 @@
               (flatten
                 (map #(if (some #{:field :fieldgroup :verb} (:tag %)) %)
                      (children form)))
-              (children entity #(= (:key %) :property)))]
+              (children entity #(= (:tag %) :property)))]
     {:tag :div
      :attrs {:id "content" :class "edit"}
      :content
@@ -217,8 +228,10 @@
                     (csrf-widget)
                     (map
                       #(widget % form entity application)
-                      (flatten
-                        (list keyfields fields)))
+                      keyfields)
+                    (map
+                      #(widget % form entity application)
+                      fields)
                     (save-widget form entity application)
                     (delete-widget form entity application)))}]}))
 
@@ -278,16 +291,17 @@
 (defn write-template-file
   [filename template]
   (spit
-    filename
+    (str *output-path* filename)
     (s/join
       "\n"
       (list
-        (file-header)
+        (file-header filename)
         (with-out-str (x/emit-element template))
-        (file-footer)))))
+        (file-footer filename)))))
 
 
 (defn to-selmer-templates
+  "Generate all [Selmer](https://github.com/yogthos/Selmer) templates implied by this ADL `application` spec."
   [application]
   (let
     [templates-map (reduce
@@ -300,7 +314,8 @@
       (map
         #(if
            (templates-map %)
-           (write-template-file (str (name %) ".html") (templates-map %)))
+           (let [filename (str (name %) ".html")]
+             (write-template-file filename (templates-map %))))
         (keys templates-map)))
     templates-map))
 

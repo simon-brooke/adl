@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/math.combinatorics "0.1.4"]
                  [bouncer "1.0.1"]
-                 [hiccup "1.0.5"]])
+                 [hiccup "1.0.5"]]
+  :plugins [[lein-codox "0.10.3"]])

@@ -1,4 +1,4 @@
-(ns ^{:doc "Application Description Language: generate HUGSQL queries file."
+(ns ^{:doc "Application Description Language - generate HUGSQL queries file."
       :author "Simon Brooke"}
   adl.to-hugsql-queries
   (:require [clojure.java.io :refer [file]]
@@ -6,7 +6,7 @@
             [clojure.string :as s]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer [has-non-key-properties? has-primary-key? is-link-table? key-names singularise]]))
+            [adl.utils :refer [has-non-key-properties? has-primary-key? link-table? key-names singularise]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -306,7 +306,7 @@
     (update-query entity-map)
     (delete-query entity-map)
     (if
-      (is-link-table? entity-map)
+      (link-table? entity-map)
       (link-table-queries entity-map entities-map)
       (merge
         (select-query entity-map)
