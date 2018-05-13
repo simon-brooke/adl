@@ -1,4 +1,4 @@
-              Application Description Language framework
+# Introduction
 
 **NOTE**: *this markdown was automatically generated from `adl_user_doc.html`, which in turn was taken from the Wiki page on which this documentation was originally written.*
 
