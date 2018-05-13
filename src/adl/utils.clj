@@ -117,6 +117,12 @@
       (= (:distinct (:attrs property)) "system"))))
 
 
+(defn entity?
+  "Return true if `x` is an ADL entity."
+  [x]
+  (= (:tag x) :entity))
+
+
 (defn visible-to
   "Return a list of names of groups to which are granted read access,
   given these `permissions`, else nil."
@@ -134,7 +140,13 @@
 (defn singularise
   "Attempt to construct an idiomatic English-language singular of this string."
   [string]
-  (s/replace (s/replace (s/replace string #"_" "-") #"s$" "") #"ie$" "y"))
+  (s/replace
+    (s/replace
+      (s/replace
+        (s/replace string #"_" "-")
+        #"s$" "")
+      #"se$" "s")
+    #"ie$" "y"))
 
 
 (defn link-table?
@@ -169,6 +181,26 @@
     (count (key-names entity-map))))
 
 
+(defn children-with-tag
+  "Return all children of this `element` which have this `tag`."
+  [element tag]
+  (children element #(= (:tag %) tag)))
+
+(defn descendants-with-tag
+  "Return all descendants of this `element`, recursively, which have this `tag`."
+  [element tag]
+  (flatten
+    (remove
+      empty?
+      (cons
+        (children element #(= (:tag %) tag))
+        (map
+          #(descendants-with-tag % tag)
+          (children element))))))
 
 
-;; (read-adl "../youyesyet/stripped.adl.xml")
+(defn all-properties
+  "Return all properties of this entity (including key properties)."
+  [entity]
+  (descendants-with-tag entity :property))
+
