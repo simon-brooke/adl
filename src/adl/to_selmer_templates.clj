@@ -125,32 +125,45 @@
   (let
     [type (:type (:attrs property))
      farname (:entity (:attrs property))
-     farside (application farname)
+     farside (first
+               (children
+                 application
+                 #(and
+                    (= (:tag %) :entity)
+                    (= (:name (:attrs %)) farname))))
+     fs-distinct (flatten
+                   (list
+                     (children farside #(#{"user" "all"} (:distinct (:attrs %))))
+                     (children
+                       (first
+                         (children farside #(= (:tag %) :key)))
+                       #(#{"user" "all"} (:distinct (:attrs %))))))
      farkey (or
               (:farkey (:attrs property))
               (:name (:attrs (first (children (children farside #(= (:tag %) :key))))))
               "id")]
-    (str "{% for record in " farname " %}<option value='record." farkey "'>"
-         (s/join
-           " "
-           (map
-             #(str "{{record." (:name (:attrs %)) "}}")
-             (children farside #(some #{"user" "all"} (:distinct %))))))
-    "</option>%{ endfor %}"))
+    [(str "{% for record in " farname " %}<option value='{{record." farkey "}}'>"
+         (s/join " " (map #(str "{{record." (:name (:attrs %)) "}}") fs-distinct))
+         "</option>{% endfor %}")]))
 
 
-(defn typedef
-  "If this `property` is of type `defined`, return its type definition from
-  this `application`, else nil."
-  [property application]
-  (if
-    (= (:type (:attrs property)) "defined")
-    (first
-      (children
-        application
-        #(and
-           (= (:tag %) :typedef)
-           (= (:name (:attrs %)) (:typedef (:attrs property))))))))
+(defn widget-type
+  "Return an appropriate HTML5 input type for this property."
+  ([property application]
+   (widget-type property application (typedef property application)))
+  ([property application typedef]
+   (let [t (if
+             typedef
+             (:type (:attrs typedef))
+             (:type (:attrs property)))]
+     (case t
+       ("integer" "real" "money") "number"
+       ("uploadable" "image") "file"
+       "boolean" "checkbox"
+       "date" "date"
+       "time" "time"
+       "text" ;; default
+       ))))
 
 
 (defn widget
@@ -158,7 +171,7 @@
   taken from within this `application`."
   [field-or-property form entity application]
   (let
-    [name (:name (:attrs field-or-property))
+    [widget-name (:name (:attrs field-or-property))
      property (if
                 (= (:tag field-or-property) :property)
                 field-or-property
@@ -168,36 +181,52 @@
                     #(and
                        (= (:tag %) :property)
                        (= (:name (:attrs %)) (:property (:attrs field-or-property)))))))
-     permissions (permissions property entity application)
-     typedef
-     show? true ;;(visible? property permissions)
-     select? (some #{"entity" "list" "link"} (:type (:attrs property)))]
-    ;; TODO: deal with disabling/hiding if no permission
-    (println "Property:")
-    (p/pprint property)
+     permissions (permissions property form entity application)
+     typedef (typedef property application)
+     visible-to (visible-to permissions)
+     ;; if the form isn't actually a form, no widget is writable.
+     writable-by (if (= (:tag form) :form) (writable-by permissions))
+     select? (#{"entity" "list" "link"} (:type (:attrs property)))]
     (if
-      show?
+      (formal-primary-key? property entity)
+      {:tag :input
+       :attrs {:id widget-name
+               :name widget-name
+               :type "hidden"
+               :value (str "{{record." widget-name "}}")}}
       {:tag :p
        :attrs {:class "widget"}
        :content [{:tag :label
-                  :attrs {:for name}
+                  :attrs {:for widget-name}
                   :content [(prompt field-or-property form entity application)]}
+                 "TODO: selmer command to hide for all groups except for those for which it is writable"
                  (if
                    select?
                    {:tag :select
-                    :attrs {:id name
-                            :name name}
+                    :attrs {:id widget-name
+                            :name widget-name}
                     :content (get-options property form entity application)}
                    {:tag :input
-                    :attrs {:id name
-                            :name name
-                            :type "text" ;; TODO - or other things
-                            :value (str "{{record." name "}}")}})]}
-      {:tag :input
-       :attrs {:id name
-               :name name
-               :type :hidden
-               :value (str "{{record." name "}}")}})))
+                    :attrs (merge
+                             {:id widget-name
+                              :name widget-name
+                              :type (widget-type property application typedef)
+                              :value (str "{{record." widget-name "}}")}
+                             (if
+                               (:minimum (:attrs typedef))
+                               {:min (:minimum (:attrs typedef))})
+                             (if
+                               (:maximum (:attrs typedef))
+                               {:max (:maximum (:attrs typedef))}))})
+                 "{% else %}"
+                 "TODO: selmer if command to hide for all groups except to those for which it is readable"
+                 {:tag :span
+                  :attrs {:id widget-name
+                          :name widget-name
+                          :class "pseudo-widget disabled"}
+                  :content [(str "{{record." widget-name "}}")]}
+                 "{% endif %}"
+                 "{% endif %}"]})))
 
 
 (defn form-to-template
@@ -214,7 +243,7 @@
               (and form (= "listed" (:properties (:attrs form))))
               ;; if we've got a form, collect its fields, fieldgroups and verbs
               (flatten
-                (map #(if (some #{:field :fieldgroup :verb} (:tag %)) %)
+                (map #(if (#{:field :fieldgroup :verb} (:tag %)) %)
                      (children form)))
               (children entity #(= (:tag %) :property)))]
     {:tag :div

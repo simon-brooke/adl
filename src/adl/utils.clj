@@ -58,35 +58,82 @@
          (:attrs element)))))
 
 
+(defn typedef
+  "If this `property` is of type `defined`, return its type definition from
+  this `application`, else nil."
+  [property application]
+  (if
+    (= (:type (:attrs property)) "defined")
+    (first
+      (children
+        application
+        #(and
+           (= (:tag %) :typedef)
+           (= (:name (:attrs %)) (:typedef (:attrs property))))))))
+
+
 (defn permissions
   "Return appropriate permissions of this `property`, taken from this `entity` of this
-  `application`."
-  [property entity application]
-  (or
-    (children property #(= (:tag %) :permission))
-    (children entity :permission)))
+  `application`, in the context of this `page`."
+  [property page entity application]
+  (first
+    (remove
+      empty?
+      (list
+        (children page #(= (:tag %) :permission))
+        (children property #(= (:tag %) :permission))
+        (children entity #(= (:tag %) :permission))
+        (children application #(= (:tag %) :permission))))))
 
 
-(defn visible?
-  "Return `true` if this property is not `system`-distinct, and is readable
-  to the `public` group; else return a list of groups to which it is readable,
-  given these `permissions`."
-  [property permissions]
-  (let [attributes (attributes property)]
-    (if
-      (not
-        (and
-          ;; if it's immutable and system distinct, the user should not need to see it.
-          (= (:immutable attributes) "true")
-          (= (:distinct attributes) "system")))
-      (map
-        #(if
-           (some #{"read" "insert" "noedit" "edit" "all"} (:permission (:attrs %)))
-           (:group (:attrs %)))
-        permissions))))
+(defn permission-groups
+  "Return a list of names of groups to which this `predicate` is true of
+  some permission taken from these `permissions`, else nil."
+  [permissions predicate]
+  (let [groups (remove
+                 nil?
+                 (map
+                   #(if
+                      (apply predicate (list %))
+                      (:group (:attrs %)))
+                   permissions))]
+    (if groups groups)))
 
 
-(defn singularise [string]
+(defn formal-primary-key?
+  "Does this `prop-or-name` appear to be a property (or the name of a property)
+  which is a formal primary key of this entity?"
+  [prop-or-name entity]
+  (if
+    (map? prop-or-name)
+    (formal-primary-key? (:name (:attrs prop-or-name)) entity)
+    (let [primary-key (first (children entity #(= (:tag %) :key)))
+          property (first
+                     (children
+                       primary-key
+                       #(and
+                          (= (:tag %) :property)
+                          (= (:name (:attrs %)) prop-or-name))))]
+      (= (:distinct (:attrs property)) "system"))))
+
+
+(defn visible-to
+  "Return a list of names of groups to which are granted read access,
+  given these `permissions`, else nil."
+  [permissions]
+  (permission-groups permissions #(#{"read" "insert" "noedit" "edit" "all"} (:permission (:attrs %)))))
+
+
+(defn writable-by
+  "Return a list of names of groups to which are granted read access,
+  given these `permissions`, else nil."
+  [permissions]
+  (permission-groups permissions #(#{"edit" "all"} (:permission (:attrs %)))))
+
+
+(defn singularise
+  "Attempt to construct an idiomatic English-language singular of this string."
+  [string]
   (s/replace (s/replace (s/replace string #"_" "-") #"s$" "") #"ie$" "y"))
 
 
