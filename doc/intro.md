@@ -1,11 +1,11 @@
-              Application Description Language framework
+# Introduction
 
 **NOTE**: *this markdown was automatically generated from `adl_user_doc.html`, which in turn was taken from the Wiki page on which this documentation was originally written.*
 
 Application Description Language framework
 ==========================================
 
-Contents
+## Contents
 --------
 
 *   [1 What is Application Description Language?](#What_is_Application_Description_Language.3F)
@@ -55,16 +55,14 @@ Contents
         *   [9.2.6 Generate Monorail controller classes](#Generate_Monorail_controller_classes)
         *   [9.2.7 Generate Velocity views for use with Monorail](#Generate_Velocity_views_for_use_with_Monorail)
 
-//<!\[CDATA\[ if (window.showTocToggle) { var tocShowText = "show"; var tocHideText = "hide"; showTocToggle(); } //\]\]>
-
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=1 "Edit section: What is Application Description Language?")\] What is Application Description Language?
+## What is Application Description Language?
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Application Description Language is an XML vocabulary, defined in a [Document Type Definition](http://en.wikipedia.org/wiki/Document_Type_Definition "http://en.wikipedia.org/wiki/Document_Type_Definition"), which declaratively describes the entities in an application domain, their relationships, and their properties. Because ADL is defined in a formal definition which can be parsed by XML editors, any DTD-aware XML editor (such as that built into Visual studio) can provide context-sensitive auto-completion for ADL, making the vocabulary easy to learn and to edit. It would perhaps be desirable to replace this DTD at some future stage with an XML Schema, since it is desirable to be able to mix HTML in with ADL in the same document.
 
 ADL is thus a '[Fourth Generation Language](http://en.wikipedia.org/wiki/Fourth-generation_programming_language "http://en.wikipedia.org/wiki/Fourth-generation_programming_language")' as understood in the 1980s - an ultra-high level language for a specific problem domain; but it is a purely declarative 4GL.
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=2 "Edit section: Current versions")\] Current versions
+## Current versions
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 *   The current STABLE version of ADL is 1.1.
@@ -76,12 +74,12 @@ ADL is thus a '[Fourth Generation Language](http://en.wikipedia.org/wiki/Fourth-
     *   Transforms for ADL 1.2 can be found at [http://libs.cygnets.co.uk/adl/1.2/ADL/transforms/](http://libs.cygnets.co.uk/adl/1.2/ADL/transforms/ "http://libs.cygnets.co.uk/adl/1.2/ADL/transforms/")
     *   The document type definition for ADL 1.2 can be found at [http://libs.cygnets.co.uk/adl/1.2/ADL/schemas/adl-1.2.dtd](http://libs.cygnets.co.uk/adl/1.2/ADL/schemas/adl-1.2.dtd "http://libs.cygnets.co.uk/adl/1.2/ADL/schemas/adl-1.2.dtd")
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=3 "Edit section: What is the Application Description Language Framework?")\] What is the Application Description Language Framework?
+\ What is the Application Description Language Framework?
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 The Application Description Language Framework is principally a set of XSL transforms which transform a single ADL file into all the various source files required to build an application.
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=4 "Edit section: Why does it matter?")\] Why does it matter?
+## Why does it matter?
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 The average data driven web application comprises pages (lists) which show lists of entities, pages (forms) that edit instances of entities, and pages (inspectors) that show details of instances of entities. That comprises 100% of many applications and 90% of others; traditionally, even with modern tools like Monorail, coding these lists, forms and inspectors has taken 90% of the development effort.
@@ -90,15 +88,15 @@ I realised about three years ago that I was doing essentially the same job over 
 
 The whole purpose of ADL is to increase productivity - mine, and that of anyone else who chooses to follow me down this path. It is pragmatic technology - it is designed to be an 80/20 or 90/10 solution, taking the repetitious grunt-work out of application development so that we can devote more time to the fun, interesting and novel bits. It is not intended to be an academic, perfect, 100% solution - although for many applications it may in practice be a 100% solution.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=5 "Edit section: Automated Application Generation")\] Automated Application Generation
+###  Automated Application Generation
 
 Thus to create a new application, all that should be necessary is to create a new ADL file, and to compile it using a single, standardised \[[NAnt](http://nant.sourceforge.net/ "http://nant.sourceforge.net/")\] (or \[[Ant](http://ant.apache.org/ "http://ant.apache.org/")\]) build file using scripts already created as part of the framework. All these scripts (with the exception of the PSQL one, which was pre-existing) have been created as part of the [C1873 - SRU - Hospitality](http://wiki.cygnets.co.uk/index.php/C1873_-_SRU_-_Hospitality "C1873 - SRU - Hospitality") contract, but they contain almost no SRU specific material (and what does exist has been designed to be factored out). Prototype 1 of the SRU Hospitality Application contains no hand-written code whatever - all the application code is automatically generated from the single ADL file. The one exception to this rule is the CSS stylesheet which provides look-and-feel and branding.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=6 "Edit section: Integration with hand-written code")\] Integration with hand-written code
+###  Integration with hand-written code
 
 Application-specific procedural code, covering specific business procedures, may still need to be hand written; the code generated by the ADL framework is specifically designed to make it easy to integrate hand-written code. Thus for example the C# entity controller classes generated are intentionally generated as _partial_ classes, so that they may be complemented by other partial classes which may be manually maintained and held in a version control system.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=7 "Edit section: High quality auto-generated code")\] High quality auto-generated code
+###  High quality auto-generated code
 
 One key objective of the framework is that the code which is generated should be as clear and readable - and as well commented - as the best hand-written code. Consider this example:
 
@@ -181,36 +179,36 @@ One key objective of the framework is that the code which is generated should be
 
 This means that it should be trivial to decide at some point in development of a project to manually modify and maintain auto-generated code.
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=8 "Edit section: What can the Application Description Language framework now do?")\] What can the Application Description Language framework now do?
+## What can the Application Description Language framework now do?
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Currently the framework includes:
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=9 "Edit section: adl2entityclass.xsl")\] adl2entityclass.xsl
+###  adl2entityclass.xsl
 
 Transforms the ADL file into C# source files for classes which describe the entities in a manner acceptable to [NHibernate](http://www.hibernate.org/ "http://www.hibernate.org/"), a widely used Object/Relational mapping layer.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=10 "Edit section: adl2mssql.xsl")\] adl2mssql.xsl
+###  adl2mssql.xsl
 
 Transforms the ADL file into an SQL script in Microsoft SQL Server 2000 syntax which initialises the database required by the application, with all relationships, permissions, referential integrity constraints and so on.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=11 "Edit section: adl2views.xsl")\] adl2views.xsl
+###  adl2views.xsl
 
 Transforms the ADL file into [Velocity](http://velocity.apache.org/ "http://velocity.apache.org/") template files as used by the [Monorail](http://www.castleproject.org/monorail/index.html "http://www.castleproject.org/monorail/index.html") framework, one template each for all the lists, forms and inspectors described in the ADL.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=12 "Edit section: adl2controllerclasses.xsl")\] adl2controllerclasses.xsl
+###  adl2controllerclasses.xsl
 
 Transforms the ADL file into a series of C# source files for classes which are controllers as used by the Monorail framework.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=13 "Edit section: adl2hibernate.xsl")\] adl2hibernate.xsl
+###  adl2hibernate.xsl
 
 Transforms the ADL file into a Hibernate mapping file, used by the [Hibernate](http://www.hibernate.org/ "http://www.hibernate.org/") ([Java](http://java.sun.com/ "http://java.sun.com")) and [NHibernate](http://www.hibernate.org/ "http://www.hibernate.org/") (C#) Object/Relational mapping layers. This transform is relatively trivial, since ADL is not greatly different from being a superset of the Hibernate vocabulary - it describes the same sorts of things but in more detail.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=14 "Edit section: adl2pgsql.xsl")\] adl2pgsql.xsl
+###  adl2pgsql.xsl
 
 Transforms the ADL file into an SQL script in [Postgres](http://www.postgresql.org/ "http://www.postgresql.org/") 7 syntax which initialises the database required by the application, with all relationships, permissions, referential integrity constraints and so on.
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=15 "Edit section: So is ADL a quick way to build Monorail applications?")\] So is ADL a quick way to build Monorail applications?
+## So is ADL a quick way to build Monorail applications?
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Yes and no.
@@ -219,35 +217,35 @@ ADL _is_ a quick way to build Monorail applications, because it seemed to me tha
 
 However ADL wasn't originally conceived with Monorail in mind. It was originally intended to generated LISP for [CLHTTPD](http://www.cl-http.org:8001/cl-http/ "http://www.cl-http.org:8001/cl-http/"), and I have a half-finished set of scripts to generate Java as part of the Jacquard2 project which I never finished. Because ADL is at a level of abstraction considerably above any [3GL](http://en.wikipedia.org/wiki/Third-generation_programming_language "http://en.wikipedia.org/wiki/Third-generation_programming_language"), it is inherently agnostic to what 3GL it is compiled down to - so that it would be as easy to write transforms that compiled ADL to [Struts](http://struts.apache.org/ "http://struts.apache.org/") or [Ruby on Rails](http://www.rubyonrails.org/ "http://www.rubyonrails.org/") as to C#/Monorail. More importantly, ADL isn't inherently limited to Web applications - it doesn't actually know anything about the Web. It should be possible to write transforms which compile ADL down to Windows native applications or to native applications for mobile phones (and, indeed, if we did have those transforms then we could make all our applications platform agnostic).
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=16 "Edit section: Limitations on ADL")\] Limitations on ADL
+## Limitations on ADL
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=17 "Edit section: Current limitations")\] Current limitations
+###  Current limitations
 
 Although I've built experimental systems before using ADL, the SRU project is the first time I've really used it in anger. There are some features I need which it can't yet represent.
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=18 "Edit section: Authentication model")\] Authentication model
+####  Authentication model
 
 For SRU, I have implemented an authentication model which authenticates the user against real database user accounts. I've done this because I think, in general, this is the correct solution, and because without this sort of authentication you cannot implement table-layer security. However most web applications use application layer authentication rather than database layer authentication, and I have not yet written controller-layer code to deal with this. So unless you do so, ADL applications can currently only authenticate at database layer.
 
 ADL defines field-level permissions, but the current controller generator does not implement this.
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=19 "Edit section: Alternative Verbs")\] Alternative Verbs
+####  Alternative Verbs
 
 Generically, with an entity form, one needs to be able to save the record being edited, and one (often) needs to be able to delete it. But sometimes one needs to be able to do other things. With SRU, for example, there is a need to be able to export event data to [Perfect Table Plan](http://www.perfecttableplan.com/ "http://www.perfecttableplan.com/"), and to reimport data from Perfect Table Plan. This will need custom buttons on the event entity form, and will also need hand-written code at the controller layer to respond to those buttons.
 
 Also, a person will have, over the course of their interaction with the SRU, potentially many invitations. In order to access those invitations it will be necessary to associate lists of dependent records with forms. Currently ADL cannot represent these.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=20 "Edit section: Inherent limitations")\] Inherent limitations
+###  Inherent limitations
 
 At this stage I doubt whether there is much point in extending ADL to include a vocabulary to describe business processes. It would make the language much more complicated, and would be unlikely to be able to offer a significantly higher level of abstraction than current 3GLs. If using ADL does not save work, it isn't worth doing it in ADL; remember this is conceived as an 80/20 solution, and you need to be prepared to write the 20 in something else.
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=21 "Edit section: ADL Vocabulary")\] ADL Vocabulary
+## ADL Vocabulary
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 This section of this document presents and comments on the existing ADL document type definition (DTD).
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=22 "Edit section: Basic definitions")\] Basic definitions
+###  Basic definitions
 
 The DTD starts with some basic definitions
 
@@ -266,7 +264,7 @@ The DTD starts with some basic definitions
 -->
 <!ENTITY % Locale "CDATA" >
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=23 "Edit section: Permissions")\] Permissions
+####  Permissions
 
 Key to any data driven application is who has authority to do what to what: 'permissions'.
 
@@ -285,7 +283,7 @@ Key to any data driven application is who has authority to do what to what: 'per
 -->
 <!ENTITY % Permissions "none|read|insert|noedit|edit|all" >
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=24 "Edit section: Data types")\] Data types
+####  Data types
 
 ADL needs to know what type of data can be stored on different properties of different entities. The data types were originally based on JDBC data types:
 
@@ -302,7 +300,7 @@ ADL needs to know what type of data can be stored on different properties of dif
         timestamp:              timestamp       java.sql.Types.TIMESTAMP
 -->
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=25 "Edit section: Definable data types")\] Definable data types
+####  Definable data types
 
 However, in order to be able to do data validation, it's useful to associate rules with data types. ADL has the concept of definable data types, to allow data validation code to be generated from the declarative description. These definable data types are used in the ADL application, for example, to define derived types for phone numbers, email addresses, postcodes, and range types.
 
@@ -328,7 +326,7 @@ However, in order to be able to do data validation, it's useful to associate rul
 <!\-\- all data types -->
 <!ENTITY % AllDataTypes "%ComplexDataTypes;|%SimpleDataTypes;" >
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=26 "Edit section: Page content")\] Page content
+####  Page content
 
 Pages in applications typically have common, often largely static, sections above, below, to the left or right of the main content which incorporates things like branding, navigation, and so on. This can be defined globally or per page. The intention is that the `head`, `top` and `foot` elements in ADL should be allowed to contain arbitrary HTML, but currently I don't have enough skill with DTD design to know how to specify this.
 
@@ -343,9 +341,9 @@ Pages in applications typically have common, often largely static, sections abov
         "name CDATA #REQUIRED
          properties (all|listed) #REQUIRED" >
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=27 "Edit section: The Elements")\] The Elements
+###  The Elements
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=28 "Edit section: Application")\] Application
+####  Application
 
 The top level element of an Application Description Language file is the application element:
 
@@ -355,7 +353,7 @@ The top level element of an Application Description Language file is the applica
         name            CDATA                                           #REQUIRED
         version         CDATA                                           #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=29 "Edit section: Definition")\] Definition
+####  Definition
 
 In order to be able to use defined types, you need to be able to provide definitions of these types:
 
@@ -377,7 +375,7 @@ In order to be able to use defined types, you need to be able to provide definit
         minimum         CDATA                                           #IMPLIED
         maximum         CDATA                                           #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=30 "Edit section: Groups")\] Groups
+####  Groups
 
 In order to be able to user permissions, we need to define who has those permissions. Groups in ADL map directly onto groups/roles at SQL level, but the intention with ADL is that groups should be defined hierarchically.
 
@@ -388,7 +386,7 @@ In order to be able to user permissions, we need to define who has those permiss
 <!\-\- the name of a group of which this group is subset -->
 <!ATTLIST group parent CDATA #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=31 "Edit section: Enities and Properties")\] Enities and Properties
+####  Enities and Properties
 
 A thing-in-the-domain has properties. Things in the domain fall into regularities, groups of things which share similar collections of properties, such that the values of these properties may have are constrained. This is a representation of the world which is not perfect, but which is sufficiently useful to be recognised by the software technologies which ADL abstracts, so we need to be able to define these. Hence we have entities and properties/
 
@@ -432,7 +430,7 @@ A thing-in-the-domain has properties. Things in the domain fall into regularitie
         required        %Boolean;                                       #IMPLIED
         size            CDATA                                           #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=32 "Edit section: Options")\] Options
+####  Options
 
 Sometimes a property has a constrained list of specific values; this is represented for example in the enumerated types supported by many programming languages. Again, we need to be able to represent this.
 
@@ -447,7 +445,7 @@ Sometimes a property has a constrained list of specific values; this is represen
 <!\-\- if the value is different from the prompt the user sees, specify it -->
 <!ATTLIST option value CDATA #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=33 "Edit section: Permissions")\] Permissions
+####  Permissions
 
 Permissions define policies to allow groups of users to access forms, pages, fields (not yet implemented) or entities. Only entity permissions are enforced at database layer, and field protection is not yet implemented at controller layer. But the ADL allows it to be described, and future implementations of the controller generating transform will do this.
 
@@ -462,7 +460,7 @@ Permissions define policies to allow groups of users to access forms, pages, fie
         group           CDATA                                   #REQUIRED
         permission      (%Permissions;)                         #REQUIRED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=34 "Edit section: Pragmas")\] Pragmas
+####  Pragmas
 
 Pragmas are currently not used at all. They are there as a possible means to provide additional controls on forms, but may not be the correct solutions for that.
 
@@ -477,7 +475,7 @@ Pragmas are currently not used at all. They are there as a possible means to pro
       name  CDATA   #REQUIRED
       value CDATA   #REQUIRED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=35 "Edit section: Prompts, helptexts and error texts")\] Prompts, helptexts and error texts
+####  Prompts, helptexts and error texts
 
 When soliciting a value for a property from the user, we need to be able to offer the user a prompt to describe what we're asking for, and we need to be able to offer that in the user's preferred natural language. Prompts are typically brief. Sometimes, however, we need to give the user a more extensive description of what is being solicited - 'help text'. Finally, if the data offered by the user isn't adequate for some reason, we need ways of feeding that back. Currently the only error text which is carried in the ADL is 'ifmissing', text to be shown if the value for a required property is missing. All prompts, helptexts and error texts have locale information, so that it should be possible to generate variants of all pages for different natural languages from the same ADL.
 
@@ -519,7 +517,7 @@ When soliciting a value for a property from the user, we need to be able to offe
 <!ATTLIST ifmissing
       locale  %Locale;  #IMPLIED>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=36 "Edit section: Forms, Pages and Lists")\] Forms, Pages and Lists
+####  Forms, Pages and Lists
 
 The basic pages of the user interface. Pages and Forms by default show fields for all the properties of the entity they describe, or they may show only a listed subset. Currently lists show fields for only those properties which are 'user distinct'. Forms, pages and lists may each have their own head, top and foot content, or they may inherit the content defined for the application.
 
@@ -576,10 +574,10 @@ The basic pages of the user interface. Pages and Forms by default show fields fo
 -->
 <!ELEMENT foot (#PCDATA) >
 
-\[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=37 "Edit section: Using ADL in your project")\] Using ADL in your project
+## Using ADL in your project
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=38 "Edit section: Selecting the version")\] Selecting the version
+###  Selecting the version
 
 Current versions of ADL are given at the top of this document. Historical versions are as follows:
 
@@ -605,11 +603,11 @@ Current versions of ADL are given at the top of this document. Historical versio
     *   The version at that location is automatically updated from CVS every night
     *   Projects using the **b_development** branch of ADL should be built against the **b_development** branch of CygnetToolkit.
 
-### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=39 "Edit section: Integrating into your build")\] Integrating into your build
+###  Integrating into your build
 
 To use ADL, it is currently most convenient to use NAnt. It is probably possible to do this with MSBuild, but as of yet I don't know how.
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=40 "Edit section: Properties")\] Properties
+####  Properties
 
 For the examples given here to work, you will need to set up at least the following properties in your NAnt `.build` file:
 
@@ -630,7 +628,7 @@ For the examples given here to work, you will need to set up at least the follow
 
 where, obviously, **YourProjectName**, **YourSourceDir** and **YourADL.adl.xml** stand in for the actual names of your project, your source directory (relative to your solution directory, where the .build file is) and your ADL file, respectively. Note that if it is to be used as an assembly name, the project name should include neither spaces, hyphens nor periods. If it must do so, you should give an assembly name which does not, explicitly.
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=41 "Edit section: Canonicalisation")\] Canonicalisation
+####  Canonicalisation
 
 The first thing you need to do with your ADL file is canonicalise it. You should generally not need to alter this, you should copy and paste it verbatim:
 
@@ -644,7 +642,7 @@ The first thing you need to do with your ADL file is canonicalise it. You should
                 </style>
         </target>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=42 "Edit section: Generate NHibernate mapping")\] Generate NHibernate mapping
+####  Generate NHibernate mapping
 
 You should generally not need to alter this at all, just copy and paste it verbatim:
 
@@ -660,7 +658,7 @@ You should generally not need to alter this at all, just copy and paste it verba
                 </style>
         </target>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=43 "Edit section: Generate SQL")\] Generate SQL
+####  Generate SQL
 
    <target name="sql" description="Generates cadlink database initialisation script"
                         depends="canonicalise">
@@ -674,7 +672,7 @@ You should generally not need to alter this at all, just copy and paste it verba
                 </style>
         </target>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=44 "Edit section: Generate C# entity classes ('POCOs')")\] Generate C# entity classes ('POCOs')
+####  Generate C# entity classes ('POCOs')
 
 Note that for this to work you must have the following:
 
@@ -707,7 +705,7 @@ Note that for this to work you must have the following:
                         pattern="cut here: next file '(\[a-zA-Z0-9_.\]*)'"/>
         </target>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=45 "Edit section: Generate Monorail controller classes")\] Generate Monorail controller classes
+####  Generate Monorail controller classes
 
 Note that for this to work you must have
 
@@ -737,7 +735,7 @@ Note that for this to work you must have
                                    destdir="${controllers}/Auto" pattern="cut here: next file '(\[a-zA-Z0-9_.\]*)'"/>
         </target>
 
-#### \[[edit](http://wiki.cygnets.co.uk/index.php?title=Application_Description_Language_framework&action=edit&section=46 "Edit section: Generate Velocity views for use with Monorail")\] Generate Velocity views for use with Monorail
+####  Generate Velocity views for use with Monorail
 
 Note that for this to work you must have
 

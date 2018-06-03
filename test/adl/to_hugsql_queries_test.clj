@@ -83,7 +83,8 @@
     (testing "update query generation"
       (let [expected "-- :name update-addres! :! :n
             -- :doc updates an existing addres record
-            UPDATE address\nSET street = :street,
+            UPDATE address
+            SET street = :street,
               town = :town,
               postcode = :postcode
             WHERE address.id = :id\n\n"

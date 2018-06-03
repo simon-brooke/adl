@@ -1,9 +1,13 @@
-(ns adl.utils
-  (:require [clojure.string :as s]))
+(ns ^{:doc "Application Description Language - utility functions."
+      :author "Simon Brooke"}
+  adl.utils
+  (:require [clojure.string :as s]
+            [clojure.xml :as x]
+            [adl.validator :refer [valid-adl? validate-adl]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
-;;;; adl.utils: utility functions generally useful to generators.
+;;;; adl.utils: utility functions.
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -22,105 +26,181 @@
 ;;;;
 ;;;; Copyright (C) 2018 Simon Brooke
 ;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; **Argument name conventions**: arguments with names of the form `*-map`
-;;; represent elements extracted from an ADL XML file as parsed by
-;;; `clojure.xml/parse`. Thus `entity-map` represents an ADL entity,
-;;; `property-map` a property, and so on.
-;;;
-;;; Generally, `(:tag x-map) => "x"`, and for every such object
-;;; `(:attrs x-map)` should return a map of attributes whose keys
-;;; are keywords and whose values are strings.
+
+(defn children
+  "Return the children of this `element`; if `predicate` is passed, return only those
+  children satisfying the predicate."
+  ([element]
+   (if
+     (keyword? (:tag element)) ;; it has a tag; it seems to be an XML element
+     (:content element)))
+  ([element predicate]
+     (remove ;; there's a more idionatic way of doing remove-nil-map, but for the moment I can't recall it.
+       nil?
+       (map
+         #(if (predicate %) %)
+         (children element)))))
+
+
+(defn attributes
+  "Return the attributes of this `element`; if `predicate` is passed, return only those
+  attributes satisfying the predicate."
+  ([element]
+   (if
+     (keyword? (:tag element)) ;; it has a tag; it seems to be an XML element
+     (:attrs element)))
+  ([element predicate]
+     (remove ;; there's a more idionatic way of doing remove-nil-map, but for the moment I can't recall it.
+       nil?
+       (map
+         #(if (predicate %) %)
+         (:attrs element)))))
+
+
+(defn typedef
+  "If this `property` is of type `defined`, return its type definition from
+  this `application`, else nil."
+  [property application]
+  (if
+    (= (:type (:attrs property)) "defined")
+    (first
+      (children
+        application
+        #(and
+           (= (:tag %) :typedef)
+           (= (:name (:attrs %)) (:typedef (:attrs property))))))))
+
+
+(defn permissions
+  "Return appropriate permissions of this `property`, taken from this `entity` of this
+  `application`, in the context of this `page`."
+  [property page entity application]
+  (first
+    (remove
+      empty?
+      (list
+        (children page #(= (:tag %) :permission))
+        (children property #(= (:tag %) :permission))
+        (children entity #(= (:tag %) :permission))
+        (children application #(= (:tag %) :permission))))))
+
+
+(defn permission-groups
+  "Return a list of names of groups to which this `predicate` is true of
+  some permission taken from these `permissions`, else nil."
+  [permissions predicate]
+  (let [groups (remove
+                 nil?
+                 (map
+                   #(if
+                      (apply predicate (list %))
+                      (:group (:attrs %)))
+                   permissions))]
+    (if groups groups)))
+
+
+(defn formal-primary-key?
+  "Does this `prop-or-name` appear to be a property (or the name of a property)
+  which is a formal primary key of this entity?"
+  [prop-or-name entity]
+  (if
+    (map? prop-or-name)
+    (formal-primary-key? (:name (:attrs prop-or-name)) entity)
+    (let [primary-key (first (children entity #(= (:tag %) :key)))
+          property (first
+                     (children
+                       primary-key
+                       #(and
+                          (= (:tag %) :property)
+                          (= (:name (:attrs %)) prop-or-name))))]
+      (= (:distinct (:attrs property)) "system"))))
+
+
+(defn entity?
+  "Return true if `x` is an ADL entity."
+  [x]
+  (= (:tag x) :entity))
+
+
+(defn visible-to
+  "Return a list of names of groups to which are granted read access,
+  given these `permissions`, else nil."
+  [permissions]
+  (permission-groups permissions #(#{"read" "insert" "noedit" "edit" "all"} (:permission (:attrs %)))))
+
+
+(defn writable-by
+  "Return a list of names of groups to which are granted read access,
+  given these `permissions`, else nil."
+  [permissions]
+  (permission-groups permissions #(#{"edit" "all"} (:permission (:attrs %)))))
+
 
 (defn singularise
-  "Assuming this string represents an English language plural noun,
-  construct a Clojure symbol name which represents the singular."
+  "Attempt to construct an idiomatic English-language singular of this string."
   [string]
-  (s/replace (s/replace (s/replace string #"_" "-") #"s$" "") #"ie$" "y"))
+  (s/replace
+    (s/replace
+      (s/replace
+        (s/replace string #"_" "-")
+        #"s$" "")
+      #"se$" "s")
+    #"ie$" "y"))
 
-(defn entities
-  [application-map]
-  (filter #(= (-> % :tag) :entity) (:content application-map)))
 
-(defn is-link-table?
-  "Does this `entity-map` represent a pure link table?"
-  [entity-map]
-  (let [properties (-> entity-map :content :properties vals)
+(defn link-table?
+  "Return true if this `entity` represents a link table."
+  [entity]
+  (let [properties (children entity #(= (:tag %) :property))
         links (filter #(-> % :attrs :entity) properties)]
     (= (count properties) (count links))))
 
+(defn read-adl [url]
+  (let [adl (x/parse url)
+        valid? (valid-adl? adl)]
+    adl))
+;;     (if valid? adl
+;;       (throw (Exception. (str (validate-adl adl)))))))
 
-(defn key-properties
-  "Return a list of all properties in the primary key of this `entity-map`."
-  [entity-map]
-  (filter
-   #(= (:tag %) :property)
-   (:content
-    ;; there's required to be only one key element in and entity element
-    (first
-     (filter
-      #(= (:tag %) :key)
-      (:content entity-map))))))
-
-
-(defn insertable-key-properties
-  "List properties in the key of the entity indicated by this `entity-map`
-  which should be inserted.
-  A key property is insertable it it is not `system` (database) generated.
-  But note that `system` is the default."
-  [entity-map]
-  (filter
-   #(let
-      [generator (-> % :attrs :generator)]
-      (not
-       (or (nil? generator)
-           (= generator "system"))))
-      (key-properties entity-map)))
-
-
-(defn key-names
-  "List the names of all properties in the primary key of this `entity-map`."
-  [entity-map]
+(defn key-names [entity-map]
   (remove
     nil?
     (map
       #(:name (:attrs %))
-      (key-properties entity-map))))
+      (vals (:content (:key (:content entity-map)))))))
 
 
-(defn has-primary-key?
-  "True if this `entity-map` has a primary key."
-  [entity-map]
-  (not (empty? (key-names entity-map))))
+(defn has-primary-key? [entity-map]
+  (> (count (key-names entity-map)) 0))
 
 
-(defn properties
-  "List the non-primary-key properties of this `entity-map`."
-  [entity-map]
-  (filter #(= (-> % :tag) :property) (:content entity-map)))
+(defn has-non-key-properties? [entity-map]
+  (>
+    (count (vals (:properties (:content entity-map))))
+    (count (key-names entity-map))))
 
 
-(defn has-non-key-properties?
-  "True if this `entity-map` has properties which do not form part of the
-  primary key."
-  [entity-map]
-  (not
-   (empty? (properties entity-map))))
+(defn children-with-tag
+  "Return all children of this `element` which have this `tag`."
+  [element tag]
+  (children element #(= (:tag %) tag)))
+
+(defn descendants-with-tag
+  "Return all descendants of this `element`, recursively, which have this `tag`."
+  [element tag]
+  (flatten
+    (remove
+      empty?
+      (cons
+        (children element #(= (:tag %) tag))
+        (map
+          #(descendants-with-tag % tag)
+          (children element))))))
 
 
-(defn property-names
-  "List the names of non-primary-key properties of this `entity-map`."
-  [entity-map]
-  (map #(:name (:attrs %)) (properties entity-map)))
-
-
-(defn quoted-type?
-  "Is the type of the property represented by this `property-map` one whose
-  values should be quoted in SQL queries?
-  TODO: this won't work for typedef types, which means we need to pass the
-  entire parsed ADL down the chain to here (and probably, generally) so that
-  we can resolve issues like that."
-  [property-map]
-  (#{"string", "text", "date", "time", "timestamp"} (-> property-map :attrs :type)))
+(defn all-properties
+  "Return all properties of this entity (including key properties)."
+  [entity]
+  (descendants-with-tag entity :property))
 
