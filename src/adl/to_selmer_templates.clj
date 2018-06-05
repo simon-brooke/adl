@@ -277,8 +277,61 @@
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
   template for the entity."
-  [list entity application]
-  )
+  [list-spec entity application]
+  (let [user-distinct-fields]
+    [:tag :div
+     :attrs {:id "content" :class "edit"}
+     :content
+     [:table {:caption (:name (:attrs entity))}
+      [:thead
+       [:tr
+        (map
+         #(vector :th (prompt %))
+         (:fields list-spec))]
+       [tr
+        (map
+         #(vector :th (prompt %))
+         (:fields list-spec))]
+        ]
+        "{% for record in %records% %}"
+        [:tr
+          (map
+           (fn [field]
+             [:td (str "{% record." (:name (:attrs %)) " %}")])
+           (:fields list-spec))
+         [:td
+          [:a
+           {:href
+            (str
+             "view-or-edit-"
+             (:name (:attrs entity))
+             "?"
+             (s/join
+              "&amp;"
+              (map
+               #(let [n (:name (:attrs %))]
+                  (str n "=record." n)))
+              (children (first (filter #(= (:tag %) :key) (children entity))))))}
+           View]]]
+      "{% endfor %}"
+      [:tfoot]]
+     "{% if offset > 0 %}"
+     [:div {:id "back-link-container"}
+      [:a {:href "FIXME"}
+       Previous]]
+     "{% endif %}"
+     [:div {:id "big-link-container"}
+      [:a {:href "FIXME"}
+       Next]]
+     ]))
+
+
+
+
+
+
+        ]}))
+
 
 
 (defn entity-to-templates
