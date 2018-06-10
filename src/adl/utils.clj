@@ -36,11 +36,9 @@
      (keyword? (:tag element)) ;; it has a tag; it seems to be an XML element
      (:content element)))
   ([element predicate]
-     (remove ;; there's a more idionatic way of doing remove-nil-map, but for the moment I can't recall it.
-       nil?
-       (map
-         #(if (predicate %) %)
-         (children element)))))
+   (filter
+     predicate
+     (children element))))
 
 
 (defn attributes
@@ -51,11 +49,9 @@
      (keyword? (:tag element)) ;; it has a tag; it seems to be an XML element
      (:attrs element)))
   ([element predicate]
-     (remove ;; there's a more idionatic way of doing remove-nil-map, but for the moment I can't recall it.
-       nil?
-       (map
-         #(if (predicate %) %)
-         (:attrs element)))))
+   (filter
+     predicate
+     (attributes element))))
 
 
 (defn typedef
@@ -140,13 +136,33 @@
 (defn singularise
   "Attempt to construct an idiomatic English-language singular of this string."
   [string]
-  (s/replace
+  (cond
+    (.endsWith string "ss") string
+    (.endsWith string "ise") string
+    true
     (s/replace
       (s/replace
-        (s/replace string #"_" "-")
-        #"s$" "")
-      #"se$" "s")
-    #"ie$" "y"))
+        (s/replace
+          (s/replace string #"_" "-")
+          #"s$" "")
+        #"se$" "s")
+      #"ie$" "y")))
+
+
+(defn capitalise
+  "Return a string like `s` but with each token capitalised."
+  [s]
+  (s/join
+    " "
+    (map
+      #(apply str (cons (Character/toUpperCase (first %)) (rest %)))
+      (s/split s #"[ \t\r\n]+"))))
+
+
+(defn pretty-name
+  [entity]
+  (capitalise (singularise (:name (:attrs entity)))))
+
 
 
 (defn link-table?
@@ -159,32 +175,19 @@
 (defn read-adl [url]
   (let [adl (x/parse url)
         valid? (valid-adl? adl)]
-    adl))
-;;     (if valid? adl
-;;       (throw (Exception. (str (validate-adl adl)))))))
-
-(defn key-names [entity-map]
-  (remove
-    nil?
-    (map
-      #(:name (:attrs %))
-      (vals (:content (:key (:content entity-map)))))))
-
-
-(defn has-primary-key? [entity-map]
-  (> (count (key-names entity-map)) 0))
-
-
-(defn has-non-key-properties? [entity-map]
-  (>
-    (count (vals (:properties (:content entity-map))))
-    (count (key-names entity-map))))
+    (if valid? adl
+      (throw (Exception. (str (validate-adl adl)))))))
 
 
 (defn children-with-tag
   "Return all children of this `element` which have this `tag`."
   [element tag]
   (children element #(= (:tag %) tag)))
+
+(defmacro properties
+  "Return all the properties of this `entity`."
+  [entity]
+  `(children-with-tag ~entity :property))
 
 (defn descendants-with-tag
   "Return all descendants of this `element`, recursively, which have this `tag`."
@@ -199,8 +202,77 @@
           (children element))))))
 
 
-(defn all-properties
-  "Return all properties of this entity (including key properties)."
-  [entity]
-  (descendants-with-tag entity :property))
+(defn insertable?
+  "Return `true` it the value of this `property` may be set from user-supplied data."
+  [property]
+  (and
+    (= (:tag property) :property)
+    (not (= (:distinct (:attrs property)) "system"))))
 
+(defmacro all-properties
+  "Return all properties of this `entity` (including key properties)."
+  [entity]
+  `(descendants-with-tag ~entity :property))
+
+(defmacro insertable-properties
+  "Return all the properties of this `entity` (including key properties) into
+  which user-supplied data can be inserted"
+  [entity]
+  `(filter
+     insertable?
+     (all-properties ~entity)))
+
+(defmacro key-properties
+  [entity]
+  `(children-with-tag (first (children-with-tag ~entity :key)) :property))
+
+(defmacro insertable-key-properties
+  [entity]
+  `(filter insertable? (key-properties entity)))
+
+
+(defn key-names [entity]
+  (remove
+    nil?
+    (map
+      #(:name (:attrs %))
+      (key-properties entity))))
+
+
+(defn has-primary-key? [entity]
+  (> (count (key-names entity)) 0))
+
+
+(defn has-non-key-properties? [entity]
+  (>
+    (count (all-properties entity))
+    (count (key-properties entity))))
+
+
+(defn distinct-properties
+  [entity]
+  (filter
+    #(#{"system" "all"} (:distinct (:attrs %)))
+    (properties entity)))
+
+(defn path-part
+  "Return the URL path part for this `form` of this `entity` within this `application`.
+  Note that `form` may be a Clojure XML representation of a `form`, `list` or `page`
+  ADL element, or may be one of the keywords `:form`, `:list`, `:page` in which case the
+  first child of the `entity` of the specified type will be used."
+  [form entity application]
+  (cond
+    (and (map? form) (#{:list :form :page} (:tag form)))
+  (s/join
+    "-"
+    (flatten
+      (list
+        (name (:tag form)) (:name (:attrs entity)) (s/split (:name (:attrs form)) #"[ \n\r\t]+"))))
+    (keyword? form)
+    (path-part (first (children-with-tag entity form)) entity application)))
+
+(defn editor-name
+  "Return the path-part of the editor form for this `entity`. Note:
+  assumes the editor form is the first form listed for the entity."
+  [entity application]
+  (path-part :form entity application))

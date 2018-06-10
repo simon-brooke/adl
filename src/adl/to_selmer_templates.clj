@@ -1,9 +1,8 @@
-(ns ^{;; :doc "Application Description Language - generate RING routes for REST requests."
+(ns ^{;; :doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
   (:require [adl.utils :refer :all]
             [clojure.java.io :refer [file]]
-            [clojure.math.combinatorics :refer [combinations]]
             [clojure.pprint :as p]
             [clojure.string :as s]
             [clojure.xml :as x]
@@ -13,7 +12,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
-;;;; adl.to-json-routes: generate RING routes for REST requests.
+;;;; adl.to-selmer-templates.
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -43,6 +42,31 @@
   "The path to which generated files will be written."
   "resources/auto/")
 
+
+(defn big-link
+  [content url]
+  {:tag :div
+   :attrs {:class "big-link-container"}
+   :content
+   [{:tag :a :attrs {:href url}
+     :content (if
+                (vector? content)
+                content
+                [content])}]})
+
+
+(defn back-link
+  [content url]
+  {:tag :div
+   :attrs {:class "back-link-container"}
+   :content
+   [{:tag :a :attrs {:href url}
+     :content (if
+                (vector? content)
+                content
+                [content])}]})
+
+
 (defn file-header
   "Generate a header for a template file."
   [filename]
@@ -67,15 +91,19 @@
   "Return an appropriate prompt for the given `field-or-property` taken from this
   `form` of this `entity` of this `application`, in the context of the current
   binding of `*locale*`. TODO: something more sophisticated about i18n"
-  [field-or-property form entity application]
-  (or
-    (first
-      (children
-        field-or-property
-        #(and
-           (= (:tag %) :prompt)
-           (= (:locale :attrs %) *locale*))))
-    (:name (:attrs field-or-property))))
+  ([field-or-property form entity application]
+   (prompt field-or-property))
+  ([field-or-property]
+   (or
+     (first
+       (children
+         field-or-property
+         #(and
+            (= (:tag %) :prompt)
+            (= (:locale :attrs %) *locale*))))
+
+     (:name (:attrs field-or-property))
+     (:property (:attrs field-or-property)))))
 
 
 (defn csrf-widget
@@ -166,12 +194,48 @@
        ))))
 
 
+(defn select-widget
+  [property form entity application]
+  (let [farname (:entity (:attrs property))
+        farside (first (children application #(= (:name (:attrs %)) farname)))
+        magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))
+        async? (and (number? magnitude) (> magnitude 1))
+        widget-name (:name (:attrs property))]
+    {:tag :div
+     :attrs {:class "select-box" :farside farname :found (if farside "true" "false")}
+     :content
+     (apply
+       vector
+       (remove
+         nil?
+         (list
+           (if
+             async?
+             {:tag :input
+              :attrs
+              {:name (str widget-name "-search-box")
+               :onchange "/* javascript to repopulate the select widget */"}})
+           {:tag :select
+            :attrs (merge
+                     {:id widget-name
+                      :name widget-name}
+                     (if
+                       (= (:type (:attrs property)) "link")
+                       {:multiple "multiple"})
+                     (if
+                       async?
+                       {:comment "JavaScript stuff to fix up aynchronous loading"}))
+            :content (apply vector (get-options property form entity application))})))}))
+
+
 (defn widget
   "Generate a widget for this `field-or-property` of this `form` for this `entity`
   taken from within this `application`."
   [field-or-property form entity application]
   (let
-    [widget-name (:name (:attrs field-or-property))
+    [widget-name (if (= (:tag field-or-property) :property)
+                   (:name (:attrs field-or-property))
+                   (:property (:attrs field-or-property)))
      property (if
                 (= (:tag field-or-property) :property)
                 field-or-property
@@ -199,13 +263,11 @@
        :content [{:tag :label
                   :attrs {:for widget-name}
                   :content [(prompt field-or-property form entity application)]}
-                 "TODO: selmer command to hide for all groups except for those for which it is writable"
-                 (if
+                 (str "{% ifwritable " (:name (:attrs entity)) " " (:name (:attrs property)) " %}")
+                 (cond
                    select?
-                   {:tag :select
-                    :attrs {:id widget-name
-                            :name widget-name}
-                    :content (get-options property form entity application)}
+                   (select-widget property form entity application)
+                   true
                    {:tag :input
                     :attrs (merge
                              {:id widget-name
@@ -219,14 +281,20 @@
                                (:maximum (:attrs typedef))
                                {:max (:maximum (:attrs typedef))}))})
                  "{% else %}"
-                 "TODO: selmer if command to hide for all groups except to those for which it is readable"
+                 (str "{% ifreadable " (:name (:attrs entity)) " " (:name (:attrs property)) "%}")
                  {:tag :span
                   :attrs {:id widget-name
                           :name widget-name
                           :class "pseudo-widget disabled"}
                   :content [(str "{{record." widget-name "}}")]}
-                 "{% endif %}"
-                 "{% endif %}"]})))
+                 "{% endifreadable %}"
+                 "{% endifwritable %}"]})))
+
+
+(defn fields
+  [form]
+  (descendants-with-tag form :field))
+
 
 
 (defn form-to-template
@@ -235,22 +303,14 @@
   template for the entity."
   [form entity application]
   (let
-    [name (str (if form (:name (:attrs form)) "edit") "-" (:name (:attrs entity)))
-     keyfields (children
+    [keyfields (children
                  ;; there should only be one key; its keys are properties
-                 (first (children entity #(= (:tag %) :key))))
-     fields (if
-              (and form (= "listed" (:properties (:attrs form))))
-              ;; if we've got a form, collect its fields, fieldgroups and verbs
-              (flatten
-                (map #(if (#{:field :fieldgroup :verb} (:tag %)) %)
-                     (children form)))
-              (children entity #(= (:tag %) :property)))]
+                 (first (children entity #(= (:tag %) :key))))]
     {:tag :div
      :attrs {:id "content" :class "edit"}
      :content
      [{:tag :form
-       :attrs {:action (str "{{servlet-context}}/" name)
+       :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
                :method "POST"}
        :content (flatten
                   (list
@@ -260,7 +320,7 @@
                       keyfields)
                     (map
                       #(widget % form entity application)
-                      fields)
+                      (fields entity))
                     (save-widget form entity application)
                     (delete-widget form entity application)))}]}))
 
@@ -268,70 +328,109 @@
 
 (defn page-to-template
   "Generate a template as specified by this `page` element for this `entity`,
-  taken from this `application`. If `page` is nill, generate a default page
+  taken from this `application`. If `page` is nil, generate a default page
   template for the entity."
   [page entity application]
   )
 
-(defn list-to-template
+
+(defn- list-thead
+  "Return a table head element for the list view for this `list-spec` of this `entity` within
+  this `application`.
+
+  TODO: where entity fields are being shown/searched on, we should be using the user-distinct
+  fields of the far side, rather than key values"
+  [list-spec entity application]
+  {:tag :thead
+   :content
+   [{:tag :tr
+     :content
+     (apply
+       vector
+       (map
+         #(hash-map
+            :content [(prompt %)]
+            :tag :th)
+         (fields list-spec)))}
+    {:tag :tr
+     :content
+     (apply
+       vector
+
+       (map
+         (fn [f]
+           (let [property (first
+                            (children
+                              entity
+                              (fn [p] (and (= (:tag p) :property)
+                                           (= (:name (:attrs p)) (:property (:attrs f)))))))]
+             (hash-map
+               :tag :th
+               :content
+               [{:tag :input
+                 :type (case (:type (:attrs property))
+                         ("integer" "real" "money") "number"
+                         ("date" "timestamp") "date"
+                         "time" "time"
+                         "text")
+                 :attrs {:id (:property (:attrs f))
+                         :name (:property (:attrs f))
+                         :value (str "{{ params." (:property (:attrs f)) " }}")}}])))
+         (fields list-spec)))}]})
+
+
+(defn- list-tbody
+  [list-spec entity application]
+  {:tag :tbody
+   :content
+   ["{% for record in %records% %}"
+    {:tag :tr
+     :content
+     (apply
+       vector
+       (concat
+         (map
+           (fn [field]
+             {:tag :td :content [(str "{{ record." (:property (:attrs field)) " }}")]})
+           (fields list-spec))
+         [{:tag :td
+          :content
+          [{:tag :a
+     :attrs
+     {:href
+      (str
+        (editor-name entity application)
+        "?"
+        (s/join
+          "&amp;"
+          (map
+            #(let [n (:name (:attrs %))]
+               (str n "={{ record." n "}}"))
+            (children (first (filter #(= (:tag %) :key) (children entity)))))))}
+     :content ["View"]}]}]))}
+    "{% endfor %}"]})
+
+
+(defn- list-to-template
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
   template for the entity."
   [list-spec entity application]
-  (let [user-distinct-fields]
-    [:tag :div
-     :attrs {:id "content" :class "edit"}
+  {:tag :form
+   :attrs {:id "content" :class "list"}
+   :content
+   [(big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
+    {:tag :table
+     :attrs {:caption (:name (:attrs entity))}
      :content
-     [:table {:caption (:name (:attrs entity))}
-      [:thead
-       [:tr
-        (map
-         #(vector :th (prompt %))
-         (:fields list-spec))]
-       [tr
-        (map
-         #(vector :th (prompt %))
-         (:fields list-spec))]
-        ]
-        "{% for record in %records% %}"
-        [:tr
-          (map
-           (fn [field]
-             [:td (str "{% record." (:name (:attrs %)) " %}")])
-           (:fields list-spec))
-         [:td
-          [:a
-           {:href
-            (str
-             "view-or-edit-"
-             (:name (:attrs entity))
-             "?"
-             (s/join
-              "&amp;"
-              (map
-               #(let [n (:name (:attrs %))]
-                  (str n "=record." n)))
-              (children (first (filter #(= (:tag %) :key) (children entity))))))}
-           View]]]
-      "{% endfor %}"
-      [:tfoot]]
-     "{% if offset > 0 %}"
-     [:div {:id "back-link-container"}
-      [:a {:href "FIXME"}
-       Previous]]
-     "{% endif %}"
-     [:div {:id "big-link-container"}
-      [:a {:href "FIXME"}
-       Next]]
-     ]))
-
-
-
-
-
-
-        ]}))
-
+     [(list-thead list-spec entity application)
+      (list-tbody list-spec entity application)
+      {:tag :tfoot}]}
+    "{% if offset > 0 %}"
+    (back-link "Previous" "FIXME")
+    "{% endif %}"
+    (big-link "Next" "FIXME")
+    (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))]})
 
 
 (defn entity-to-templates
@@ -349,37 +448,91 @@
       (merge
         (if
           forms
-          (apply merge (map #(assoc {} (keyword (str "form-" (:name (:attrs entity)) "-" (:name (:attrs %))))
+          (apply merge (map #(assoc {} (keyword (path-part % entity application))
                                (form-to-template % entity application))
                             forms))
           {(keyword (str "form-" (:name (:attrs entity))))
            (form-to-template nil entity application)})
         (if
           pages
-          (apply merge (map #(assoc {} (keyword (str "page-" (:name (:attrs entity)) "-" (:name (:attrs %))))
+          (apply merge (map #(assoc {} (keyword (path-part % entity application))
                                (page-to-template % entity application))
                             pages))
           {(keyword (str "page-" (:name (:attrs entity))))
            (page-to-template nil entity application)})
         (if
           lists
-          (apply merge (map #(assoc {} (keyword (str "list-" (:name (:attrs entity)) "-" (:name (:attrs %))))
+          (apply merge (map #(assoc {} (keyword (path-part % entity application))
                                (list-to-template % entity application))
                             lists))
           {(keyword (str "list-" (:name (:attrs entity))))
            (form-to-template nil entity application)})))))
 
 
+
+(defn application-to-template
+  [application]
+  (let
+    [first-class-entities (filter
+                            #(children-with-tag % :list)
+                            (children-with-tag application :entity))]
+    {:application-index
+     {:tag :dl
+      :attrs {:class "index"}
+      :content
+      (apply
+        vector
+        (interleave
+          (map
+            #(hash-map
+               :tag :dt
+               :content
+               [{:tag :a
+                 :attrs {:href (path-part :list % application)}
+                 :content [(pretty-name %)]}])
+            first-class-entities)
+          (map
+            #(hash-map
+               :tag :dd
+               :content (apply
+                          vector
+                          (map
+                            (fn [d]
+                              (hash-map
+                                :tag :p
+                                :content (:content d)))
+                            (children-with-tag % :documentation))))
+            first-class-entities)))}}))
+
+
+
 (defn write-template-file
   [filename template]
-  (spit
-    (str *output-path* filename)
-    (s/join
-      "\n"
-      (list
-        (file-header filename)
-        (with-out-str (x/emit-element template))
-        (file-footer filename)))))
+  (if
+    template
+    (try
+      (spit
+        (str *output-path* filename)
+        (s/join
+          "\n"
+          (list
+            (file-header filename)
+            (with-out-str
+              (x/emit-element template))
+            (file-footer filename))))
+      (catch Exception any
+        (spit
+          (str *output-path* filename)
+          (with-out-str
+            (println
+              (str
+                "<!-- Exception "
+                (.getName (.getClass any))
+                (.getMessage any)
+                " while printing "
+                filename "-->"))
+            (p/pprint template))))))
+  filename)
 
 
 (defn to-selmer-templates
@@ -388,7 +541,7 @@
   (let
     [templates-map (reduce
                      merge
-                     {}
+                     (application-to-template application)
                      (map
                        #(entity-to-templates % application)
                        (children application #(= (:tag %) :entity))))]
@@ -397,8 +550,15 @@
         #(if
            (templates-map %)
            (let [filename (str (name %) ".html")]
-             (write-template-file filename (templates-map %))))
-        (keys templates-map)))
-    templates-map))
+             (try
+               (write-template-file filename (templates-map %))
+               (catch Exception any
+                 (str
+                   "Exception "
+                   (.getName (.getClass any))
+                   (.getMessage any)
+                   " while writing "
+                   filename)))))
+        (keys templates-map)))))
 
 

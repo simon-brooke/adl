@@ -36,17 +36,25 @@
   "The path to which generated files will be written."
   "resources/auto/")
 
+(def electors {:tag :entity, :attrs {:magnitude "6", :name "electors", :table "electors"}, :content [{:tag :key, :attrs nil, :content [{:tag :property, :attrs {:distinct "system", :immutable "true", :column "id", :name "id", :type "integer", :required "true"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "id"}, :content nil}]}]} {:tag :property, :attrs {:distinct "user", :column "name", :name "name", :type "string", :required "true", :size "64"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "name"}, :content nil}]} {:tag :property, :attrs {:farkey "id", :entity "dwelling", :column "dwelling_id", :name "dwelling_id", :type "entity", :required "true"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "Flat"}, :content nil}]} {:tag :property, :attrs {:distinct "user", :column "phone", :name "phone", :type "string", :size "16"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "phone"}, :content nil}]} {:tag :property, :attrs {:distinct "user", :column "email", :name "email", :type "string", :size "128"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "email"}, :content nil}]} {:tag :property, :attrs {:default "Unknown", :farkey "id", :entity "genders", :column "gender", :type "entity", :name "gender"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "gender"}, :content nil}]} {:tag :list, :attrs {:name "Electors", :properties "listed"}, :content [{:tag :field, :attrs {:property "id"}, :content nil} {:tag :field, :attrs {:property "name"}, :content nil} {:tag :field, :attrs {:property "dwelling_id"}, :content nil} {:tag :field, :attrs {:property "phone"}, :content nil} {:tag :field, :attrs {:property "email"}, :content nil} {:tag :field, :attrs {:property "gender"}, :content nil}]} {:tag :form, :attrs {:name "Elector", :properties "listed"}, :content [{:tag :field, :attrs {:property "id"}, :content nil} {:tag :field, :attrs {:property "name"}, :content nil} {:tag :field, :attrs {:property "dwelling_id"}, :content nil} {:tag :field, :attrs {:property "phone"}, :content nil} {:tag :field, :attrs {:property "email"}, :content nil} {:tag :field, :attrs {:property "gender"}, :content nil}]}]})
 
 (defn where-clause
-  "Generate an appropriate `where` clause for queries on this `entity`"
-  [entity]
-  (let
-    [entity-name (:name (:attrs entity))]
-    (str
-      "WHERE " entity-name "."
-      (s/join
-        (str " AND\n\t" entity-name ".")
-        (map #(str % " = " (keyword %)) (key-names entity))))))
+  "Generate an appropriate `where` clause for queries on this `entity`;
+  if `properties` are passed, filter on those properties, otherwise the key
+  properties."
+  ([entity]
+   (where-clause entity (key-properties entity)))
+  ([entity properties]
+   (let
+     [entity-name (:name (:attrs entity))
+      property-names (map #(:name (:attrs %)) properties)]
+     (if
+       (not (empty? property-names))
+       (str
+         "WHERE "
+         (s/join
+           "\n\tAND"
+           (map #(str entity-name "." % " = :" %) property-names)))))))
 
 
 (defn order-by-clause
@@ -75,11 +83,7 @@
   [entity]
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
-        insertable-property-names (map
-                                    #(:name (:attrs %))
-                                    (filter
-                                      #(not (= (:distinct (:attrs %)) "system"))
-                                      (all-properties entity)))
+        insertable-property-names (map #(:name (:attrs %)) (insertable-properties entity))
         query-name (str "create-" pretty-name "!")
         signature ":! :n"]
     (hash-map
@@ -110,11 +114,7 @@
       (has-non-key-properties? entity))
     (let [entity-name (:name (:attrs entity))
           pretty-name (singularise entity-name)
-          property-names (remove
-                           nil?
-                           (map
-                             #(if (= (:tag %) :property) (:name (:attrs %)))
-                             (vals (:properties (:content entity)))))
+          property-names (map #(:name (:attrs %)) (insertable-properties entity))
           query-name (str "update-" pretty-name "!")
           signature ":! :n"]
       (hash-map
@@ -135,73 +135,85 @@
 
 
 (defn search-query [entity]
-  "Generate an appropriate search query for this `entity`"
+  "Generate an appropriate search query for string fields of this `entity`"
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
         query-name (str "search-strings-" pretty-name)
         signature ":? :1"
-        props (concat (properties entity-map) (insertable-key-properties entity-map))
-        string-fields (filter
-                        #(= (-> % :attrs :type) "string")
-                        (children entity #(= (:tag %) :property)))]
-    (if
-      (empty? string-fields)
-      {}
-      (hash-map
-        (keyword query-name)
-        {:name query-name
-         :signature signature
-         :entity entity
-         :type :text-search
-         :query
-         (s/join
-           "\n"
-           (remove
-             empty?
-             (list
-               (str "-- :name " query-name " " signature)
-               (str
-                 "-- :doc selects existing "
-                 pretty-name
-                 " records having any string field matching `:pattern` by substring match")
-               (str "SELECT * FROM " entity-name)
-               "WHERE "
-               (s/join
-                 "\n\tOR "
+        properties (all-properties entity)]
+    (hash-map
+      (keyword query-name)
+      {:name query-name
+       :signature signature
+       :entity entity
+       :type :text-search
+       :query
+       (s/join
+         "\n"
+         (remove
+           empty?
+           (list
+             (str "-- :name " query-name " " signature)
+             (str
+               "-- :doc selects existing "
+               pretty-name
+               " records having any string field matching `:pattern` by substring match")
+             (str "SELECT * FROM " entity-name)
+             "WHERE "
+             (s/join
+               "\n\tOR "
+               (filter
+                 string?
                  (map
-                   #(str (-> % :attrs :name) " LIKE '%:pattern%'")
-                   string-fields))
-               (order-by-clause entity)
-               "--~ (if (:offset params) \"OFFSET :offset \")"
-               "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))}))))
+                   #(if
+                      (#{"string" "date" "text"} (:type (:attrs %)))
+                      (str (-> % :attrs :name) " LIKE '%:pattern%'"))
+                   properties)))
+             (order-by-clause entity)
+             "--~ (if (:offset params) \"OFFSET :offset \")"
+             "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
 
-(defn select-query [entity]
+(defn select-query
   "Generate an appropriate `select` query for this `entity`"
-  (if
-    (has-primary-key? entity)
-    (let [entity-name (:name (:attrs entity))
-          pretty-name (singularise entity-name)
-          query-name (str "get-" pretty-name)
-          signature ":? :1"]
-      (hash-map
-        (keyword query-name)
-        {:name query-name
-         :signature signature
-         :entity entity
-         :type :select-1
-         :query
-         (s/join
-           "\n"
-           (remove
-             empty?
-             (list
-               (str "-- :name " query-name " " signature)
-               (str "-- :doc selects an existing " pretty-name " record")
-               (str "SELECT * FROM " entity-name)
-               (where-clause entity)
-               (order-by-clause entity))))}))
-    {}))
+  ([entity properties]
+   (if
+     (not (empty? properties))
+     (let [entity-name (:name (:attrs entity))
+           pretty-name (singularise entity-name)
+           query-name (if (= properties (key-properties entity))
+                        (str "get-" pretty-name)
+                        (str "get-" pretty-name "-by-" (s/join "=" (map #(:name (:attrs %)) properties))))
+           signature ":? :1"]
+       (hash-map
+         (keyword query-name)
+         {:name query-name
+          :signature signature
+          :entity entity
+          :type :select-1
+          :query
+          (s/join
+            "\n"
+            (remove
+              empty?
+              (list
+                (str "-- :name " query-name " " signature)
+                (str "-- :doc selects an existing " pretty-name " record")
+                (str "SELECT * FROM " entity-name)
+                (where-clause entity properties)
+                (order-by-clause entity))))}))
+     {}))
+  ([entity]
+   (let [distinct-fields (distinct-properties entity)]
+     (apply
+       merge
+       (cons
+         (select-query entity (key-properties entity))
+         (map
+           #(select-query entity %)
+           (combinations distinct-fields (count distinct-fields))))))))
+
+(select-query electors)
 
 
 (defn list-query
@@ -373,21 +385,27 @@
 
 
 (defn queries
-  "Generate all standard queries for this `entity` in this `application`."
-  [entity application]
-  (merge
-    {}
-    (insert-query entity)
-    (update-query entity)
-    (delete-query entity)
-    (if
-      (link-table? entity)
-      (link-table-queries entity application)
-      (merge
-        (select-query entity)
-        (list-query entity)
-        (search-query entity)
-        (foreign-queries entity application)))))
+  "Generate all standard queries for this `entity` in this `application`; if
+  no entity is specified, generate all queris for the application."
+  ([application entity]
+   (merge
+     {}
+     (insert-query entity)
+     (update-query entity)
+     (delete-query entity)
+     (if
+       (link-table? entity)
+       (link-table-queries entity application)
+       {})
+     (select-query entity)
+     (list-query entity)
+     (search-query entity)
+     (foreign-queries entity application)))
+  ([application]
+   (apply
+     merge
+     (map #(queries application %)
+          (children-with-tag application :entity)))))
 
 
 (defn to-hugsql-queries
@@ -410,11 +428,5 @@
             (sort
               #(compare (:name %1) (:name %2))
               (vals
-                (apply
-                  merge
-                  (map
-                    #(queries % application)
-                    (children
-                      application
-                      (fn [child] (= (:tag child) :entity))))))))))))
+                (queries application))))))))
 

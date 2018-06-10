@@ -2,7 +2,6 @@
       :author "Simon Brooke"}
   adl.to-json-routes
   (:require [clojure.java.io :refer [file]]
-            [clojure.math.combinatorics :refer [combinations]]
             [clojure.string :as s]
             [clj-time.core :as t]
             [clj-time.format :as f]))

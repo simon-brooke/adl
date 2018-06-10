@@ -418,6 +418,7 @@
 				<xsl:attribute name="property">
 					<xsl:value-of select="@name"/>
 				</xsl:attribute>
+        <xsl:copy-of select="*"/>
 			</field>
 		</xsl:for-each>
 	</xsl:template>
@@ -435,6 +436,7 @@
 						<xsl:attribute name="property">
 							<xsl:value-of select="@name"/>
 						</xsl:attribute>
+            <xsl:copy-of select="*"/>
 					</field>
 				</xsl:otherwise>
 			</xsl:choose>
@@ -454,6 +456,7 @@
 				</xsl:attribute>
 				<xsl:apply-templates select="adl:prompt"/>
 				<xsl:apply-templates select="adl:help"/>
+        <xsl:copy-of select="*"/>
 			</field>
 		</xsl:for-each>
 	</xsl:template>
