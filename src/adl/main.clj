@@ -44,7 +44,7 @@
     (.exists (java.io.File. (first args)))
     (let [application (x/parse (first args))]
       (h/to-hugsql-queries application)
-      ;; (j/to-json-routes application)
+      (j/to-json-routes application)
       (s/to-selmer-routes application)
       (t/to-selmer-templates application))))
 

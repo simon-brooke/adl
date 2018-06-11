@@ -181,6 +181,19 @@
 
 
 
+(defn safe-name
+  ([string]
+    (s/replace string #"[^a-zA-Z0-9-]" ""))
+  ([string convention]
+   (case convention
+     (:sql :c) (s/replace string #"[^a-zA-Z0-9_]" "_")
+     :c-sharp (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")
+     :java (let
+             [camel (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")]
+             (apply str (cons (Character/toUpperCase (first camel)) (rest camel))))
+     (safe-name string))))
+
+
 (defn link-table?
   "Return true if this `entity` represents a link table."
   [entity]

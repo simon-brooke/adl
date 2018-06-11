@@ -50,6 +50,7 @@
       '[ring.util.http-response :as response]
       '[clojure.java.io :as io]
       '[hugsql.core :as hugsql]
+      (vector (symbol (str (:name (:attrs application)) ".layout")) :as 'l)
       (vector (symbol (str (:name (:attrs application)) ".db.core")) :as 'db)
       (vector (symbol (str (:name (:attrs application)) ".routes.manual")) :as 'm))))
 
@@ -62,7 +63,7 @@
       (vector 'r)
       (list 'let (vector 'p (list :form-params 'r))
             (list
-              'layout/render
+              'l/render
               (list 'resolve-template (str n ".html"))
               (merge
                 {:title (capitalise (:name (:attrs f)))
@@ -79,7 +80,7 @@
                    (list
                      (symbol
                        (str
-                         "db/search-"
+                         "db/search-strings-"
                          (singularise (:name (:attrs e)))))
                      'p)})))))))
 
@@ -111,13 +112,38 @@
       'defroutes
       (cons
         'auto-selmer-routes
-        (interleave
-          (map
-            (fn [r] (make-route 'GET r))
-            (sort routes))
-        (map
-          (fn [r] (make-route 'POST r))
-          (sort routes)))))))
+        (cons
+          '(GET
+             "/index"
+             request
+             (route/restricted
+               (apply (resolve-handler "index") (list request))))
+          (interleave
+            (map
+              (fn [r] (make-route 'GET r))
+              (sort routes))
+            (map
+              (fn [r] (make-route 'POST r))
+              (sort routes))))))))
+
+
+(defn generate-handler-resolver
+  "Dodgy, dodgy, dodgy. Generate code which will look up functions in the
+  manual and in this namespace. I'm sure someone who really knew what they
+  were doing could write this more elegantly."
+  [application]
+  (list
+    'defn
+    'raw-resolve-handler
+    "Prefer the manually-written version of the handler with name `n`, if it exists, to the automatically generated one"
+    (vector 'n)
+    (list 'try
+          (list 'eval (list 'symbol (list 'str (:name (:attrs application)) ".routes.manual/" 'n)))
+          (list 'catch
+                'Exception '_
+                (list 'eval
+                      (list 'symbol
+                            (list 'str (:name (:attrs application)) ".routes.auto/" 'n)))))))
 
 
 (defn to-selmer-routes
@@ -134,13 +160,13 @@
                      n
                      (str "auto/" n))))
         (println)
-        (pprint '(def resolve-template (memoise raw-resolve-template)))
+        (pprint '(def resolve-template (memoize raw-resolve-template)))
         (println)
         (pprint '(defn index
                    [r]
-                   (layout/render
+                   (l/render
                      (resolve-template
-                       "application-index")
+                       "application-index.html")
                      {:title "Administrative menu"})))
         (println)
         (doall
@@ -153,14 +179,8 @@
                     (println))
                   (filter (fn [c] (#{:form :list :page} (:tag c))) (children e)))))
             (children-with-tag application :entity)))
-        (pprint '(defn raw-resolve-handler
-                   "Prefer the manually-written version of the handler with name `n`, if it exists, to the automatically generated one"
-                   [n]
-                   (let [s (symbol (str "m." n))]
-                     (if
-                       (bound? s)
-                       (eval s)
-                       (eval (symbol n))))))
+        (pprint
+          (generate-handler-resolver application))
         (println)
         (pprint '(def resolve-handler
                    (memoize raw-resolve-handler)))

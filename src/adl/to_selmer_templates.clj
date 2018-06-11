@@ -90,7 +90,7 @@
      "\n"
      (flatten
        (list
-         "{% extends \"templates/base.html\" %}"
+         "{% extends \"base.html\" %}"
          (str "<!-- File "
               filename
               " generated "
