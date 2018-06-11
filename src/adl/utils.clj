@@ -196,9 +196,12 @@
 
 
 (defn children-with-tag
-  "Return all children of this `element` which have this `tag`."
+  "Return all children of this `element` which have this `tag`;
+  if `element` is `nil`, return `nil`."
   [element tag]
-  (children element #(= (:tag %) tag)))
+  (if
+    element
+    (children element #(= (:tag %) tag))))
 
 (defmacro properties
   "Return all the properties of this `entity`."
@@ -223,6 +226,7 @@
   [property]
   (and
     (= (:tag property) :property)
+    (not (#{"link"} (:type (:attrs property))))
     (not (= (:distinct (:attrs property)) "system"))))
 
 (defmacro all-properties

@@ -12,7 +12,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
-;;;; adl.to-selmer-templates.
+;;;; adl.to-selmer-templates. Generate Web 1.0 style user interface.
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or
 ;;;; modify it under the terms of the GNU General Public License
@@ -58,24 +58,64 @@
                 [content])}]})
 
 
+(defn emit-content
+  ([filename application k]
+   (emit-content filename nil nil application k))
+  ([filename spec entity application k]
+   (let [content (:content
+                   (first
+                     (or (children-with-tag spec k)
+                         (children-with-tag entity k)
+                         (children-with-tag
+                           (first
+                             (children-with-tag application :content))
+                           k))))]
+     (if
+       content
+       (list
+         (str "{% block " (name k) " %}")
+         (map
+           #(with-out-str (x/emit-element %))
+           content)
+         "{% endblock %}")))))
+
+
 (defn file-header
-  "Generate a header for a template file."
-  [filename]
-  (str
-    "{% extends \"templates/base.html\" %}\n\n"
-    "<!-- File "
-    filename
-    " generated "
-    (t/now)
-    " by adl.to-selmer-templates.\n"
-    "See [Application Description Language](https://github.com/simon-brooke/adl)."
-    "-->\n\n"
-    "{% block content %}"))
+  "Generate a header for a template file with this `filename` for this `spec`
+  of this `entity` within this `application`."
+  ([filename application]
+   (file-header filename nil nil application))
+  ([filename spec entity application]
+   (s/join
+     "\n"
+     (flatten
+       (list
+         "{% extends \"templates/base.html\" %}"
+         (str "<!-- File "
+              filename
+              " generated "
+              (t/now)
+              " by adl.to-selmer-templates.\n"
+              "See [Application Description Language](https://github.com/simon-brooke/adl)."
+              "-->")
+         (emit-content filename spec entity application :head)
+         (emit-content filename spec entity application :top)
+         "{% block content %}")))))
+
 
 (defn file-footer
-  "Generate a header for a template file."
-  [filename]
-  "{% endblock %}\n")
+  "Generate a footer for a template file with this `filename` for this `spec`
+  of this `entity` within this `application`."
+  ([filename application]
+   (file-footer filename nil nil application))
+  ([filename spec entity application]
+   (s/join
+     "\n"
+     (flatten
+       (list
+         "{% endblock %}"
+         (emit-content filename spec entity application :foot)
+         )))))
 
 
 (defn prompt
@@ -347,7 +387,7 @@
      :content
      (apply
        vector
-
+      (concat
        (map
          (fn [f]
            (let [property (first
@@ -359,18 +399,26 @@
                :tag :th
                :content
                [{:tag :input
-                 :type (case (:type (:attrs property))
+                 :attrs {:id (:property (:attrs f))
+                         :type (case (:type (:attrs property))
                          ("integer" "real" "money") "number"
                          ("date" "timestamp") "date"
                          "time" "time"
                          "text")
-                 :attrs {:id (:property (:attrs f))
                          :name (:property (:attrs f))
                          :value (str "{{ params." (:property (:attrs f)) " }}")}}])))
-         (fields list-spec)))}]})
+         (fields list-spec))
+        '({:tag :th
+           :content
+           [{:tag :input
+             :attrs {:type "submit"
+                     :id "search"
+                     :value "Search"}}]})))}]})
 
 
 (defn- list-tbody
+  "Return a table body element for the list view for this `list-spec` of this `entity` within
+  this `application`."
   [list-spec entity application]
   {:tag :tbody
    :content
@@ -390,6 +438,7 @@
      :attrs
      {:href
       (str
+        "{{servlet-context}}/"
         (editor-name entity application)
         "?"
         (s/join
@@ -400,6 +449,35 @@
             (children (first (filter #(= (:tag %) :key) (children entity)))))))}
      :content ["View"]}]}]))}
     "{% endfor %}"]})
+
+
+(defn- list-page-control
+  "What this needs to do is emit an HTML control which, when selected, requests the
+  next or previous page keeping the same search parameters; so it essentially needs
+  to be a submit button, not a link."
+  [forward?]
+  {:tag :div
+   :attrs {:class (if forward? "big-link-container" "back-link-container")}
+   :content
+   [{:tag :input
+     :attrs {:id "page"
+             :name "page"
+             :disabled (if
+                         forward?
+                         false
+                         "{% ifequal offset 0 %} false {% else %} true {% endifequal %}")
+             ;; TODO: real thought needs to happen on doing i18n for this!
+             :value (if forward? "Next" "Previous")}}]})
+
+
+(defn- list-tfoot
+  "Return a table footer element for the list view for this `list-spec` of this `entity` within
+  this `application`."
+  [list-spec entity application]
+  {:tag :tfoot
+   :content
+   [(list-page-control false)
+    (list-page-control true)]})
 
 
 (defn- list-to-template
@@ -416,12 +494,7 @@
      :content
      [(list-thead list-spec entity application)
       (list-tbody list-spec entity application)
-      {:tag :tfoot}]}
-    "{% if offset > 0 %}"
-    (back-link "Previous" "FIXME")
-    "{% endif %}"
-    (big-link "Next" "FIXME")
-    (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))]})
+      (list-tfoot list-spec entity application)]}]})
 
 
 (defn entity-to-templates
@@ -498,7 +571,7 @@
 
 
 (defn write-template-file
-  [filename template]
+  [filename template application]
   (if
     template
     (try
@@ -507,10 +580,10 @@
         (s/join
           "\n"
           (list
-            (file-header filename)
+            (file-header filename application)
             (with-out-str
               (x/emit-element template))
-            (file-footer filename))))
+            (file-footer filename application))))
       (catch Exception any
         (spit
           (str *output-path* filename)
@@ -542,7 +615,7 @@
            (templates-map %)
            (let [filename (str (name %) ".html")]
              (try
-               (write-template-file filename (templates-map %))
+               (write-template-file filename (templates-map %) application)
                (catch Exception any
                  (str
                    "Exception "
