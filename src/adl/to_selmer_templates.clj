@@ -1,4 +1,4 @@
-(ns ^{;; :doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
+(ns ^{:doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
   (:require [adl.utils :refer :all]
@@ -32,15 +32,6 @@
 ;;;; Copyright (C) 2018 Simon Brooke
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-(def ^:dynamic  *locale*
-  "The locale for which files will be generated."
-  "en-GB")
-
-(def ^:dynamic *output-path*
-  "The path to which generated files will be written."
-  "resources/auto/")
 
 
 (defn big-link

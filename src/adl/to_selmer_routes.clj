@@ -34,11 +34,6 @@
 
 ;;; Generally. there's one route in the generated file for each Selmer template which has been generated.
 
-(def ^:dynamic *output-path*
-  "The path to which generated files will be written."
-  "resources/auto/")
-
-
 (defn file-header
   [application]
   (list

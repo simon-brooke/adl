@@ -33,10 +33,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(def ^:dynamic *output-path*
-  "The path to which generated files will be written."
-  "resources/auto/")
-
 (defn where-clause
   "Generate an appropriate `where` clause for queries on this `entity`;
   if `properties` are passed, filter on those properties, otherwise the key

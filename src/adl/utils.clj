@@ -26,6 +26,17 @@
 ;;;;
 ;;;; Copyright (C) 2018 Simon Brooke
 ;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(def ^:dynamic  *locale*
+  "The locale for which files will be generated."
+  "en-GB")
+
+(def ^:dynamic *output-path*
+  "The path to which generated files will be written."
+  "resources/auto/")
+
 
 (defn link-table-name
   "Canonical name of a link table between entity `e1` and entity `e2`."
