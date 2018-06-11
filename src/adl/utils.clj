@@ -27,6 +27,11 @@
 ;;;; Copyright (C) 2018 Simon Brooke
 ;;;;
 
+(defn link-table-name
+  "Canonical name of a link table between entity `e1` and entity `e2`."
+  [e1 e2]
+  (s/join "_" (list "link" (:name (:attrs e1)) (:name (:attrs e2)))))
+
 
 (defn children
   "Return the children of this `element`; if `predicate` is passed, return only those

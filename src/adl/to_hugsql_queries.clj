@@ -4,6 +4,7 @@
   (:require [clojure.java.io :refer [file]]
             [clojure.math.combinatorics :refer [combinations]]
             [clojure.string :as s]
+            [clojure.xml :as x]
             [clj-time.core :as t]
             [clj-time.format :as f]
             [adl.utils :refer :all]))
@@ -35,8 +36,6 @@
 (def ^:dynamic *output-path*
   "The path to which generated files will be written."
   "resources/auto/")
-
-(def electors {:tag :entity, :attrs {:magnitude "6", :name "electors", :table "electors"}, :content [{:tag :key, :attrs nil, :content [{:tag :property, :attrs {:distinct "system", :immutable "true", :column "id", :name "id", :type "integer", :required "true"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "id"}, :content nil}]}]} {:tag :property, :attrs {:distinct "user", :column "name", :name "name", :type "string", :required "true", :size "64"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "name"}, :content nil}]} {:tag :property, :attrs {:farkey "id", :entity "dwelling", :column "dwelling_id", :name "dwelling_id", :type "entity", :required "true"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "Flat"}, :content nil}]} {:tag :property, :attrs {:distinct "user", :column "phone", :name "phone", :type "string", :size "16"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "phone"}, :content nil}]} {:tag :property, :attrs {:distinct "user", :column "email", :name "email", :type "string", :size "128"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "email"}, :content nil}]} {:tag :property, :attrs {:default "Unknown", :farkey "id", :entity "genders", :column "gender", :type "entity", :name "gender"}, :content [{:tag :prompt, :attrs {:locale "en-GB", :prompt "gender"}, :content nil}]} {:tag :list, :attrs {:name "Electors", :properties "listed"}, :content [{:tag :field, :attrs {:property "id"}, :content nil} {:tag :field, :attrs {:property "name"}, :content nil} {:tag :field, :attrs {:property "dwelling_id"}, :content nil} {:tag :field, :attrs {:property "phone"}, :content nil} {:tag :field, :attrs {:property "email"}, :content nil} {:tag :field, :attrs {:property "gender"}, :content nil}]} {:tag :form, :attrs {:name "Elector", :properties "listed"}, :content [{:tag :field, :attrs {:property "id"}, :content nil} {:tag :field, :attrs {:property "name"}, :content nil} {:tag :field, :attrs {:property "dwelling_id"}, :content nil} {:tag :field, :attrs {:property "phone"}, :content nil} {:tag :field, :attrs {:property "email"}, :content nil} {:tag :field, :attrs {:property "gender"}, :content nil}]}]})
 
 (defn where-clause
   "Generate an appropriate `where` clause for queries on this `entity`;
@@ -140,7 +139,7 @@
         pretty-name (singularise entity-name)
         query-name (str "search-strings-" pretty-name)
         signature ":? :1"
-        properties (all-properties entity)]
+        properties (remove #(#{"link"}(:type (:attrs %))) (all-properties entity))]
     (hash-map
       (keyword query-name)
       {:name query-name
@@ -213,8 +212,6 @@
            #(select-query entity %)
            (combinations distinct-fields (count distinct-fields))))))))
 
-(select-query electors)
-
 
 (defn list-query
   "Generate a query to list records in the table represented by this `entity`.
@@ -246,15 +243,14 @@
 
 
 (defn foreign-queries
-
   [entity application]
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
-        links (filter #(-> % :attrs :entity) (children entity #(= (:tag %) :property)))]
+        links (filter #(#{"link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
     (apply
       merge
       (map
-        #(let [far-name (-> % :attrs :entity)
+        #(let [far-name (:entity (:attrs %))
                far-entity (first
                             (children
                               application
@@ -264,6 +260,7 @@
                                   (= (:name (:attrs x)) far-name)))))
                pretty-far (singularise far-name)
                farkey (-> % :attrs :farkey)
+               link-type (-> % :attrs :type)
                link-field (-> % :attrs :name)
                query-name (str "list-" entity-name "-by-" pretty-far)
                signature ":? :*"]
@@ -279,14 +276,25 @@
                 "\n"
                 (remove
                   empty?
-                  (list
-                    (str "-- :name " query-name " " signature)
-                    (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
-                    (str "SELECT * \nFROM " entity-name)
-                    (str "WHERE " entity-name "." link-field " = :id")
-                    (order-by-clause entity))))}))
+                  (case link-type
+                    "entity" (list
+                               (str "-- :name " query-name " " signature)
+                               (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
+                               (str "SELECT * \nFROM " entity-name)
+                               (str "WHERE " entity-name "." link-field " = :id")
+                               (order-by-clause entity))
+                    "link" (let [link-table-name
+                                 (link-table-name entity far-entity)]
+                             (list
+                               (str "-- :name " query-name " " signature)
+                               (str "-- :doc links all existing " pretty-name " records related to a given " pretty-far)
+                               (str "SELECT * \nFROM " entity-name)
+                               (str "WHERE " entity-name "." link-field " = " link-table-name "." (singularise entity-name) "_id")
+                               (str "\tAND " link-table-name "." (singularise far-name) "_id = :id")
+                               (order-by-clause entity)))
+                    (list (str "ERROR: unexpected type " link-type " of property " %)))))
+              }))
         links))))
-
 
 (defn link-table-query
   "Generate a query which links across the entity passed as `link`
@@ -328,8 +336,8 @@
               (str "-- :doc lists all existing " near-name " records related through " link-name " to a given " pretty-far )
               (str "SELECT "near-name ".*")
               (str "FROM " near-name ", " link-name )
-              (str "WHERE " near-name "." (first (key-names near)) " = " link-name "." (-> (links (keyword near-name)) :attrs :name) )
-              ("\tAND " link-name "." (-> (links (keyword far-name)) :attrs :name) " = :id")
+              (str "WHERE " near-name "." (first (key-names near)) " = " link-name "." (singularise near-name) "_id" )
+              ("\tAND " link-name "." (singularise far-name) "_id = :id")
               (order-by-clause near))))}))))
 
 
@@ -389,14 +397,13 @@
   no entity is specified, generate all queris for the application."
   ([application entity]
    (merge
-     {}
-     (insert-query entity)
-     (update-query entity)
-     (delete-query entity)
      (if
        (link-table? entity)
        (link-table-queries entity application)
        {})
+     (insert-query entity)
+     (update-query entity)
+     (delete-query entity)
      (select-query entity)
      (list-query entity)
      (search-query entity)
