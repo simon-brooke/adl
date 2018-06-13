@@ -284,8 +284,10 @@
                              (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc links all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT * \nFROM " entity-name)
-                               (str "WHERE " entity-name "." link-field " = " link-table-name "." (singularise entity-name) "_id")
+                               (str "SELECT * \nFROM " entity-name ", " link-table-name)
+                               (str "WHERE " entity-name "."
+                                    (first (key-names entity))
+                                    " = " link-table-name "." (singularise entity-name) "_id")
                                (str "\tAND " link-table-name "." (singularise far-name) "_id = :id")
                                (order-by-clause entity)))
                     (list (str "ERROR: unexpected type " link-type " of property " %)))))

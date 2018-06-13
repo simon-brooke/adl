@@ -41,7 +41,13 @@
 (defn link-table-name
   "Canonical name of a link table between entity `e1` and entity `e2`."
   [e1 e2]
-  (s/join "_" (list "link" (:name (:attrs e1)) (:name (:attrs e2)))))
+  (s/join
+    "_"
+    (cons
+      "ln"
+      (sort
+        (list
+          (:name (:attrs e1)) (:name (:attrs e2)))))))
 
 
 (defn children
@@ -55,6 +61,12 @@
    (filter
      predicate
      (children element))))
+
+
+(defn child
+  "Return the first child of this `element` satisfying this `predicate`."
+  [element predicate]
+  (first (children element predicate)))
 
 
 (defn attributes
@@ -87,7 +99,7 @@
 (defn permissions
   "Return appropriate permissions of this `property`, taken from this `entity` of this
   `application`, in the context of this `page`."
-  [property page entity application]
+  ([property page entity application]
   (first
     (remove
       empty?
@@ -96,6 +108,10 @@
         (children property #(= (:tag %) :permission))
         (children entity #(= (:tag %) :permission))
         (children application #(= (:tag %) :permission))))))
+  ([property entity application]
+   (permissions property nil entity application))
+  ([entity application]
+   (permissions nil nil entity application)))
 
 
 (defn permission-groups
@@ -133,6 +149,24 @@
   "Return true if `x` is an ADL entity."
   [x]
   (= (:tag x) :entity))
+
+
+(defn property?
+  "True if `o` is a property."
+  [o]
+  (= (:tag o) :property))
+
+
+(defn entity-for-property
+  "If this `property` references an entity, return that entity from this `application`"
+  [property application]
+  (if
+    (and (property? property) (:entity (:attrs property)))
+    (child
+      application
+      #(and
+         (entity? %)
+         (= (:name (:attrs %))(:entity (:attrs property)))))))
 
 
 (defn visible-to
@@ -216,6 +250,12 @@
     element
     (children element #(= (:tag %) tag))))
 
+(defn child-with-tag
+  "Return the first child of this `element` which has this `tag`;
+  if `element` is `nil`, return `nil`."
+  [element tag]
+  (first (children-with-tag element tag)))
+
 (defmacro properties
   "Return all the properties of this `entity`."
   [entity]
@@ -242,10 +282,18 @@
     (not (#{"link"} (:type (:attrs property))))
     (not (= (:distinct (:attrs property)) "system"))))
 
+
 (defmacro all-properties
   "Return all properties of this `entity` (including key properties)."
   [entity]
   `(descendants-with-tag ~entity :property))
+
+
+(defn user-distinct-properties
+  "Return the properties of this `entity` which are user distinct"
+  [entity]
+  (filter #(#{"user" "all"} (:distinct (:attrs %))) (all-properties entity)))
+
 
 (defmacro insertable-properties
   "Return all the properties of this `entity` (including key properties) into
@@ -309,3 +357,16 @@
   assumes the editor form is the first form listed for the entity."
   [entity application]
   (path-part :form entity application))
+
+(defn typedef
+  [property application]
+  (first
+    (children application
+              #(and
+                 (= (:tag %) :typedef)
+                 (= (:name (:attrs %))
+                    (:definition (:attrs property)))))))
+
+(defn type-for-defined
+  [property application]
+  (:type (:attrs (typedef property application))))
