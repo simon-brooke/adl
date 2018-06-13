@@ -88,12 +88,11 @@
   [property application]
   (if
     (= (:type (:attrs property)) "defined")
-    (first
-      (children
-        application
-        #(and
-           (= (:tag %) :typedef)
-           (= (:name (:attrs %)) (:typedef (:attrs property))))))))
+    (child
+     application
+     #(and
+       (= (:tag %) :typedef)
+       (= (:name (:attrs %)) (:typedef (:attrs property)))))))
 
 
 (defn permissions
@@ -352,20 +351,13 @@
     (keyword? form)
     (path-part (first (children-with-tag entity form)) entity application)))
 
+
 (defn editor-name
   "Return the path-part of the editor form for this `entity`. Note:
   assumes the editor form is the first form listed for the entity."
   [entity application]
   (path-part :form entity application))
 
-(defn typedef
-  [property application]
-  (first
-    (children application
-              #(and
-                 (= (:tag %) :typedef)
-                 (= (:name (:attrs %))
-                    (:definition (:attrs property)))))))
 
 (defn type-for-defined
   [property application]

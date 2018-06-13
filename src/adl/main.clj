@@ -4,6 +4,7 @@
   (:require [adl.utils :refer :all]
             [adl.to-hugsql-queries :as h]
             [adl.to-json-routes :as j]
+            [adl.to-psql :as p]
             [adl.to-selmer-routes :as s]
             [adl.to-selmer-templates :as t]
             [clojure.xml :as x])
@@ -36,7 +37,7 @@
   (println "Argument should be a pathname to an ADL file"))
 
 (defn -main
-  "Expects as arg the name of the git hook to be handled, followed by the arguments to it"
+  "Expects as arg the path-name of an ADL file."
   [& args]
   (cond
     (empty? args)
@@ -45,6 +46,9 @@
     (let [application (x/parse (first args))]
       (h/to-hugsql-queries application)
       (j/to-json-routes application)
+      (p/to-psql application)
       (s/to-selmer-routes application)
       (t/to-selmer-templates application))))
+
+
 
