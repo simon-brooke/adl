@@ -392,13 +392,10 @@
 
 (defn queries
   "Generate all standard queries for this `entity` in this `application`; if
-  no entity is specified, generate all queris for the application."
+  no entity is specified, generate all queries for the application."
   ([application entity]
    (merge
-     (if
-       (link-table? entity)
-       (link-table-queries entity application)
-       {})
+     ;; TODO: queries that look through link tables
      (insert-query entity)
      (update-query entity)
      (delete-query entity)

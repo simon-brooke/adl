@@ -281,14 +281,6 @@
          (safe-name string))))))
 
 
-(defn link-table?
-  "Return true if this `entity` represents a link table."
-  [entity]
-  (let [properties (children entity #(= (:tag %) :property))
-        links (filter #(-> % :attrs :entity) properties)]
-    (= (count properties) (count links))))
-
-
 (defn read-adl [url]
   (let [adl (x/parse url)
         valid? (valid-adl? adl)]
@@ -369,6 +361,14 @@
 (defmacro insertable-key-properties
   [entity]
   `(filter insertable? (key-properties entity)))
+
+
+(defn link-table?
+  "Return true if this `entity` represents a link table."
+  [entity]
+  (let [properties (all-properties entity)
+        links (filter #(-> % :attrs :entity) properties)]
+    (= (count properties) (count links))))
 
 
 (defn key-names [entity]
