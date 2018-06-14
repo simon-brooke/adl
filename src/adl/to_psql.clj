@@ -336,8 +336,8 @@
      (list
       "ALTER TABLE"
       (:name (:attrs nearside))
-      "ADD CONSTRINT"
-      (str "ri_" (:name (:attrs nearside)) "_" (:name (:attrs farside)) "_" (:name (:attrs property)))
+      "ADD CONSTRAINT"
+      (str "ri_" (:name (:attrs nearside)) "_" (:name (:attrs property)))
       "\n\tFOREIGN KEY("
       (:name (:attrs property))
       ") \n\tREFERENCES"
@@ -357,9 +357,10 @@
   ([entity application]
    (map
     #(emit-referential-integrity-link % entity application)
-    (filter
+    (sort-by-name
+     (filter
      #(= (:type (:attrs %)) "entity")
-     (properties entity))))
+     (properties entity)))))
   ([application]
    (flatten
     (list
@@ -368,7 +369,7 @@
       (str "--\treferential integrity links for first-class tables"))
      (map
       #(emit-referential-integrity-links % application)
-      (children-with-tag application :entity))))))
+      (sort-by-name (children-with-tag application :entity)))))))
 
 
 (defn emit-table
@@ -427,7 +428,8 @@
            :column (str (:name (:attrs entity)) "_id")
            :type "entity"
            :entity (:name (:attrs entity))
-           :farkey (first (key-names entity))}})
+           :farkey (first (key-names entity))}
+   :content nil})
 
 
 (defn emit-link-table
@@ -450,34 +452,41 @@
                          :attrs {:name link-table-name
                                  :table link-table-name}
                          :content
-                         (vector
-                          (concat
-                           [(construct-link-property e1)
+                           (apply vector
+                            (flatten
+                             (list
+                             [(construct-link-property e1)
                             (construct-link-property e2)]
-                           permissions))}]
+                             permissions)))}]
         ;; mark it as emitted
         (swap! emitted-link-tables conj link-table-name)
         ;; emit it
-        (emit-table
-         link-entity
-         application
-         (str
-          "link table joining "
-          (:name (:attrs e1))
-          " with "
-          (:name (:attrs e2))))
-        ;; and immediately emit its referential integrity links
-        (emit-referential-integrity-links link-entity application)))))
+        (flatten
+         (list
+          (emit-table
+           link-entity
+           application
+           (str
+            "link table joining "
+            (:name (:attrs e1))
+            " with "
+            (:name (:attrs e2))))
+          ;; and immediately emit its referential integrity links
+          (emit-referential-integrity-links link-entity application)))))))
 
 
 (defn emit-link-tables
-  [entity application emitted-link-tables]
+  ([entity application emitted-link-tables]
   (map
    #(emit-link-table % entity application emitted-link-tables)
    (sort-by-name
     (filter
      #(= (:type (:attrs %)) "link")
      (properties entity)))))
+  ([application emitted-link-tables]
+   (map
+    #(emit-link-tables % application emitted-link-tables)
+    (sort-by-name (children-with-tag application :entity)))))
 
 
 (defn emit-entity
@@ -530,10 +539,7 @@
         (sort-by-name
          (children-with-tag application :entity)))
        (emit-referential-integrity-links application)
-       (map
-        #(emit-link-tables % application emitted-link-tables)
-        (sort-by-name
-         (children-with-tag application :entity))))))))
+       (emit-link-tables application emitted-link-tables))))))
 
 
 (defn to-psql
