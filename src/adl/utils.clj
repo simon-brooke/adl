@@ -2,6 +2,7 @@
       :author "Simon Brooke"}
   adl.utils
   (:require [clojure.string :as s]
+            [clojure.pprint :as p]
             [clojure.xml :as x]
             [adl.validator :refer [valid-adl? validate-adl]]))
 
@@ -36,6 +37,40 @@
 (def ^:dynamic *output-path*
   "The path to which generated files will be written."
   "resources/auto/")
+
+
+(defn wrap-lines
+  "Wrap lines in this `text` to this `width`; return a list of lines."
+  ;; Shamelessly adapted from https://www.rosettacode.org/wiki/Word_wrap#Clojure
+  [width text]
+  (s/split-lines
+   (p/cl-format
+    nil
+    (str "~{~<~%~1," width ":;~A~> ~}")
+    (clojure.string/split text #" "))))
+
+
+(defn emit-header
+  "Emit this `content` as a sequence of wrapped lines each prefixed with
+  `prefix`, and the whole delimited by rules."
+  [prefix & content]
+  (let [comment-rule (apply str (repeat 70 (last prefix)))
+        p (str "\n" prefix "\t") ]
+    (str
+     prefix
+     comment-rule
+     p
+     (s/join
+      p
+      (flatten
+       (interpose
+        ""
+         (map
+          #(wrap-lines 70 (str %))
+          (flatten content)))))
+     "\n"
+     prefix
+     comment-rule)))
 
 
 (defn link-table-name
@@ -213,7 +248,6 @@
   (capitalise (singularise (:name (:attrs entity)))))
 
 
-
 (defn safe-name
   ([string]
     (s/replace string #"[^a-zA-Z0-9-]" ""))
@@ -234,6 +268,7 @@
         links (filter #(-> % :attrs :entity) properties)]
     (= (count properties) (count links))))
 
+
 (defn read-adl [url]
   (let [adl (x/parse url)
         valid? (valid-adl? adl)]
@@ -249,16 +284,19 @@
     element
     (children element #(= (:tag %) tag))))
 
+
 (defn child-with-tag
   "Return the first child of this `element` which has this `tag`;
   if `element` is `nil`, return `nil`."
   [element tag]
   (first (children-with-tag element tag)))
 
+
 (defmacro properties
   "Return all the properties of this `entity`."
   [entity]
   `(children-with-tag ~entity :property))
+
 
 (defn descendants-with-tag
   "Return all descendants of this `element`, recursively, which have this `tag`."
@@ -302,9 +340,11 @@
      insertable?
      (all-properties ~entity)))
 
+
 (defmacro key-properties
   [entity]
   `(children-with-tag (first (children-with-tag ~entity :key)) :property))
+
 
 (defmacro insertable-key-properties
   [entity]

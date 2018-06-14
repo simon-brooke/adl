@@ -46,9 +46,9 @@
   [elements]
   (sort #(.compareTo (:name (:attrs %1)) (:name (:attrs %2))) elements))
 
+
 (declare emit-field-type emit-property)
 
-(def comment-rule (apply str (repeat 79 "-")))
 
 (defn emit-defined-field-type
   [property application]
@@ -115,13 +115,7 @@
        "-- ERROR: cannot generate link to entity "
        (:name (:attrs farside))
        " with compound primary key\n")
-      (list
-       (emit-field-type (first key-properties) farside application false)
-       "REFERENCES"
-       (str
-        (:table (:attrs farside)) "(" (:name (:attrs (first key-properties)))) ")"
-       ;; TODO: ought to handle the `cascade` attribute, even though it's rarely used
-       ))))
+       (emit-field-type (first key-properties) farside application false))))
 
 
 (defn emit-field-type
@@ -135,8 +129,7 @@
     "entity" (emit-entity-field-type property application)
     ("date" "time" "timestamp" "boolean" "text" "money")
               (.toUpperCase (:type (:attrs property)))
-    (str "-- ERROR: unknown type " (:type (:attrs property)))
-    ))
+    (str "-- ERROR: unknown type " (:type (:attrs property)))))
 
 
 (defn emit-link-field
@@ -170,47 +163,6 @@
     (if
       (not (empty? group-names))
       (s/join " " (list "GRANT" (name privilege) "ON"  table-name "TO" (s/join ",\n\t" (sort group-names)) ";")))))
-
-
-(defn emit-link-table
-  [property e1 application emitted-link-tables]
-  (let [e2 (child
-            application
-            #(and
-              (entity? %)
-              (= (:name (:attrs %)) (:entity (:attrs property)))))
-        link-table-name (link-table-name e1 e2)
-        permissions (flatten
-                     (list
-                      (children-with-tag e1 :permission)
-                      (children-with-tag e1 :permission)))]
-    (if
-      (not (@emitted-link-tables link-table-name))
-      (do
-        (swap! emitted-link-tables conj link-table-name)
-        (s/join
-         "\n"
-         (list
-          comment-rule
-          (str "--\tlink table joining " (:name (:attrs e1)) " with " (:name (:attrs e2)))
-          comment-rule
-          (s/join " " (list "CREATE TABLE IF NOT EXISTS" link-table-name))
-          "("
-          (emit-link-field property e1 application)
-          (emit-link-field property e2 application)
-          ");"
-          (emit-permissions-grant link-table-name :SELECT permissions)
-          (emit-permissions-grant link-table-name :INSERT permissions)))))))
-
-
-(defn emit-link-tables
-  [entity application emitted-link-tables]
-  (map
-   #(emit-link-table % entity application emitted-link-tables)
-   (sort-by-name
-    (filter
-     #(= (:type (:attrs %)) "link")
-     (properties entity)))))
 
 
 (defn emit-property
@@ -328,9 +280,9 @@
       nil?
       (flatten
        (list
-        comment-rule
-        (str "--\tconvenience view " view-name " of entity " (:name (:attrs entity)) " for lists, et cetera")
-        comment-rule
+        (emit-header
+         "--"
+         (str "convenience view " view-name " of entity " (:name (:attrs entity)) " for lists, et cetera"))
         (s/join
          " "
          (list "CREATE VIEW" view-name "AS"))
@@ -375,40 +327,157 @@
         (emit-permissions-grant view-name :SELECT (permissions entity application))))))))
 
 
-(defn emit-table
-  [entity application]
-  (let [table-name (:table (:attrs entity))
-        permissions (children-with-tag entity :permission)]
+(defn emit-referential-integrity-link
+  [property nearside application]
+  (let
+    [farside (entity-for-property property application)]
     (s/join
-     "\n"
-     (flatten
-      (list
-       comment-rule
-       (str "--\tprimary table " table-name " for entity " (:name (:attrs entity)))
-       comment-rule
-       (s/join
-        " "
-        (list "CREATE TABLE" table-name))
-       "("
-       (str
+     " "
+     (list
+      "ALTER TABLE"
+      (:name (:attrs nearside))
+      "ADD CONSTRINT"
+      (str "ri_" (:name (:attrs nearside)) "_" (:name (:attrs farside)) "_" (:name (:attrs property)))
+      "\n\tFOREIGN KEY("
+      (:name (:attrs property))
+      ") \n\tREFERENCES"
+      (str
+       (:table (:attrs farside)) "(" (:name (:attrs (first (key-properties farside)))) ")")
+      ;; TODO: ought to handle the `cascade` attribute, even though it's rarely used
+      "\n\tON DELETE"
+      (case
+        (:cascade (:attrs property))
+        "orphan" "SET NULL"
+        "delete" "CASCADE"
+        "NO ACTION")
+      ";"))))
+
+
+(defn emit-referential-integrity-links
+  ([entity application]
+   (map
+    #(emit-referential-integrity-link % entity application)
+    (filter
+     #(= (:type (:attrs %)) "entity")
+     (properties entity))))
+  ([application]
+   (flatten
+    (list
+     (emit-header
+      "--"
+      (str "--\treferential integrity links for first-class tables"))
+     (map
+      #(emit-referential-integrity-links % application)
+      (children-with-tag application :entity))))))
+
+
+(defn emit-table
+  ([entity application doc-comment]
+   (let [table-name (:table (:attrs entity))
+         permissions (children-with-tag entity :permission)]
+     (s/join
+      "\n"
+      (flatten
+       (list
+        (emit-header
+         "--"
+         (list
+          doc-comment
+          (map
+           #(:content %)
+           (children-with-tag entity :documentation))))
         (s/join
-         ",\n"
-         (flatten
-          (remove
-           nil?
-           (list
-            (map
-             #(emit-property % entity application true)
-             (children-with-tag (child-with-tag entity :key) :property))
-            (map
-             #(emit-property % entity application false)
-             (filter
-              #(not (= (:type (:attrs %)) "link"))
-              (children-with-tag entity :property)))))))
+         " "
+         (list "CREATE TABLE" table-name))
+        "("
+        (str
+         (s/join
+          ",\n"
+          (flatten
+           (remove
+            nil?
+            (list
+             (map
+              #(emit-property % entity application true)
+              (children-with-tag (child-with-tag entity :key) :property))
+             (map
+              #(emit-property % entity application false)
+              (filter
+               #(not (= (:type (:attrs %)) "link"))
+               (children-with-tag entity :property)))))))
          "\n);")
         (map
          #(emit-permissions-grant table-name % permissions)
          '(:SELECT :INSERT :UPDATE :DELETE)))))))
+  ([entity application]
+   (emit-table
+    entity
+    application
+    (str
+     "primary table "
+     (:table (:attrs entity))
+     " for entity "
+     (:name (:attrs entity))))))
+
+
+(defn construct-link-property
+  [entity]
+  {:tag :property
+   :attrs {:name (str (:name (:attrs entity)) "_id")
+           :column (str (:name (:attrs entity)) "_id")
+           :type "entity"
+           :entity (:name (:attrs entity))
+           :farkey (first (key-names entity))}})
+
+
+(defn emit-link-table
+  [property e1 application emitted-link-tables]
+  (let [e2 (child
+            application
+            #(and
+              (entity? %)
+              (= (:name (:attrs %)) (:entity (:attrs property)))))
+        link-table-name (link-table-name e1 e2)]
+    (if
+      ;; we haven't already emitted this one...
+      (not (@emitted-link-tables link-table-name))
+      (let [permissions (flatten
+                         (list
+                          (children-with-tag e1 :permission)
+                          (children-with-tag e1 :permission)))
+            ;; construct a dummy entity
+            link-entity {:tag :entity
+                         :attrs {:name link-table-name
+                                 :table link-table-name}
+                         :content
+                         (vector
+                          (concat
+                           [(construct-link-property e1)
+                            (construct-link-property e2)]
+                           permissions))}]
+        ;; mark it as emitted
+        (swap! emitted-link-tables conj link-table-name)
+        ;; emit it
+        (emit-table
+         link-entity
+         application
+         (str
+          "link table joining "
+          (:name (:attrs e1))
+          " with "
+          (:name (:attrs e2))))
+        ;; and immediately emit its referential integrity links
+        (emit-referential-integrity-links link-entity application)))))
+
+
+(defn emit-link-tables
+  [entity application emitted-link-tables]
+  (map
+   #(emit-link-table % entity application emitted-link-tables)
+   (sort-by-name
+    (filter
+     #(= (:type (:attrs %)) "link")
+     (properties entity)))))
 
 
 (defn emit-entity
@@ -421,30 +490,27 @@
 
 (defn emit-group-declaration
   [group application]
-  (s/join
-   "\n"
-   (list
-    comment-rule
-    (str "--\tsecurity group " (:name (:attrs group)))
-    comment-rule
-    (str "CREATE GROUP " (:name (:attrs group)) ";"))))
+  (list
+   (emit-header
+    "--"
+    (str "security group " (:name (:attrs group))))
+   (str "CREATE GROUP " (:name (:attrs group)) ";")))
 
 
 (defn emit-file-header
   [application]
-  (s/join
-   "\n"
-   (list
-    comment-rule
-    (str
-     "--\tDatabase definition for application "
-     (:name (:attrs application))
-     " version "
-     (:version (:attrs application)))
-    (str
-     "--\tauto-generated by [Application Description Language framework](https://github.com/simon-brooke/adl) at "
-     (f/unparse (f/formatters :basic-date-time) (t/now)))
-    comment-rule)))
+  (emit-header
+   "--"
+   "Database definition for application "
+   (str (:name (:attrs application))
+        " version "
+        (:version (:attrs application)))
+   "auto-generated by [Application Description Language framework]"
+   (str "(https://github.com/simon-brooke/adl) at "
+        (f/unparse (f/formatters :basic-date-time) (t/now)))
+   (map
+    #(:content %)
+    (children-with-tag application :documentation))))
 
 
 (defn emit-application
@@ -463,6 +529,7 @@
         #(emit-entity % application)
         (sort-by-name
          (children-with-tag application :entity)))
+       (emit-referential-integrity-links application)
        (map
         #(emit-link-tables % application emitted-link-tables)
         (sort-by-name
