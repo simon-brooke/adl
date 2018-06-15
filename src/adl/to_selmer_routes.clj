@@ -78,11 +78,25 @@
                   :list
                   {:records
                    (list
-                     (symbol
-                       (str
-                         "db/search-strings-"
-                         (singularise (:name (:attrs e)))))
-                     'p)})))))))
+                     'if
+                     (list
+                       'not
+                       (list
+                         'empty?
+                         (list 'remove 'nil? (list 'vals 'p))))
+                     (list
+                       (symbol
+                         (str
+                           "db/search-strings-"
+                           (singularise (:name (:attrs e)))))
+                       (symbol "db/*db*")
+                       'p)
+                     (list
+                       (symbol
+                         (str
+                           "db/list-"
+                           (:name (:attrs e))))
+                       (symbol "db/*db*") {}))})))))))
 
 (defn make-route
   "Make a route for method `m` to request the resource with name `n`."

@@ -422,7 +422,7 @@
   [list-spec entity application]
   {:tag :tbody
    :content
-   ["{% for record in %records% %}"
+   ["{% for record in records %}"
     {:tag :tr
      :content
      (apply
@@ -438,7 +438,6 @@
      :attrs
      {:href
       (str
-        "{{servlet-context}}/"
         (editor-name entity application)
         "?"
         (s/join

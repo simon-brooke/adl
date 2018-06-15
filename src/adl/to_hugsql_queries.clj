@@ -54,7 +54,9 @@
 
 (defn order-by-clause
   "Generate an appropriate `order by` clause for queries on this `entity`"
-  [entity]
+  ([entity]
+   (order-by-clause entity ""))
+  ([entity prefix]
   (let
     [entity-name (:name (:attrs entity))
      preferred (map
@@ -65,10 +67,10 @@
       (empty? preferred)
       ""
       (str
-        "ORDER BY " entity-name "."
+        "ORDER BY " prefix entity-name "."
         (s/join
-          (str ",\n\t" entity-name ".")
-          (flatten (cons preferred (key-names entity))))))))
+          (str ",\n\t" prefix entity-name ".")
+          (flatten (cons preferred (key-names entity)))))))))
 
 
 (defn insert-query
@@ -152,8 +154,8 @@
              (str
                "-- :doc selects existing "
                pretty-name
-               " records having any string field matching `:pattern` by substring match")
-             (str "SELECT * FROM " entity-name)
+               " records having any string field matching the parameter of the same name by substring match")
+             (str "SELECT * FROM lv_" entity-name)
              "WHERE "
              (s/join
                "\n\tOR "
@@ -162,9 +164,9 @@
                  (map
                    #(if
                       (#{"string" "date" "text"} (:type (:attrs %)))
-                      (str (-> % :attrs :name) " LIKE '%:pattern%'"))
+                      (str (-> % :attrs :name) " LIKE '%params." (-> % :attrs :name) "%'"))
                    properties)))
-             (order-by-clause entity)
+             (order-by-clause entity "lv_")
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
@@ -232,8 +234,8 @@
            (list
              (str "-- :name " query-name " " signature)
              (str "-- :doc lists all existing " pretty-name " records")
-             (str "SELECT * FROM " entity-name)
-             (order-by-clause entity)
+             (str "SELECT * FROM lv_" entity-name)
+             (order-by-clause entity "lv_")
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
@@ -276,9 +278,11 @@
                     "entity" (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT * \nFROM " entity-name)
-                               (str "WHERE " entity-name "." link-field " = :id")
-                               (order-by-clause entity))
+                               (str "SELECT * \nFROM lv_" entity-name ", " entity-name)
+                               (str "WHERE lv_" entity-name "." (first (key-names entity)) " = "
+                                    entity-name "." (first (key-names entity))
+                                    "\n\tAND " entity-name "." link-field " = :id")
+                               (order-by-clause entity "lv_"))
                     "link" (let [link-table-name
                                  (link-table-name entity far-entity)]
                              (list
