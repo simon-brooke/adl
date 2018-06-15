@@ -37,16 +37,6 @@
 ;;; this is a pretty straight translation of adl2psql.xslt, and was written because
 ;;; Clojure is easier to debug.
 
-;;; TODO: the order in which we generate tables is critical, because tables
-;;; can only reference other tables which already exist. We could get around
-;;; this by generating referential integrity constraints post-hoc, which is
-;;; what the xslt version did.
-
-(defn sort-by-name
-  [elements]
-  (sort #(.compareTo (:name (:attrs %1)) (:name (:attrs %2))) elements))
-
-
 (declare emit-field-type emit-property)
 
 
@@ -60,7 +50,7 @@
           (:pattern (:attrs typedef))
           (str
            " CONSTRAINT "
-           (gensym "c-")
+           (gensym "pattern_")
            " CHECK ("
            (:name (:attrs property))
            " ~* '"
@@ -70,7 +60,7 @@
           ;; TODO: if base type is date, time or timestamp, values should be quoted.
           (str
            " CONSTRAINT "
-           (gensym "c-")
+           (gensym "minmax_")
            " CHECK ("
            (:minimum (:attrs typedef))
            " < "
@@ -83,7 +73,7 @@
           (:maximum (:attrs typedef))
           (str
            " CONSTRAINT "
-           (gensym "c-")
+           (gensym "max_")
            " CHECK ("
            (:name (:attrs property))
            " < "
@@ -92,7 +82,7 @@
           (:minimum (:attrs typedef))
           (str
            " CONSTRAINT "
-           (gensym "c-")
+           (gensym "min_")
            " CHECK ("
            (:minimum (:attrs typedef))
            " < "
@@ -154,15 +144,35 @@
           (:DELETE :ALL) #{"all"})
         group-names
         (set
-         (remove
-          nil?
-          (map
-           #(if (selector (:permission (:attrs %)))
-              (:group (:attrs %)))
-           permissions)))]
+          (remove
+            nil?
+            (map
+              #(if (selector (:permission (:attrs %)))
+                 (safe-name (:group (:attrs %)) :sql))
+              permissions)))]
     (if
       (not (empty? group-names))
-      (s/join " " (list "GRANT" (name privilege) "ON"  table-name "TO" (s/join ",\n\t" (sort group-names)) ";")))))
+      (s/join
+        " "
+        (list
+          "GRANT"
+          (name privilege)
+          "ON"
+          (safe-name table-name :sql)
+          "TO"
+          (s/join
+            ",\n\t"
+            (sort group-names))
+          ";")))))
+
+
+(defn field-name
+  [property]
+  (safe-name
+    (or
+      (:column (:attrs property))
+      (:name (:attrs property)))
+    :sql))
 
 
 (defn emit-property
@@ -181,9 +191,17 @@
          (flatten
           (list
            "\t"
-           (:name (:attrs property))
+           (field-name property)
            (emit-field-type property entity application key?)
-           (if default (list "DEFAULT" default))
+           (if
+             default
+             (list
+               "DEFAULT"
+               (if
+                 (is-quotable-type? property application)
+                 (str "'" default "'") ;; TODO: but if the default value seems to be a function invocation, should it be quoted?
+                                       ;; it's quite common for 'now()' to be the default for a date, time or timestamp field.
+                 default)))
            (if
              key?
              "NOT NULL PRIMARY KEY"
@@ -203,7 +221,7 @@
         (if
           (= (:type (:attrs f)) "entity")
           (compose-convenience-entity-field f farside application)
-          (str (:table (:attrs farside)) "." (:name (:attrs f)))))
+          (str (safe-name (:table (:attrs farside))) "." (field-name f))))
       (user-distinct-properties farside)))))
 
 
@@ -213,7 +231,7 @@
    nil?
    (flatten
     (cons
-     (:name (:attrs entity))
+     (safe-name (:table (:attrs entity)) :sql)
      (map
       (fn [f]
         (if
@@ -242,13 +260,13 @@
          (let [farside (entity-for-property f application)]
            (cons
             (str
-             (:table (:attrs entity))
+             (safe-name (:table (:attrs entity)) :sql)
              "."
-             (:name (:attrs f))
+             (field-name f)
              " = "
-             (:table (:attrs farside))
+             (safe-name (:table (:attrs farside)) :sql)
              "."
-             (first (key-names farside)))
+             (safe-name (first (key-names farside)) :sql))
             #(compose-convenience-where-clause farside application false)))))
      (if
        top-level?
@@ -260,17 +278,17 @@
   [field entity application]
   (str
    (s/join
-    " |', '| "
+    " ||', '|| "
     (compose-convenience-entity-field field entity application))
    " AS "
-   (:name (:attrs field))))
+   (field-name field)))
 
 
 (defn emit-convenience-view
   "Emit a convenience view of this `entity` of this `application` for use in generating lists,
   menus, et cetera."
   [entity application]
-  (let [view-name (str "lv_" (:table (:attrs entity)))
+  (let [view-name (safe-name (str "lv_" (:table (:attrs entity))) :sql)
         entity-fields (filter
                        #(= (:type (:attrs %)) "entity")
                        (properties entity))]
@@ -294,12 +312,12 @@
            #(if
               (= (:type (:attrs %)) "entity")
               (emit-convenience-entity-field % entity application)
-              (:name (:attrs %)))
+              (str (safe-name entity) "." (field-name %)))
            (filter
-            #(and (= (:tag %) :property) (not (= (:type (:attrs %)) "link")))
+            #(not (= (:type (:attrs %)) "link"))
             (all-properties entity) ))))
         (str
-         "FROM " (s/join ", " (compose-convenience-view-select-list entity application true)))
+         "FROM " (s/join ", " (set (compose-convenience-view-select-list entity application true))))
         (if
           (not (empty? entity-fields))
           (str
@@ -315,13 +333,13 @@
                              (entity? %)
                              (= (:name (:attrs %)) (:entity (:attrs f)))))]
                  (str
-                  (:table (:attrs entity))
+                  (safe-name (:table (:attrs entity)) :sql)
                   "."
-                  (:name (:attrs f))
+                  (field-name f)
                   " = "
-                  (:table (:attrs farside))
+                  (safe-name (:table (:attrs farside)) :sql)
                   "."
-                  (first (key-names farside)))))
+                  (safe-name (first (key-names farside)) :sql))))
              entity-fields))))
         ";"
         (emit-permissions-grant view-name :SELECT (permissions entity application))))))))
@@ -335,14 +353,15 @@
      " "
      (list
       "ALTER TABLE"
-      (:name (:attrs nearside))
+      (safe-name (:name (:attrs nearside)) :sql)
       "ADD CONSTRAINT"
-      (str "ri_" (:name (:attrs nearside)) "_" (:name (:attrs property)))
+      (safe-name (str "ri_" (:name (:attrs nearside)) "_" (:name (:attrs farside)) "_" (:name (:attrs property))) :sql)
       "\n\tFOREIGN KEY("
-      (:name (:attrs property))
+      (field-name property)
       ") \n\tREFERENCES"
       (str
-       (:table (:attrs farside)) "(" (:name (:attrs (first (key-properties farside)))) ")")
+       (safe-name (:table (:attrs farside)) :sql)
+        "(" (field-name (first (key-properties farside))) ")")
       ;; TODO: ought to handle the `cascade` attribute, even though it's rarely used
       "\n\tON DELETE"
       (case
@@ -366,7 +385,7 @@
     (list
      (emit-header
       "--"
-      (str "--\treferential integrity links for first-class tables"))
+      "referential integrity links for primary tables")
      (map
       #(emit-referential-integrity-links % application)
       (sort-by-name (children-with-tag application :entity)))))))
@@ -374,7 +393,7 @@
 
 (defn emit-table
   ([entity application doc-comment]
-   (let [table-name (:table (:attrs entity))
+   (let [table-name (safe-name (:table (:attrs entity)) :sql)
          permissions (children-with-tag entity :permission)]
      (s/join
       "\n"
@@ -424,12 +443,11 @@
 (defn construct-link-property
   [entity]
   {:tag :property
-   :attrs {:name (str (:name (:attrs entity)) "_id")
-           :column (str (:name (:attrs entity)) "_id")
+   :attrs {:name (safe-name (str (:name (:attrs entity)) "_id") :sql)
+           :column (safe-name (str (:name (:attrs entity)) "_id") :sql)
            :type "entity"
            :entity (:name (:attrs entity))
-           :farkey (first (key-names entity))}
-   :content nil})
+           :farkey (safe-name (first (key-names entity)) :sql)}})
 
 
 (defn emit-link-table
@@ -489,21 +507,13 @@
     (sort-by-name (children-with-tag application :entity)))))
 
 
-(defn emit-entity
-  [entity application]
-  (doall
-   (list
-    (emit-table entity application)
-    (emit-convenience-view entity application))))
-
-
 (defn emit-group-declaration
   [group application]
   (list
    (emit-header
     "--"
     (str "security group " (:name (:attrs group))))
-   (str "CREATE GROUP " (:name (:attrs group)) ";")))
+   (str "CREATE GROUP " (safe-name (:name (:attrs group)) :sql) ";")))
 
 
 (defn emit-file-header
@@ -535,7 +545,11 @@
         (sort-by-name
          (children-with-tag application :group)))
        (map
-        #(emit-entity % application)
+        #(emit-table % application)
+        (sort-by-name
+         (children-with-tag application :entity)))
+       (map
+        #(emit-convenience-view % application)
         (sort-by-name
          (children-with-tag application :entity)))
        (emit-referential-integrity-links application)

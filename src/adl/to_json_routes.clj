@@ -47,12 +47,12 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
+      '[clojure.java.io :as io]
+      '[compojure.core :refer [defroutes GET POST]]
+      '[hugsql.core :as hugsql]
       '[noir.response :as nresponse]
       '[noir.util.route :as route]
-      '[compojure.core :refer [defroutes GET POST]]
       '[ring.util.http-response :as response]
-      '[clojure.java.io :as io]
-      '[hugsql.core :as hugsql]
       (vector (symbol (str (safe-name (:name (:attrs application))) ".db.core")) :as 'db))))
 
 

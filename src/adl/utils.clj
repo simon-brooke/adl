@@ -39,6 +39,12 @@
   "resources/auto/")
 
 
+(defn element?
+  "True if `o` is a Clojure representation of an XML element."
+  [o]
+  (and (map? o) (:tag o) (:attrs o)))
+
+
 (defn wrap-lines
   "Wrap lines in this `text` to this `width`; return a list of lines."
   ;; Shamelessly adapted from https://www.rosettacode.org/wiki/Word_wrap#Clojure
@@ -71,6 +77,11 @@
      "\n"
      prefix
      comment-rule)))
+
+
+(defn sort-by-name
+  [elements]
+  (sort #(compare (:name (:attrs %1)) (:name (:attrs %2))) elements))
 
 
 (defn link-table-name
@@ -249,24 +260,25 @@
 
 
 (defn safe-name
-  ([string]
-    (s/replace string #"[^a-zA-Z0-9-]" ""))
-  ([string convention]
-   (case convention
-     (:sql :c) (s/replace string #"[^a-zA-Z0-9_]" "_")
-     :c-sharp (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")
-     :java (let
-             [camel (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")]
-             (apply str (cons (Character/toUpperCase (first camel)) (rest camel))))
-     (safe-name string))))
-
-
-(defn link-table?
-  "Return true if this `entity` represents a link table."
-  [entity]
-  (let [properties (children entity #(= (:tag %) :property))
-        links (filter #(-> % :attrs :entity) properties)]
-    (= (count properties) (count links))))
+  "Return a safe name for the object `o`, given the specified `convention`.
+  `o` is expected to be either a string or an entity."
+  ([o]
+   (if
+     (element? o)
+     (safe-name (:name (:attrs o)))
+     (s/replace (str o) #"[^a-zA-Z0-9-]" "")))
+  ([o convention]
+   (if
+     (element? o)
+     (safe-name (:name (:attrs o)) convention)
+     (let [string (str o)]
+       (case convention
+         (:sql :c) (s/replace string #"[^a-zA-Z0-9_]" "_")
+         :c-sharp (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")
+         :java (let
+                 [camel (s/replace (capitalise string) #"[^a-zA-Z0-9]" "")]
+                 (apply str (cons (Character/toLowerCase (first camel)) (rest camel))))
+         (safe-name string))))))
 
 
 (defn read-adl [url]
@@ -351,12 +363,51 @@
   `(filter insertable? (key-properties entity)))
 
 
+(defn link-table?
+  "Return true if this `entity` represents a link table."
+  [entity]
+  (let [properties (all-properties entity)
+        links (filter #(-> % :attrs :entity) properties)]
+    (= (count properties) (count links))))
+
+
 (defn key-names [entity]
   (remove
     nil?
     (map
       #(:name (:attrs %))
       (key-properties entity))))
+
+
+(defn base-type
+  [property application]
+  (cond
+    (:typedef (:attrs property))
+    (:type
+      (:attrs
+        (child
+          application
+          #(and
+             (= (:tag %) :typedef)
+             (= (:name (:attrs %)) (:typedef (:attrs property)))))))
+    (:entity (:attrs property))
+    (:type
+      (:attrs
+        (first
+          (key-properties
+            (child
+              application
+              #(and
+                 (= (:tag %) :entity)
+                 (= (:name (:attrs %)) (:entity (:attrs property)))))))))
+    true
+    (:type (:attrs property))))
+
+
+(defn is-quotable-type?
+  "True if the value for this field should be quoted."
+  [property application]
+  (#{"date" "image" "string" "text" "time" "timestamp" "uploadable"} (base-type property application)))
 
 
 (defn has-primary-key? [entity]

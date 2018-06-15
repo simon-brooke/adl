@@ -44,12 +44,12 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
+      '[clojure.java.io :as io]
+      '[compojure.core :refer [defroutes GET POST]]
+      '[hugsql.core :as hugsql]
       '[noir.response :as nresponse]
       '[noir.util.route :as route]
-      '[compojure.core :refer [defroutes GET POST]]
       '[ring.util.http-response :as response]
-      '[clojure.java.io :as io]
-      '[hugsql.core :as hugsql]
       (vector (symbol (str (:name (:attrs application)) ".layout")) :as 'l)
       (vector (symbol (str (:name (:attrs application)) ".db.core")) :as 'db)
       (vector (symbol (str (:name (:attrs application)) ".routes.manual")) :as 'm))))
@@ -78,11 +78,25 @@
                   :list
                   {:records
                    (list
-                     (symbol
-                       (str
-                         "db/search-strings-"
-                         (singularise (:name (:attrs e)))))
-                     'p)})))))))
+                     'if
+                     (list
+                       'not
+                       (list
+                         'empty?
+                         (list 'remove 'nil? (list 'vals 'p))))
+                     (list
+                       (symbol
+                         (str
+                           "db/search-strings-"
+                           (singularise (:name (:attrs e)))))
+                       (symbol "db/*db*")
+                       'p)
+                     (list
+                       (symbol
+                         (str
+                           "db/list-"
+                           (:name (:attrs e))))
+                       (symbol "db/*db*") {}))})))))))
 
 (defn make-route
   "Make a route for method `m` to request the resource with name `n`."

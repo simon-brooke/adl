@@ -422,7 +422,7 @@
   [list-spec entity application]
   {:tag :tbody
    :content
-   ["{% for record in %records% %}"
+   ["{% for record in records %}"
     {:tag :tr
      :content
      (apply
@@ -438,7 +438,6 @@
      :attrs
      {:href
       (str
-        "{{servlet-context}}/"
         (editor-name entity application)
         "?"
         (s/join
@@ -480,7 +479,7 @@
     (list-page-control true)]})
 
 
-(defn- list-to-template
+(defn list-to-template
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
   template for the entity."
@@ -502,9 +501,9 @@
   `entity` in this `application`"
   [entity application]
   (let
-    [forms (children entity #(= (:tag %) :form))
-     pages (children entity #(= (:tag %) :page))
-     lists (children entity #(= (:tag %) :list))]
+    [forms (children-with-tag entity :form)
+     pages (children-with-tag entity :page)
+     lists (children-with-tag entity :list)]
     (if
       (and
         (= (:tag entity) :entity) ;; it seems to be an ADL entity
