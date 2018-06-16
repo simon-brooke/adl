@@ -366,12 +366,36 @@
   )
 
 
+(defn compose-list-search-widget
+  [field entity]
+  (let [property (first
+                   (children
+                     entity
+                     (fn [p] (and (= (:tag p) :property)
+                                  (= (:name (:attrs p)) (:property (:attrs field)))))))
+        input-type (case (:type (:attrs property))
+                     ("integer" "real" "money") "number"
+                     ("date" "timestamp") "date"
+                     "time" "time"
+                     "text")
+        base-name (:property (:attrs field))
+        search-name (if
+                      (= (:type (:attrs property)) "entity")
+                      (str base-name "_expanded") base-name)]
+    (hash-map
+      :tag :th
+      :content
+      [{:tag :input
+        :attrs {:id search-name
+                :type input-type
+                :name search-name
+                :value (str "{{ params." search-name " }}")}}])))
+
+
+
 (defn- list-thead
   "Return a table head element for the list view for this `list-spec` of this `entity` within
-  this `application`.
-
-  TODO: where entity fields are being shown/searched on, we should be using the user-distinct
-  fields of the far side, rather than key values"
+  this `application`."
   [list-spec entity application]
   {:tag :thead
    :content
@@ -388,33 +412,16 @@
      :content
      (apply
        vector
-      (concat
-       (map
-         (fn [f]
-           (let [property (first
-                            (children
-                              entity
-                              (fn [p] (and (= (:tag p) :property)
-                                           (= (:name (:attrs p)) (:property (:attrs f)))))))]
-             (hash-map
-               :tag :th
-               :content
-               [{:tag :input
-                 :attrs {:id (:property (:attrs f))
-                         :type (case (:type (:attrs property))
-                         ("integer" "real" "money") "number"
-                         ("date" "timestamp") "date"
-                         "time" "time"
-                         "text")
-                         :name (:property (:attrs f))
-                         :value (str "{{ params." (:property (:attrs f)) " }}")}}])))
-         (fields list-spec))
-        '({:tag :th
-           :content
-           [{:tag :input
-             :attrs {:type "submit"
-                     :id "search"
-                     :value "Search"}}]})))}]})
+       (concat
+         (map
+           #(compose-list-search-widget % entity)
+           (fields list-spec))
+         '({:tag :th
+            :content
+            [{:tag :input
+              :attrs {:type "submit"
+                      :id "search"
+                      :value "Search"}}]})))}]})
 
 
 (defn edit-link
@@ -425,8 +432,7 @@
     (s/join
       "&amp;"
       (map
-        #(let [n (:name (:attrs %1))]
-           (str n "={{ record." %2 " }}"))
+        #(str %1 "={{ record." %2 " }}")
         (key-names entity)
         parameters))))
 

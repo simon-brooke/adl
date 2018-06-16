@@ -61,7 +61,10 @@
       'defn
       (symbol n)
       (vector 'r)
-      (list 'let (vector 'p (list :form-params 'r))
+      (list 'let (vector 'p (list :params 'r)) ;; TODO: we must take key params out of just params,
+            ;; but we should take all other params out of form-params - because we need the key to
+            ;; load the form in the first place, but just accepting values of other params would
+            ;; allow spoofing.
             (list
               'l/render
               (list 'resolve-template (str n ".html"))
@@ -71,10 +74,12 @@
                 (case (:tag f)
                   (:form :page)
                   {:record
+                   (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
                    (list
                      (symbol
                        (str "db/get-" (singularise (:name (:attrs e)))))
-                     'p)}
+                       (symbol "db/*db*")
+                     'p))}
                   :list
                   {:records
                    (list
