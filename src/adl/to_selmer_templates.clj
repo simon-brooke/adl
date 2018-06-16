@@ -362,6 +362,7 @@
   taken from this `application`. If `page` is nil, generate a default page
   template for the entity."
   [page entity application]
+  ;; TODO
   )
 
 
@@ -416,7 +417,21 @@
                      :value "Search"}}]})))}]})
 
 
-(defn- list-tbody
+(defn edit-link
+  [entity application parameters]
+  (str
+    (editor-name entity application)
+    "?"
+    (s/join
+      "&amp;"
+      (map
+        #(let [n (:name (:attrs %1))]
+           (str n "={{ record." %2 " }}"))
+        (key-names entity)
+        parameters))))
+
+
+(defn list-tbody
   "Return a table body element for the list view for this `list-spec` of this `entity` within
   this `application`."
   [list-spec entity application]
@@ -430,22 +445,26 @@
        (concat
          (map
            (fn [field]
-             {:tag :td :content [(str "{{ record." (:property (:attrs field)) " }}")]})
+             {:tag :td :content
+              (let
+               [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
+                e (first
+                    (filter
+                      #(= (:name (:attrs %)) (:entity (:attrs p)))
+                      (children-with-tag application :entity)))
+                c (str "{{ record." (:property (:attrs field)) " }}")]
+               (if
+                 (= (:type (:attrs p)) "entity")
+                 [{:tag :a
+                   :attrs {:href (edit-link e application (list (:name (:attrs p))))}
+                   :content [(str "{{ record." (:property (:attrs field)) "_expanded }}")]}]
+                 [c]))})
            (fields list-spec))
          [{:tag :td
           :content
           [{:tag :a
      :attrs
-     {:href
-      (str
-        (editor-name entity application)
-        "?"
-        (s/join
-          "&amp;"
-          (map
-            #(let [n (:name (:attrs %))]
-               (str n "={{ record." n "}}"))
-            (children (first (filter #(= (:tag %) :key) (children entity)))))))}
+     {:href (edit-link entity application (key-names entity))}
      :content ["View"]}]}]))}
     "{% endfor %}"]})
 

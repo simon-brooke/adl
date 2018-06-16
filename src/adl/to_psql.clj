@@ -281,7 +281,8 @@
     " ||', '|| "
     (compose-convenience-entity-field field entity application))
    " AS "
-   (field-name field)))
+   (field-name field)
+    "_expanded"))
 
 
 (defn emit-convenience-view
@@ -290,59 +291,62 @@
   [entity application]
   (let [view-name (safe-name (str "lv_" (:table (:attrs entity))) :sql)
         entity-fields (filter
-                       #(= (:type (:attrs %)) "entity")
-                       (properties entity))]
+                        #(= (:type (:attrs %)) "entity")
+                        (properties entity))]
     (s/join
-     "\n"
-     (remove
-      nil?
-      (flatten
-       (list
-        (emit-header
-         "--"
-         (str "convenience view " view-name " of entity " (:name (:attrs entity)) " for lists, et cetera"))
-        (s/join
-         " "
-         (list "CREATE VIEW" view-name "AS"))
-        (str
-         "SELECT "
-         (s/join
-          ",\n\t"
-          (map
-           #(if
-              (= (:type (:attrs %)) "entity")
-              (emit-convenience-entity-field % entity application)
-              (str (safe-name entity) "." (field-name %)))
-           (filter
-            #(not (= (:type (:attrs %)) "link"))
-            (all-properties entity) ))))
-        (str
-         "FROM " (s/join ", " (set (compose-convenience-view-select-list entity application true))))
-        (if
-          (not (empty? entity-fields))
-          (str
-           "WHERE "
-           (s/join
-            "\n\tAND "
-            (map
-             (fn [f]
-               (let
-                 [farside (child
-                           application
-                           #(and
-                             (entity? %)
-                             (= (:name (:attrs %)) (:entity (:attrs f)))))]
-                 (str
-                  (safe-name (:table (:attrs entity)) :sql)
-                  "."
-                  (field-name f)
-                  " = "
-                  (safe-name (:table (:attrs farside)) :sql)
-                  "."
-                  (safe-name (first (key-names farside)) :sql))))
-             entity-fields))))
-        ";"
-        (emit-permissions-grant view-name :SELECT (permissions entity application))))))))
+      "\n"
+      (remove
+        nil?
+        (flatten
+          (list
+            (emit-header
+              "--"
+              (str "convenience view " view-name " of entity " (:name (:attrs entity)) " for lists, et cetera"))
+            (s/join
+              " "
+              (list "CREATE VIEW" view-name "AS"))
+            (str
+              "SELECT "
+              (s/join
+                ",\n\t"
+                (flatten
+                  (map
+                    #(if
+                       (= (:type (:attrs %)) "entity")
+                       (list
+                         (emit-convenience-entity-field % entity application)
+                         (str (safe-name entity) "." (field-name %)))
+                       (str (safe-name entity) "." (field-name %)))
+                    (filter
+                      #(not (= (:type (:attrs %)) "link"))
+                      (all-properties entity) )))))
+            (str
+              "FROM " (s/join ", " (set (compose-convenience-view-select-list entity application true))))
+            (if
+              (not (empty? entity-fields))
+              (str
+                "WHERE "
+                (s/join
+                  "\n\tAND "
+                  (map
+                    (fn [f]
+                      (let
+                        [farside (child
+                                   application
+                                   #(and
+                                      (entity? %)
+                                      (= (:name (:attrs %)) (:entity (:attrs f)))))]
+                        (str
+                          (safe-name (:table (:attrs entity)) :sql)
+                          "."
+                          (field-name f)
+                          " = "
+                          (safe-name (:table (:attrs farside)) :sql)
+                          "."
+                          (safe-name (first (key-names farside)) :sql))))
+                    entity-fields))))
+            ";"
+            (emit-permissions-grant view-name :SELECT (permissions entity application))))))))
 
 
 (defn emit-referential-integrity-link
