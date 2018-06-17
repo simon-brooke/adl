@@ -362,15 +362,40 @@
   taken from this `application`. If `page` is nil, generate a default page
   template for the entity."
   [page entity application]
+  ;; TODO
   )
+
+
+(defn compose-list-search-widget
+  [field entity]
+  (let [property (first
+                   (children
+                     entity
+                     (fn [p] (and (= (:tag p) :property)
+                                  (= (:name (:attrs p)) (:property (:attrs field)))))))
+        input-type (case (:type (:attrs property))
+                     ("integer" "real" "money") "number"
+                     ("date" "timestamp") "date"
+                     "time" "time"
+                     "text")
+        base-name (:property (:attrs field))
+        search-name (if
+                      (= (:type (:attrs property)) "entity")
+                      (str base-name "_expanded") base-name)]
+    (hash-map
+      :tag :th
+      :content
+      [{:tag :input
+        :attrs {:id search-name
+                :type input-type
+                :name search-name
+                :value (str "{{ params." search-name " }}")}}])))
+
 
 
 (defn- list-thead
   "Return a table head element for the list view for this `list-spec` of this `entity` within
-  this `application`.
-
-  TODO: where entity fields are being shown/searched on, we should be using the user-distinct
-  fields of the far side, rather than key values"
+  this `application`."
   [list-spec entity application]
   {:tag :thead
    :content
@@ -387,36 +412,32 @@
      :content
      (apply
        vector
-      (concat
-       (map
-         (fn [f]
-           (let [property (first
-                            (children
-                              entity
-                              (fn [p] (and (= (:tag p) :property)
-                                           (= (:name (:attrs p)) (:property (:attrs f)))))))]
-             (hash-map
-               :tag :th
-               :content
-               [{:tag :input
-                 :attrs {:id (:property (:attrs f))
-                         :type (case (:type (:attrs property))
-                         ("integer" "real" "money") "number"
-                         ("date" "timestamp") "date"
-                         "time" "time"
-                         "text")
-                         :name (:property (:attrs f))
-                         :value (str "{{ params." (:property (:attrs f)) " }}")}}])))
-         (fields list-spec))
-        '({:tag :th
-           :content
-           [{:tag :input
-             :attrs {:type "submit"
-                     :id "search"
-                     :value "Search"}}]})))}]})
+       (concat
+         (map
+           #(compose-list-search-widget % entity)
+           (fields list-spec))
+         '({:tag :th
+            :content
+            [{:tag :input
+              :attrs {:type "submit"
+                      :id "search"
+                      :value "Search"}}]})))}]})
 
 
-(defn- list-tbody
+(defn edit-link
+  [entity application parameters]
+  (str
+    (editor-name entity application)
+    "?"
+    (s/join
+      "&amp;"
+      (map
+        #(str %1 "={{ record." %2 " }}")
+        (key-names entity)
+        parameters))))
+
+
+(defn list-tbody
   "Return a table body element for the list view for this `list-spec` of this `entity` within
   this `application`."
   [list-spec entity application]
@@ -430,22 +451,26 @@
        (concat
          (map
            (fn [field]
-             {:tag :td :content [(str "{{ record." (:property (:attrs field)) " }}")]})
+             {:tag :td :content
+              (let
+               [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
+                e (first
+                    (filter
+                      #(= (:name (:attrs %)) (:entity (:attrs p)))
+                      (children-with-tag application :entity)))
+                c (str "{{ record." (:property (:attrs field)) " }}")]
+               (if
+                 (= (:type (:attrs p)) "entity")
+                 [{:tag :a
+                   :attrs {:href (edit-link e application (list (:name (:attrs p))))}
+                   :content [(str "{{ record." (:property (:attrs field)) "_expanded }}")]}]
+                 [c]))})
            (fields list-spec))
          [{:tag :td
           :content
           [{:tag :a
      :attrs
-     {:href
-      (str
-        (editor-name entity application)
-        "?"
-        (s/join
-          "&amp;"
-          (map
-            #(let [n (:name (:attrs %))]
-               (str n "={{ record." n "}}"))
-            (children (first (filter #(= (:tag %) :key) (children entity)))))))}
+     {:href (edit-link entity application (key-names entity))}
      :content ["View"]}]}]))}
     "{% endfor %}"]})
 
