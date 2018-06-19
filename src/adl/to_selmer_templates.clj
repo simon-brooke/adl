@@ -259,6 +259,31 @@
             :content (apply vector (get-options property form entity application))})))}))
 
 
+(defn permissions-for
+  [property entity application]
+  (first
+   (remove
+    empty?
+    (list
+     (children-with-tag property :permission)
+     (children-with-tag entity :permission)
+     (children-with-tag application :permission)))))
+
+
+(defn compose-if-member-of-tag
+  [property entity application writable?]
+  (let
+    [all-permissions (permissions-for property entity application)
+     permissions (if writable? (writable-by all-permissions) (visible-to all-permissions))]
+    (s/join
+     " "
+     (flatten
+      (list
+       "{% ifmemberof"
+       permissions
+       "%}")))))
+
+
 (defn widget
   "Generate a widget for this `field-or-property` of this `form` for this `entity`
   taken from within this `application`."
@@ -294,7 +319,7 @@
        :content [{:tag :label
                   :attrs {:for widget-name}
                   :content [(prompt field-or-property form entity application)]}
-                 (str "{% ifwritable " (:name (:attrs entity)) " " (:name (:attrs property)) " %}")
+                 (compose-if-member-of-tag property entity application true)
                  (cond
                    select?
                    (select-widget property form entity application)
@@ -312,14 +337,14 @@
                                (:maximum (:attrs typedef))
                                {:max (:maximum (:attrs typedef))}))})
                  "{% else %}"
-                 (str "{% ifreadable " (:name (:attrs entity)) " " (:name (:attrs property)) "%}")
+                 (compose-if-member-of-tag property entity application false)
                  {:tag :span
                   :attrs {:id widget-name
                           :name widget-name
                           :class "pseudo-widget disabled"}
                   :content [(str "{{record." widget-name "}}")]}
-                 "{% endifreadable %}"
-                 "{% endifwritable %}"]})))
+                 "{% endifmemberof %}"
+                 "{% endifmemberof %}"]})))
 
 
 (defn fields
@@ -335,8 +360,8 @@
   [form entity application]
   (let
     [keyfields (children
-                 ;; there should only be one key; its keys are properties
-                 (first (children entity #(= (:tag %) :key))))]
+                ;; there should only be one key; its keys are properties
+                (first (children entity #(= (:tag %) :key))))]
     {:tag :div
      :attrs {:id "content" :class "edit"}
      :content
@@ -344,16 +369,18 @@
        :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
                :method "POST"}
        :content (flatten
-                  (list
-                    (csrf-widget)
-                    (map
-                      #(widget % form entity application)
-                      keyfields)
-                    (map
-                      #(widget % form entity application)
-                      (fields entity))
-                    (save-widget form entity application)
-                    (delete-widget form entity application)))}]}))
+                 (list
+                  (csrf-widget)
+                  (map
+                   #(widget % form entity application)
+                   keyfields)
+                  (map
+                   #(widget % form entity application)
+                   (remove
+                    #(= (:distict (:attrs %)) :system)
+                    (fields entity)))
+                  (save-widget form entity application)
+                  (delete-widget form entity application)))}]}))
 
 
 

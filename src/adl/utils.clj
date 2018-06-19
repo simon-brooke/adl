@@ -222,8 +222,10 @@
 
 
 (defn writable-by
-  "Return a list of names of groups to which are granted read access,
-  given these `permissions`, else nil."
+  "Return a list of names of groups to which are granted write access,
+  given these `permissions`, else nil.
+  TODO: TOTHINKABOUT: properties are also writable by `insert` and `noedit`, but only if the
+  current value is nil."
   [permissions]
   (permission-groups permissions #(#{"edit" "all"} (:permission (:attrs %)))))
 
