@@ -7,7 +7,7 @@
             [clojure.xml :as x]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer :all]
+            [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,7 +37,6 @@
 ;;; to-hugsql-queries, because essentially we need one JSON entry point to wrap
 ;;; each query.
 
-
 (defn file-header [application]
   (list
     'ns
@@ -47,6 +46,7 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
+      '[adl-support.core :as support]
       '[clojure.java.io :as io]
       '[compojure.core :refer [defroutes GET POST]]
       '[hugsql.core :as hugsql]
@@ -221,25 +221,37 @@
 (defn to-json-routes
   [application]
   (let [handlers-map (make-handlers-map application)
-        filepath (str *output-path* (:name (:attrs application)) "/routes/auto_json.clj")]
+        filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto_json.clj")]
     (make-parents filepath)
-    (with-open [output (writer filepath)]
-      (binding [*out* output]
-        (doall
-          (map
-            (fn [f]
-              (pprint f)
-              (println "\n"))
-            (list
-              (file-header application)
-              (declarations handlers-map)
-              (defroutes handlers-map))))
-        (doall
-          (map
-            (fn [h]
-              (pprint (:src (handlers-map h)))
-              (println)
-              h)
-            (sort (keys handlers-map))))))))
+    (try
+      (with-open [output (writer filepath)]
+        (binding [*out* output]
+          (doall
+            (map
+              (fn [f]
+                (pprint f)
+                (println "\n"))
+              (list
+                (file-header application)
+                (declarations handlers-map)
+                (defroutes handlers-map))))
+          (doall
+            (map
+              (fn [h]
+                (pprint (:src (handlers-map h)))
+                (println)
+                h)
+              (sort (keys handlers-map))))))
+      (if (> *verbosity* 0)
+        (println (str "\tGenerated " filepath)))
+      (catch
+        Exception any
+        (println
+          (str
+            "ERROR: Exception "
+            (.getName (.getClass any))
+            (.getMessage any)
+            " while printing "
+            filepath))))))
 
 

@@ -1,7 +1,9 @@
 (ns ^{:doc "Application Description Language: validator for ADL structure."
       :author "Simon Brooke"}
   adl.validator
-  (:require [clojure.set :refer [union]]
+  (:require [adl-support.utils :refer :all]
+            [clojure.set :refer [union]]
+            [clojure.xml :refer [parse]]
             [bouncer.core :as b]
             [bouncer.validators :as v]))
 
@@ -28,44 +30,55 @@
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; TODO: more work needed; I *think* this is finding spurious errors, and in any
+;;; case it is failing to usefully locate the errors it is finding, so its
+;;; diagnostic usefulness is small.
 
-(defn disjunct-valid?
+
+(defn try-validate
+  [o validation]
+  (if
+    (symbol? validation)
+    (try
+      (b/validate o validation)
+      (catch java.lang.ClassCastException c
+        ;; The validator regularly barfs on strings, which are perfectly
+        ;; valid content of some elements. I need a way to validate
+        ;; elements where they're not tolerated!
+        (if (string? o) [nil o]))
+      (catch Exception e
+        [{:error (.getName (.getClass e))
+          :message (.getMessage e)
+          :validation validation
+          :context o} o]))
+    [(str "Error: not a symbol" validation) o]))
+
+(defmacro disjunct-valid?
   ;; Yes, this is a horrible hack. I should be returning the error structure
   ;; not printing it. But I can't see how to make that work with `bouncer`.
   ;; OK, so: most of the validators will (usually) fail, and that's OK. How
   ;; do we identify the one which ought not to have failed?
   [o & validations]
-  (println
+  `(println
    (str
-    (if (:tag o) (str "Tag: " (:tag o) "; "))
-    (if (:name (:attrs o)) (str "Name: " (:name (:attrs o)) ";"))
-    (if-not (or (:tag o) (:name (:attrs o))) (str "Context: " o))))
+    (if (:tag ~o) (str "Tag: " (:tag ~o) "; "))
+    (if (:name (:attrs ~o)) (str "Name: " (:name (:attrs ~o)) ";"))
+    (if-not (or (:tag ~o) (:name (:attrs ~o))) (str "Context: " ~o))))
 
-  (let
-    [rs (map
-         #(try
-            (b/validate o %)
-            (catch java.lang.ClassCastException c
-              ;; The validator regularly barfs on strings, which are perfectly
-              ;; valid content of some elements. I need a way to validate
-              ;; elements where they're not tolerated!
-              [nil o])
-            (catch Exception e
-              [{:exception (.getMessage e)
-                :class (type e)
-                :context o} o]))
-         validations)
-     all-candidates (remove nil? (map first rs))
-     suspicious (remove :tag all-candidates)]
-    ;; if *any* succeeded, we succeeded
-    ;; otherwise, one of these is the valid error - but which? The answer, in my case
-    ;; is that if there is any which did not fail on the :tag check, then that is the
-    ;; interesting one. But generally?
-    (try
-      (doall (map #(println (str "\tError: " %)) suspicious))
-      (empty? suspicious)
-      (catch Exception _ (println "Error while trying to print errors")
-      true))))
+  `(empty?
+     (remove :tag (remove nil? (map first (map
+         #(try-validate ~o '%)
+         ~validations))))))
+;; ]
+;;     ;; if *any* succeeded, we succeeded
+;;     ;; otherwise, one of these is the valid error - but which? The answer, in my case
+;;     ;; is that if there is any which did not fail on the :tag check, then that is the
+;;     ;; interesting one. But generally?
+;;     (try
+;;       (doall (map #(println (str "ERROR: " %)) suspicious))
+;;       (empty? suspicious)
+;;       (catch Exception _ (println "ERROR while trying to print errors")
+;;       true))))
 
 
 ;;; the remainder of this file is a fairly straight translation of the ADL 1.4 DTD into Clojure
@@ -440,14 +453,15 @@
    [:attrs :column] v/string
    [:attrs :concrete] [[v/member #{"true", "false"}]]
    [:attrs :cascade] [[v/member cascade-actions]]
-   :content [[v/every #(disjunct-valid? %
-                         documentation-validations
-                         generator-validations
-                         permission-validations
-                         option-validations
-                         prompt-validations
-                         help-validations
-                         ifmissing-validations)]]})
+;;    :content [[v/every #(disjunct-valid? %
+;;                          documentation-validations
+;;                          generator-validations
+;;                          permission-validations
+;;                          option-validations
+;;                          prompt-validations
+;;                          help-validations
+;;                          ifmissing-validations)]]
+   })
 
 
 (def permission-validations
@@ -657,3 +671,8 @@
 
 (defn validate-adl [src]
   (b/validate src application-validations))
+
+(defn validate-adl-file [filepath]
+  (validate-adl (parse filepath)))
+
+

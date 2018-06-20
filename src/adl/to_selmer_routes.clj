@@ -1,13 +1,14 @@
 (ns ^{:doc "Application Description Language: generate routes for user interface requests."
       :author "Simon Brooke"}
   adl.to-selmer-routes
-  (:require [clojure.java.io :refer [file make-parents writer]]
+  (:require [adl-support.utils :refer :all]
+            [clojure.java.io :refer [file make-parents writer]]
             [clojure.pprint :refer [pprint]]
             [clojure.string :as s]
             [clojure.xml :as x]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer :all]))
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -32,7 +33,11 @@
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Generally. there's one route in the generated file for each Selmer template which has been generated.
+;;; Generally. there's one route in the generated file for each Selmer
+;;; template which has been generated.
+
+;;; TODO: there must be some more idiomatic way of generating all these
+;;; functions.
 
 (defn file-header
   [application]
@@ -44,6 +49,7 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
+      '[adl-support.core :as support]
       '[clojure.java.io :as io]
       '[compojure.core :refer [defroutes GET POST]]
       '[hugsql.core :as hugsql]
@@ -61,25 +67,39 @@
       'defn
       (symbol n)
       (vector 'r)
-      (list 'let (vector 'p (list :params 'r)) ;; TODO: we must take key params out of just params,
+      (list 'let (vector
+                   'p
+                   (list
+                     'merge
+                     (list 'support/query-string-to-map (list :query-string 'r))
+                     (list :params 'r)))
+            ;; TODO: we must take key params out of just params,
             ;; but we should take all other params out of form-params - because we need the key to
             ;; load the form in the first place, but just accepting values of other params would
             ;; allow spoofing.
             (list
               'l/render
-              (list 'resolve-template (str n ".html"))
+              (list 'support/resolve-template (str n ".html"))
               (merge
                 {:title (capitalise (:name (:attrs f)))
                  :params  'p}
                 (case (:tag f)
                   (:form :page)
-                  {:record
-                   (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
-                   (list
-                     (symbol
-                       (str "db/get-" (singularise (:name (:attrs e)))))
-                       (symbol "db/*db*")
-                     'p))}
+                  (reduce
+                    merge
+                    {:record
+                     (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
+                           (list
+                             (symbol
+                               (str "db/get-" (singularise (:name (:attrs e)))))
+                             (symbol "db/*db*")
+                             'p))}
+                    (map
+                      (fn [p]
+                        (hash-map
+                          (keyword (-> p :attrs :entity))
+                          (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
+                      (filter #(= (:type (:attrs %)) "entity") (descendants-with-tag e :property))))
                   :list
                   {:records
                    (list
@@ -167,43 +187,49 @@
 
 (defn to-selmer-routes
   [application]
-  (let [filename (str *output-path* (:name (:attrs application)) "/routes/auto.clj")]
-    (make-parents filename)
-    (with-open [output (writer filename)]
-      (binding [*out* output]
-        (pprint (file-header application))
-        (println)
-        (pprint '(defn raw-resolve-template [n]
-                   (if
-                     (.exists (io/as-file (str "resources/templates/" n)))
-                     n
-                     (str "auto/" n))))
-        (println)
-        (pprint '(def resolve-template (memoize raw-resolve-template)))
-        (println)
-        (pprint '(defn index
-                   [r]
-                   (l/render
-                     (resolve-template
-                       "application-index.html")
-                     {:title "Administrative menu"})))
-        (println)
-        (doall
-          (map
-            (fn [e]
-              (doall
-                (map
-                  (fn [c]
-                    (pprint (make-handler c e application))
-                    (println))
-                  (filter (fn [c] (#{:form :list :page} (:tag c))) (children e)))))
-            (children-with-tag application :entity)))
-        (pprint
-          (generate-handler-resolver application))
-        (println)
-        (pprint '(def resolve-handler
-                   (memoize raw-resolve-handler)))
-        (println)
-        (pprint (make-defroutes application))
-        (println)))))
+  (let [filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto.clj")]
+    (make-parents filepath)
+    (try
+      (with-open [output (writer filepath)]
+        (binding [*out* output]
+          (pprint (file-header application))
+          (println)
+          (pprint '(defn admin
+                     [r]
+                     (l/render
+                       (support/resolve-template
+                         "application-index.html")
+                       {:title "Administrative menu"})))
+          (println)
+          (doall
+            (map
+              (fn [e]
+                (doall
+                  (map
+                    (fn [c]
+                      (pprint (make-handler c e application))
+                      (println))
+                    (filter (fn [c] (#{:form :list :page} (:tag c))) (children e)))))
+              (sort
+                #(compare (:name (:attrs %1))(:name (:attrs %2)))
+                (children-with-tag application :entity))))
+          (pprint
+            (generate-handler-resolver application))
+          (println)
+          (pprint '(def resolve-handler
+                     (memoize raw-resolve-handler)))
+          (println)
+          (pprint (make-defroutes application))
+          (println)))
+      (if (> *verbosity* 0)
+        (println (str "\tGenerated " filepath)))
+      (catch
+        Exception any
+        (println
+          (str
+            "ERROR: Exception "
+            (.getName (.getClass any))
+            (.getMessage any)
+            " while printing "
+            filepath))))))
 

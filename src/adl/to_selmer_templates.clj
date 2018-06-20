@@ -1,8 +1,8 @@
 (ns ^{:doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
-  (:require [adl.utils :refer :all]
-            [clojure.java.io :refer [file]]
+  (:require [adl-support.utils :refer :all]
+            [clojure.java.io :refer [file make-parents]]
             [clojure.pprint :as p]
             [clojure.string :as s]
             [clojure.xml :as x]
@@ -145,7 +145,8 @@
 
 (defn save-widget
   "Return an appropriate 'save' widget for this `form` operating on this `entity` taken
-  from this `application`."
+  from this `application`.
+  TODO: should be suppressed unless a member of a group which can insert or edit."
   [form entity application]
   {:tag :p
    :attrs {:class "widget action-safe"}
@@ -156,13 +157,14 @@
               :attrs {:id "save-button"
                       :name "save-button"
                       :class "action-safe"
-                      :type :submit
+                      :type "submit"
                       :value (str "Save!")}}]})
 
 
 (defn delete-widget
   "Return an appropriate 'save' widget for this `form` operating on this `entity` taken
-  from this `application`."
+  from this `application`.
+  TODO: should be suppressed unless member of a group which can delete."
   [form entity application]
   {:tag :p
    :attrs {:class "widget action-dangerous"}
@@ -173,7 +175,7 @@
               :attrs {:id "delete-button"
                       :name "delete-button"
                       :class "action-dangerous"
-                      :type :submit
+                      :type "submit"
                       :value (str "Delete!")}}]})
 
 
@@ -259,21 +261,10 @@
             :content (apply vector (get-options property form entity application))})))}))
 
 
-(defn permissions-for
-  [property entity application]
-  (first
-   (remove
-    empty?
-    (list
-     (children-with-tag property :permission)
-     (children-with-tag entity :permission)
-     (children-with-tag application :permission)))))
-
-
 (defn compose-if-member-of-tag
   [property entity application writable?]
   (let
-    [all-permissions (permissions-for property entity application)
+    [all-permissions (find-permissions property entity application)
      permissions (if writable? (writable-by all-permissions) (visible-to all-permissions))]
     (s/join
      " "
@@ -295,20 +286,18 @@
      property (if
                 (= (:tag field-or-property) :property)
                 field-or-property
-                (first
-                  (children
-                    entity
-                    #(and
-                       (= (:tag %) :property)
-                       (= (:name (:attrs %)) (:property (:attrs field-or-property)))))))
-     permissions (permissions property form entity application)
+                (child-with-tag entity
+                                :property
+                                #(= (:name (:attrs %))
+                                    (:property (:attrs field-or-property)))))
+     permissions (find-permissions field-or-property property form entity application)
      typedef (typedef property application)
      visible-to (visible-to permissions)
      ;; if the form isn't actually a form, no widget is writable.
      writable-by (if (= (:tag form) :form) (writable-by permissions))
      select? (#{"entity" "list" "link"} (:type (:attrs property)))]
     (if
-      (formal-primary-key? property entity)
+      (= (:distinct (:attrs property)) "system")
       {:tag :input
        :attrs {:id widget-name
                :name widget-name
@@ -343,14 +332,14 @@
                           :name widget-name
                           :class "pseudo-widget disabled"}
                   :content [(str "{{record." widget-name "}}")]}
+                 "{% else %}"
+                 {:tag :span
+                  :attrs {:id widget-name
+                          :name widget-name
+                          :class "pseudo-widget not-authorised"}
+                  :content [(str "You are not permitted to view " widget-name " of " (:name (:attrs entity)))]}
                  "{% endifmemberof %}"
                  "{% endifmemberof %}"]})))
-
-
-(defn fields
-  [form]
-  (descendants-with-tag form :field))
-
 
 
 (defn form-to-template
@@ -358,30 +347,29 @@
   taken from this `application`. If `form` is nill, generate a default form
   template for the entity."
   [form entity application]
-  (let
-    [keyfields (children
-                ;; there should only be one key; its keys are properties
-                (first (children entity #(= (:tag %) :key))))]
-    {:tag :div
-     :attrs {:id "content" :class "edit"}
-     :content
-     [{:tag :form
-       :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
-               :method "POST"}
-       :content (flatten
-                 (list
+  {:tag :div
+   :attrs {:id "content" :class "edit"}
+   :content
+   [{:tag :form
+     :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
+             :method "POST"}
+     :content (flatten
+                (list
                   (csrf-widget)
                   (map
-                   #(widget % form entity application)
-                   keyfields)
+                    #(widget % form entity application)
+                    (children-with-tag (child-with-tag entity :key) :properties))
                   (map
-                   #(widget % form entity application)
-                   (remove
-                    #(= (:distict (:attrs %)) :system)
-                    (fields entity)))
+                    #(widget % form entity application)
+                    (remove
+                      #(let
+                         [property (filter
+                                     (fn [p] (= (:name (:attrs p)) (:property (:attrs %))))
+                                     (descendants-with-tag entity :property))]
+                         (= (:distict (:attrs property)) :system))
+                      (children-with-tag form :field)))
                   (save-widget form entity application)
-                  (delete-widget form entity application)))}]}))
-
+                  (delete-widget form entity application)))}]})
 
 
 (defn page-to-template
@@ -434,7 +422,7 @@
          #(hash-map
             :content [(prompt %)]
             :tag :th)
-         (fields list-spec)))}
+         (children-with-tag list-spec :field)))}
     {:tag :tr
      :content
      (apply
@@ -442,7 +430,7 @@
        (concat
          (map
            #(compose-list-search-widget % entity)
-           (fields list-spec))
+           (children-with-tag list-spec :field))
          '({:tag :th
             :content
             [{:tag :input
@@ -492,7 +480,7 @@
                    :attrs {:href (edit-link e application (list (:name (:attrs p))))}
                    :content [(str "{{ record." (:property (:attrs field)) "_expanded }}")]}]
                  [c]))})
-           (fields list-spec))
+           (children-with-tag list-spec :field))
          [{:tag :td
           :content
           [{:tag :a
@@ -623,31 +611,35 @@
 
 (defn write-template-file
   [filename template application]
-  (if
-    template
-    (try
-      (spit
-        (str *output-path* filename)
-        (s/join
-          "\n"
-          (list
-            (file-header filename application)
-            (with-out-str
-              (x/emit-element template))
-            (file-footer filename application))))
-      (catch Exception any
+  (let [filepath (str *output-path* "resources/templates/auto/" filename)]
+    (make-parents filepath)
+    (if
+      template
+      (try
         (spit
-          (str *output-path* filename)
-          (with-out-str
-            (println
-              (str
-                "<!-- Exception "
-                (.getName (.getClass any))
-                (.getMessage any)
-                " while printing "
-                filename "-->"))
-            (p/pprint template))))))
-  filename)
+          filepath
+          (s/join
+            "\n"
+            (list
+              (file-header filename application)
+              (with-out-str
+                (x/emit-element template))
+              (file-footer filename application))))
+        (if (> *verbosity* 0) (println "\tGenerated " filepath))
+        (catch Exception any
+          (let [report (str
+                         "ERROR: Exception "
+                         (.getName (.getClass any))
+                         (.getMessage any)
+                         " while printing "
+                         filename)]
+            (spit
+              filepath
+              (with-out-str
+                (println (str "<!-- " report "-->"))
+                (p/pprint template)))
+            (println report)))))
+    (str filepath)))
 
 
 (defn to-selmer-templates
@@ -668,12 +660,13 @@
              (try
                (write-template-file filename (templates-map %) application)
                (catch Exception any
-                 (str
-                   "Exception "
-                   (.getName (.getClass any))
-                   (.getMessage any)
-                   " while writing "
-                   filename)))))
+                 (println
+                   (str
+                     "ERROR: Exception "
+                     (.getName (.getClass any))
+                     (.getMessage any)
+                     " while writing "
+                     filename))))))
         (keys templates-map)))))
 
 
