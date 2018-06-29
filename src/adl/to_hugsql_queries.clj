@@ -140,7 +140,7 @@
     {}))
 
 
-(defn search-query [entity]
+(defn search-query [entity application]
   "Generate an appropriate search query for string fields of this `entity`"
   (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
@@ -164,7 +164,7 @@
                "-- :doc selects existing "
                pretty-name
                " records having any string field matching the parameter of the same name by substring match")
-             (str "SELECT * FROM lv_" entity-name)
+             (str "SELECT DISTINCT * FROM lv_" entity-name)
              (s/join
                "\n\t--~ "
                (cons
@@ -174,8 +174,8 @@
                    (map
                      #(str
                         "(if (:" (-> % :attrs :name) " params) \"OR "
-                        (case (:type (:attrs %))
-                          ("string" "text" "defined") ;; TODO: 'defined' types may be string or number - more work here
+                        (case (base-type % application)
+                          ("string" "text")
                           (str
                             (safe-name (-> % :attrs :name) :sql)
                             " LIKE '%:" (-> % :attrs :name) "%'")
@@ -257,7 +257,7 @@
            (list
              (str "-- :name " query-name " " signature)
              (str "-- :doc lists all existing " pretty-name " records")
-             (str "SELECT * FROM lv_" entity-name)
+             (str "SELECT DISTINCT * FROM lv_" entity-name)
              (order-by-clause entity "lv_")
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
@@ -359,7 +359,7 @@
              (list
                (str "-- :name " query-name " " signature)
                (str "-- :doc lists all existing " near-name " records related through " link-name " to a given " pretty-far )
-               (str "SELECT "near-name ".*")
+               (str "SELECT DISTINCT "near-name ".*")
                (str "FROM " near-name ", " link-name )
                (str "WHERE " near-name "." (first (key-names near)) " = " link-name "." (singularise near-name) "_id" )
                ("\tAND " link-name "." (singularise far-name) "_id = :id")
@@ -428,7 +428,7 @@
      (delete-query entity)
      (select-query entity)
      (list-query entity)
-     (search-query entity)
+     (search-query entity application)
      (foreign-queries entity application)))
   ([application]
    (apply

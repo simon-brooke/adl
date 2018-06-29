@@ -77,6 +77,7 @@
             (list
               'l/render
               (list 'support/resolve-template (str n ".html"))
+              '(:session r)
               (merge
                 {:title (capitalise (:name (:attrs f)))
                  :params  'p}
@@ -96,7 +97,8 @@
                         (hash-map
                           (keyword (-> p :attrs :entity))
                           (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
-                      (filter #(= (:type (:attrs %)) "entity") (descendants-with-tag e :property))))
+                      (filter #(#{"entity" "link"} (:type (:attrs %)))
+                              (descendants-with-tag e :property))))
                   :list
                   {:records
                    (list

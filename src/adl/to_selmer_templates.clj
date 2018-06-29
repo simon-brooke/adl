@@ -132,7 +132,6 @@
          #(and
             (= (:tag %) :prompt)
             (= (:locale :attrs %) *locale*))))
-
      (:name (:attrs field-or-property))
      (:property (:attrs field-or-property)))))
 
@@ -265,7 +264,12 @@
   [property entity application writable?]
   (let
     [all-permissions (find-permissions property entity application)
-     permissions (if writable? (writable-by all-permissions) (visible-to all-permissions))]
+     permissions (map
+                   s/lower-case
+                   (if
+                     writable?
+                     (writable-by all-permissions)
+                     (visible-to all-permissions)))]
     (s/join
      " "
      (flatten
@@ -590,9 +594,12 @@
 (defn application-to-template
   [application]
   (let
-    [first-class-entities (filter
-                            #(children-with-tag % :list)
-                            (children-with-tag application :entity))]
+    [first-class-entities
+     (sort-by
+       #(:name (:attrs %))
+       (filter
+         #(children-with-tag % :list)
+         (children-with-tag application :entity)))]
     {:application-index
      {:tag :dl
       :attrs {:class "index"}
