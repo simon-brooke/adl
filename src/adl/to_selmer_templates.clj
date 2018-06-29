@@ -318,7 +318,18 @@
                              {:id widget-name
                               :name widget-name
                               :type (widget-type property application typedef)
-                              :value (str "{{record." widget-name "}}")}
+                              :value (str "{{record." widget-name "}}")
+                              :maxlength (:size (:attrs property))
+                              :size (cond
+                                      (nil? (:size (:attrs property)))
+                                      "16"
+                                      (try
+                                        (> (read-string
+                                             (:size (:attrs property))) 60)
+                                        (catch Exception _ false))
+                                      "60"
+                                      true
+                                      (:size (:attrs property)))}
                              (if
                                (:minimum (:attrs typedef))
                                {:min (:minimum (:attrs typedef))})

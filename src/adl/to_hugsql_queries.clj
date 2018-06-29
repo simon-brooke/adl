@@ -165,31 +165,33 @@
                pretty-name
                " records having any string field matching the parameter of the same name by substring match")
              (str "SELECT * FROM lv_" entity-name)
-             "WHERE "
              (s/join
-               "\n\tOR "
-               (filter
-                 string?
-                 (map
-                   #(case (:type (:attrs %))
-                      ("string" "text")
-                      (str
-                        (safe-name (-> % :attrs :name) :sql)
-                        " LIKE '%params."
-                        (-> % :attrs :name) "%'")
-                      ("date" "time" "timestamp")
-                      (str
-                        (safe-name (-> % :attrs :name) :sql)
-                        " = 'params."
-                        (-> % :attrs :name) "'")
-                      (str
-                        (safe-name (-> % :attrs :name) :sql)
-                        " = params."
-                        (-> % :attrs :name)))
-                   properties)))
-             (order-by-clause entity "lv_")
-             "--~ (if (:offset params) \"OFFSET :offset \")"
-             "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
+               "\n\t--~ "
+               (cons
+                 "WHERE false"
+                 (filter
+                   string?
+                   (map
+                     #(str
+                        "(if (:" (-> % :attrs :name) " params) \"OR "
+                        (case (:type (:attrs %))
+                          ("string" "text" "defined") ;; TODO: 'defined' types may be string or number - more work here
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " LIKE '%:" (-> % :attrs :name) "%'")
+                          ("date" "time" "timestamp")
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " = ':" (-> % :attrs :name) "'")
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " = :"
+                            (-> % :attrs :name)))
+                        "\")")
+                     properties))))
+               (order-by-clause entity "lv_")
+               "--~ (if (:offset params) \"OFFSET :offset \")"
+               "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
 
 (defn select-query

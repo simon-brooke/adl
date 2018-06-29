@@ -69,10 +69,7 @@
       (vector 'r)
       (list 'let (vector
                    'p
-                   (list
-                     'merge
-                     (list 'support/query-string-to-map (list :query-string 'r))
-                     (list :params 'r)))
+                   (list 'support/massage-params (list :params 'r)))
             ;; TODO: we must take key params out of just params,
             ;; but we should take all other params out of form-params - because we need the key to
             ;; load the form in the first place, but just accepting values of other params would
@@ -194,7 +191,7 @@
         (binding [*out* output]
           (pprint (file-header application))
           (println)
-          (pprint '(defn admin
+          (pprint '(defn index
                      [r]
                      (l/render
                        (support/resolve-template
