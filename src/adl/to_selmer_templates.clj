@@ -405,9 +405,11 @@
                      "time" "time"
                      "text")
         base-name (:property (:attrs field))
-        search-name (if
-                      (= (:type (:attrs property)) "entity")
-                      (str base-name "_expanded") base-name)]
+        search-name (safe-name
+                      (if
+                        (= (:type (:attrs property)) "entity")
+                        (str base-name "_expanded") base-name)
+                      :sql)]
     (hash-map
       :tag :th
       :content
@@ -480,16 +482,17 @@
              {:tag :td :content
               (let
                [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
+                s (safe-name (:name (:attrs p)) :sql)
                 e (first
                     (filter
                       #(= (:name (:attrs %)) (:entity (:attrs p)))
                       (children-with-tag application :entity)))
-                c (str "{{ record." (:property (:attrs field)) " }}")]
+                c (str "{{ record." s " }}")]
                (if
                  (= (:type (:attrs p)) "entity")
                  [{:tag :a
                    :attrs {:href (edit-link e application (list (:name (:attrs p))))}
-                   :content [(str "{{ record." (:property (:attrs field)) "_expanded }}")]}]
+                   :content [(str "{{ record." s "_expanded }}")]}]
                  [c]))})
            (children-with-tag list-spec :field))
          [{:tag :td

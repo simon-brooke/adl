@@ -150,7 +150,7 @@
         'auto-selmer-routes
         (cons
           '(GET
-             "/index"
+             "/admin"
              request
              (route/restricted
                (apply (resolve-handler "index") (list request))))

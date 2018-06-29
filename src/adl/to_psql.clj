@@ -447,8 +447,8 @@
 (defn construct-link-property
   [entity]
   {:tag :property
-   :attrs {:name (safe-name (str (:name (:attrs entity)) "_id") :sql)
-           :column (safe-name (str (:name (:attrs entity)) "_id") :sql)
+   :attrs {:name (safe-name (str (singularise (:name (:attrs entity))) "_id") :sql)
+           :column (safe-name (str (singularise (:name (:attrs entity))) "_id") :sql)
            :type "entity"
            :entity (:name (:attrs entity))
            :farkey (safe-name (first (key-names entity)) :sql)}})
