@@ -82,22 +82,25 @@
 	</xsl:template>
 
 	<!-- an entity which already has a key tag - just copy it through -->
-	<xsl:template match="adl:entity[adl:key]">
-		<xsl:comment>
-			entity <xsl:value-of select="@name"/> already has a key - not generating one
-		</xsl:comment>
-		<entity>
+  <xsl:template match="adl:entity[adl:key]">
+  <xsl:comment>
+    entity <xsl:value-of select="@name"/> already has a key - not generating one
+    </xsl:comment>
+    <entity>
       <xsl:if test="not(@magnitude)">
         <xsl:attribute name="magnitude">6</xsl:attribute>
+      </xsl:if>
+      <xsl:if test="not(@volatility)">
+        <xsl:attribute name="volatility">0</xsl:attribute>
       </xsl:if>
       <xsl:if test="not( @table)">
         <xsl:attribute name="table">
           <xsl:value-of select="concat( $tablename-prefix, @name)"/>
         </xsl:attribute>
       </xsl:if>
-			<xsl:apply-templates select="@* | node()"/>
-		</entity>
-	</xsl:template>
+      <xsl:apply-templates select="@* | node()"/>
+    </entity>
+  </xsl:template>
 
 	<!-- an entity which has a '@natural-key' attribute.
 		Since we've got the key tag, I think this should be disallowed -->

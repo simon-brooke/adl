@@ -246,7 +246,7 @@ that we can allow HTML block level entities within content elements -->
 	an entity which has properties and relationships; maps onto a database
 	table or a Java serialisable class - or, of course, various other things
 
-  name:         obviously, the name of this entity
+  name:         obviously, the name of this entity.
   natural-key:  if present, the name of a property of this entity which forms
                 a natural primary key [NOTE: Only partly implemented. NOTE: much of
                 the present implementation assumes all primary keys will be
@@ -254,21 +254,27 @@ that we can allow HTML block level entities within content elements -->
                 'key' element, below.
   table:        the name of the table in which this entity is stored. Defaults to same
                 as name of entity. Strongly recommend this is not used unless it needs
-                to be different from the name of the entity
+                to be different from the name of the entity.
   foreign:      this entity is part of some other system; no code will be generated
-                for it, although code which links to it will be generated
+                for it, although code which links to it will be generated.
   magnitude:    The power of ten which approximates the expected number of records; thus
                 if ten records are expected, the magnitude is 1; if a million, the
-                magnitude is 6
+                magnitude is 6.
+  volatility:   Number representing the anticipated rate of change of records in this
+                entity; if 0, results should never be cached; otherwise, a power of
+                10 representing the number of seconds the data may safely be cached.
+                thus 5 represents a cach time to live of 100,000 seconds, or slightly
+                more than one day.
 -->
 <!ELEMENT entity ( documentation?, prompt*, content?, key?,
       property*, permission*, (form | page | list)*)>
 <!ATTLIST entity
-    name      CDATA           #REQUIRED
+    name        CDATA         #REQUIRED
     natural-key CDATA         #IMPLIED
-    table     CDATA           #IMPLIED
-    foreign   %Boolean;       #IMPLIED
-    magnitude CDATA           #IMPLIED>
+    table       CDATA         #IMPLIED
+    foreign     %Boolean;     #IMPLIED
+    magnitude   CDATA         #IMPLIED
+    volatility  CDATA         #IMPLIED>
 
 <!--
   contains documentation on the element which immediately contains it. TODO:

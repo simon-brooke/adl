@@ -198,6 +198,7 @@
                      (l/render
                        (support/resolve-template
                          "application-index.html")
+                       (:session r)
                        {:title "Administrative menu"})))
           (println)
           (doall
