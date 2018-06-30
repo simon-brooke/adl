@@ -99,8 +99,7 @@
               "See [Application Description Language](https://github.com/simon-brooke/adl)."
               "-->")
          (emit-content filename spec entity application :head)
-         (emit-content filename spec entity application :top)
-         "{% block content %}")))))
+         (emit-content filename spec entity application :top))))))
 
 
 (defn file-footer
@@ -110,12 +109,8 @@
    (file-footer filename nil nil application))
   ([filename spec entity application]
    (s/join
-     "\n"
-     (flatten
-       (list
-         "{% endblock %}"
-         (emit-content filename spec entity application :foot)
-         )))))
+    "\n"
+    (emit-content filename spec entity application :foot))))
 
 
 (defn prompt
@@ -362,25 +357,26 @@
     [keyfields (children
                 ;; there should only be one key; its keys are properties
                 (first (children entity #(= (:tag %) :key))))]
-    {:tag :div
-     :attrs {:id "content" :class "edit"}
-     :content
-     [{:tag :form
-       :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
-               :method "POST"}
-       :content (flatten
-                 (list
-                  (csrf-widget)
-                  (map
-                   #(widget % form entity application)
-                   keyfields)
-                  (map
-                   #(widget % form entity application)
-                   (remove
-                    #(= (:distict (:attrs %)) :system)
-                    (fields entity)))
-                  (save-widget form entity application)
-                  (delete-widget form entity application)))}]}))
+    {:content
+     {:tag :div
+      :attrs {:id "content" :class "edit"}
+      :content
+      [{:tag :form
+        :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
+                :method "POST"}
+        :content (flatten
+                  (list
+                   (csrf-widget)
+                   (map
+                    #(widget % form entity application)
+                    keyfields)
+                   (map
+                    #(widget % form entity application)
+                    (remove
+                     #(= (:distict (:attrs %)) :system)
+                     (fields entity)))
+                   (save-widget form entity application)
+                   (delete-widget form entity application)))}]}}))
 
 
 
@@ -536,16 +532,46 @@
   taken from this `application`. If `list` is nill, generate a default list
   template for the entity."
   [list-spec entity application]
-  {:tag :form
-   :attrs {:id "content" :class "list"}
-   :content
-   [(big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
-    {:tag :table
-     :attrs {:caption (:name (:attrs entity))}
+  (let [form-name
+        (str
+         "list-"
+         (:name (:attrs entity))
+         "-"
+         (:name (:attrs list-spec)))]
+    {:big-links
+     {:tag :div
+      :content
+      [{:tag :div :attrs {:class "big-link-container"}
+        :content
+        [{:tag :a :attrs {:id "next-selector" :role "button" :class "big-link"}
+          :content ["Next"]}]}
+       (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))]}
      :content
-     [(list-thead list-spec entity application)
-      (list-tbody list-spec entity application)
-      (list-tfoot list-spec entity application)]}]})
+     {:tag :form
+      :attrs {:id form-name :class "list"
+              :action (str "{{servlet-context}}/" form-name)
+              :method "POST"}
+      :content
+      [
+       (csrf-widget)
+       {:tag :input :attrs {:id "offset" :type "hidden" :value "{{offset|0}}"}}
+       {:tag :input :attrs {:id "limit" :type "hidden" :value "{{limit|50}}"}}
+       (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
+       {:tag :table
+        :attrs {:caption (:name (:attrs entity))}
+        :content
+        [(list-thead list-spec entity application)
+         (list-tbody list-spec entity application)
+         (list-tfoot list-spec entity application)]}]}
+     :extra-script
+     (str "var form = document.getElementById('" form-name "');
+          var ow = document.getElementById('offset');
+          var lw = document.getElementById('limit');
+
+          document.getElementById('next-selector').addEventListener('click', function () {
+          ow.text=(parseInt(ow.text)+parseInt(lw.text));
+          //form.submit();
+          });")}))
 
 
 (defn entity-to-templates
@@ -589,35 +615,36 @@
   [application]
   (let
     [first-class-entities (filter
-                            #(children-with-tag % :list)
-                            (children-with-tag application :entity))]
-    {:application-index
-     {:tag :dl
-      :attrs {:class "index"}
-      :content
-      (apply
+                           #(children-with-tag % :list)
+                           (children-with-tag application :entity))]
+    {:content
+     {:application-index
+      {:tag :dl
+       :attrs {:class "index"}
+       :content
+       (apply
         vector
         (interleave
-          (map
-            #(hash-map
-               :tag :dt
-               :content
-               [{:tag :a
-                 :attrs {:href (path-part :list % application)}
-                 :content [(pretty-name %)]}])
-            first-class-entities)
-          (map
-            #(hash-map
-               :tag :dd
-               :content (apply
-                          vector
-                          (map
-                            (fn [d]
-                              (hash-map
-                                :tag :p
-                                :content (:content d)))
-                            (children-with-tag % :documentation))))
-            first-class-entities)))}}))
+         (map
+          #(hash-map
+            :tag :dt
+            :content
+            [{:tag :a
+              :attrs {:href (path-part :list % application)}
+              :content [(pretty-name %)]}])
+          first-class-entities)
+         (map
+          #(hash-map
+            :tag :dd
+            :content (apply
+                      vector
+                      (map
+                       (fn [d]
+                         (hash-map
+                          :tag :p
+                          :content (:content d)))
+                       (children-with-tag % :documentation))))
+          first-class-entities)))}}}))
 
 
 
@@ -627,26 +654,39 @@
     template
     (try
       (spit
-        (str *output-path* filename)
-        (s/join
-          "\n"
-          (list
-            (file-header filename application)
-            (with-out-str
-              (x/emit-element template))
-            (file-footer filename application))))
+       (str *output-path* filename)
+       (s/join
+        "\n"
+        (flatten
+         (list
+          (file-header filename application)
+          (doall
+           (map
+            #(let [content (template %)]
+               (list
+                (str "{% block " (name %) " %}")
+                (cond (string? content)
+                      content
+                      (map? content)
+                      (with-out-str
+                        (x/emit-element content))
+                      true
+                      (str "<!-- don't know what to do with '" content "' -->"))
+                "{% endblock %}")
+               (keys template))))
+          (file-footer filename application)))))
       (catch Exception any
         (spit
-          (str *output-path* filename)
-          (with-out-str
-            (println
-              (str
-                "<!-- Exception "
-                (.getName (.getClass any))
-                (.getMessage any)
-                " while printing "
-                filename "-->"))
-            (p/pprint template))))))
+         (str *output-path* filename)
+         (with-out-str
+           (println
+            (str
+             "<!-- Exception "
+             (.getName (.getClass any))
+             (.getMessage any)
+             " while printing "
+             filename "-->"))
+           (p/pprint template))))))
   filename)
 
 
