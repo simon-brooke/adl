@@ -2,6 +2,21 @@
 
 A language for describing applications, from which code can be automatically generated.
 
+## Usage
+
+A document describing the proposed application should be written in XML using the DTD `resources/schemas/adl-1.4.1.dtd`. It may then be transformed into a C# or Java application using the XSL transforms, see **History** below, but this code is very out of date and the resulting application is unlikely to be very usable. Alternatively, it can be transformed into a Clojure [Luminus](http://www.luminusweb.net/) application using the Clojure transformation, as follows:
+
+    simon@fletcher:~/workspace/adl$ java -jar target/adl-1.4.1-SNAPSHOT-standalone.jar --help
+    Usage: java -jar adl-[VERSION]-SNAPSHOT-standalone.jar -options [adl-file]
+    where options include:
+      -a, --abstract-key-name-convention [string]: the abstract key name convention to use for generated key fields (TODO: not yet implemented); (default: id)
+      -h, --help: Show this message
+      -l, --locale [LOCALE]: set the locale to generate; (default: en_GB.UTF-8)
+      -p, --path [PATH]: The path under which generated files should be written; (default: generated)
+      -v, --verbosity [LEVEL], : Verbosity level - integer value required; (default: 0)
+
+This is not yet complete but it is at an advanced stage and already produces code which is useful.
+
 ## History
 
 This idea started back in 2007, when I felt that web development in Java had really reached the end of the road - one spent all one's time writing boilerplate, and the amount of time taken to achieve anything useful had expanded far beyond common sense. So I thought: write one high level document describing an application; write a series of transforms from that document to the different files required to build the application; and a great deal of time would be saved.
@@ -25,6 +40,10 @@ The idea is that the ADL framework should autogenerate 95% of your application. 
 ### The DTD
 
 A Document Type Definition is the core of this; the current version is `adl-1.4.dtd`.
+
+### The Clojure transformer application
+
+This is the future direction of the project. Currently it converts a valid ADL XML document into most of the files required for a Clojure web-app. Shortly it will produce a complete Clojure [Luminus](http://www.luminusweb.net/) web-app. In future it may produce web-apps in other languages and frameworks.
 
 ### XSL transforms
 
@@ -54,6 +73,6 @@ I will happily accept pull requests for new XSL transforms (although I'd like so
 
 ## License
 
-Copyright © Simon Brooke 2007-2018
+Copyright © Simon Brooke 2007-2018; some work was done under contract to [Cygnet Solutions Ltd](http://cygnets.co.uk/), but they have kindly transferred the copyright back to me.
 
 Distributed under the Gnu GPL version 2 or any later version; I am open to licensing this project under additional licences if required.

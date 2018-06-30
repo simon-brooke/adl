@@ -7,7 +7,7 @@
             [clojure.xml :as x]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer :all]
+            [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,7 +37,6 @@
 ;;; to-hugsql-queries, because essentially we need one JSON entry point to wrap
 ;;; each query.
 
-
 (defn file-header [application]
   (list
     'ns
@@ -47,7 +46,9 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
+      '[adl-support.core :as support]
       '[clojure.java.io :as io]
+      '[clojure.core.memoize :as memo]
       '[compojure.core :refer [defroutes GET POST]]
       '[hugsql.core :as hugsql]
       '[noir.response :as nresponse]
@@ -60,24 +61,45 @@
   (cons 'declare (sort (map #(symbol (name %)) (keys handlers-map)))))
 
 
+(defn generate-handler-body
+  "Generate and return the function body for the handler for this `query`."
+  [query]
+  (list
+    [{:keys ['params]}]
+    (list 'do (list (symbol (str "db/" (:name query))) 'params))
+    (case
+      (:type query)
+      (:delete-1 :update-1)
+      '(response/found "/")
+      nil)))
+
+
 (defn generate-handler-src
+  "Generate and return the handler for this `query`."
   [handler-name query-map method doc]
   (hash-map
     :method method
-    :src
-    (remove
-    nil?
-    (list
-      'defn
-      handler-name
-      (str "Auto-generated method to " doc)
-      [{:keys ['params]}]
-      (list 'do (list (symbol (str "db/" (:name query-map))) 'params))
-      (case
-        (:type query-map)
-        (:delete-1 :update-1)
-        '(response/found "/")
-        nil)))))
+    :src (remove
+           nil?
+           (if
+             (or
+               (zero? (volatility (:entity query-map)))
+               (#{:delete-1 :insert-1 :update-1} (:type query-map)))
+             (concat
+               (list
+                 'defn
+                 handler-name
+                 (str "Auto-generated method to " doc))
+               (generate-handler-body query-map))
+             (concat
+               (list
+                 'def
+                 handler-name
+                 (list
+                   'memo/ttl
+                   (cons 'fn (generate-handler-body query-map))
+                   :ttl/threshold
+                   (* (volatility (:entity query-map)) 1000))))))))
 
 
 (defn handler
@@ -100,7 +122,7 @@
             (str "delete one record from the `"
                  (-> query :entity :attrs :name)
                  "` table. Expects the following key(s) to be present in `params`: `"
-                 (doall (-> query :entity :content :key :content keys))
+                 (-> query :entity key-names)
                  "`."))
           :insert-1
           (generate-handler-src
@@ -108,9 +130,12 @@
             (str "insert one record to the `"
                  (-> query :entity :attrs :name)
                  "` table. Expects the following key(s) to be present in `params`: `"
-                 (pr-str (-> query :entity :content :properties keys))
+                 (pr-str
+                   (map
+                     #(keyword (:name (:attrs %)))
+                     (-> query :entity insertable-properties )))
                  "`. Returns a map containing the keys `"
-                 (pr-str (-> query :entity :content :key :content keys))
+                 (-> query :entity key-names)
                  "` identifying the record created."))
           :update-1
           (generate-handler-src
@@ -121,10 +146,12 @@
                  (pr-str
                    (distinct
                      (sort
-                       (flatten
-                         (cons
-                           (-> query :entity :content :properties keys)
-                           (-> query :entity :content :key :content keys))))))
+                       (map
+                         #(keyword (:name (:attrs %)))
+                         (flatten
+                           (cons
+                             (-> query :entity key-properties)
+                             (-> query :entity insertable-properties)))))))
                  "`."))
           :select-1
           (generate-handler-src
@@ -132,15 +159,9 @@
             (str "select one record from the `"
                  (-> query :entity :attrs :name)
                  "` table. Expects the following key(s) to be present in `params`: `"
-                 (pr-str (-> query :entity :content :key :content keys))
+                 (-> query :entity key-names)
                  "`. Returns a map containing the following keys: `"
-                 (pr-str
-                   (distinct
-                     (sort
-                       (flatten
-                         (cons
-                           (-> query :entity :content :properties keys)
-                           (-> query :entity :content :key :content keys))))))
+                 (map #(keyword (:name (:attrs %))) (-> query :entity all-properties))
                  "`."))
           :select-many
           (generate-handler-src
@@ -149,26 +170,21 @@
                  (-> query :entity :attrs :name)
                  "` table. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
                  (pr-str
-                   (distinct
-                     (sort
-                       (flatten
-                         (cons
-                           (-> query :entity :content :properties keys)
-                           (-> query :entity :content :key :content keys))))))
+                   (map
+                     #(keyword (:name (:attrs %)))
+                     (-> query :entity all-properties)))
                  "`."))
           :text-search
           (generate-handler-src
             handler-name query :get
             (str "select all records from the `"
                  (-> query :entity :attrs :name)
+                 ;; TODO: this doc-string is out of date
                  "` table with any text field matching the value of the key `:pattern` which should be in the request. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
                  (pr-str
-                   (distinct
-                     (sort
-                       (flatten
-                         (cons
-                           (-> query :entity :content :properties keys)
-                           (-> query :entity :content :key :content keys))))))
+                   (map
+                     #(keyword (:name (:attrs %)))
+                     (-> query :entity all-properties)))
                  "`."))
           (:select-many-to-many
            :select-one-to-many)
@@ -221,25 +237,31 @@
 (defn to-json-routes
   [application]
   (let [handlers-map (make-handlers-map application)
-        filepath (str *output-path* (:name (:attrs application)) "/routes/auto_json.clj")]
+        filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto_json.clj")]
     (make-parents filepath)
-    (with-open [output (writer filepath)]
-      (binding [*out* output]
-        (doall
-          (map
-            (fn [f]
-              (pprint f)
-              (println "\n"))
-            (list
-              (file-header application)
-              (declarations handlers-map)
-              (defroutes handlers-map))))
-        (doall
-          (map
-            (fn [h]
-              (pprint (:src (handlers-map h)))
-              (println)
-              h)
-            (sort (keys handlers-map))))))))
+    (try
+      (with-open [output (writer filepath)]
+        (binding [*out* output]
+          (pprint (file-header application))
+          (println)
+          (doall
+            (map
+              (fn [h]
+                (pprint (:src (handlers-map h)))
+                (println)
+                h)
+              (sort (keys handlers-map))))
+          (pprint (defroutes handlers-map))))
+      (if (> *verbosity* 0)
+        (println (str "\tGenerated " filepath)))
+      (catch
+        Exception any
+        (println
+          (str
+            "ERROR: Exception "
+            (.getName (.getClass any))
+            (.getMessage any)
+            " while printing "
+            filepath))))))
 
 

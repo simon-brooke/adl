@@ -7,7 +7,7 @@
             [clojure.xml :as x]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl.utils :refer :all]))
+            [adl-support.utils :refer :all]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -58,9 +58,9 @@
    (order-by-clause entity ""))
   ([entity prefix]
   (let
-    [entity-name (:name (:attrs entity))
+    [entity-name (safe-name (:name (:attrs entity)) :sql)
      preferred (map
-                 #(:name (:attrs %))
+                 #(safe-name (:name (:attrs %)) :sql)
                  (filter #(#{"user" "all"} (-> % :attrs :distinct))
                          (children entity #(= (:tag %) :property))))]
     (if
@@ -70,7 +70,9 @@
         "ORDER BY " prefix entity-name "."
         (s/join
           (str ",\n\t" prefix entity-name ".")
-          (flatten (cons preferred (key-names entity)))))))))
+          (map
+            #(safe-name % :sql)
+            (flatten (cons preferred (key-names entity))))))))))
 
 
 (defn insert-query
@@ -78,9 +80,11 @@
   TODO: this depends on the idea that system-unique properties
   are not insertable, which is... dodgy."
   [entity]
-  (let [entity-name (:name (:attrs entity))
+  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
-        insertable-property-names (map #(:name (:attrs %)) (insertable-properties entity))
+        insertable-property-names (map
+                                    #(safe-name (:name (:attrs %)) :sql)
+                                    (insertable-properties entity))
         query-name (str "create-" pretty-name "!")
         signature ":! :n"]
     (hash-map
@@ -99,7 +103,12 @@
             ")"
             (if
               (has-primary-key? entity)
-              (str "\nreturning " (s/join ",\n\t" (key-names entity)))))})))
+              (str "\nreturning "
+                   (s/join
+                     ",\n\t"
+                     (map
+                       #(safe-name % :sql)
+                           (key-names entity))))))})))
 
 
 (defn update-query
@@ -109,7 +118,7 @@
     (and
       (has-primary-key? entity)
       (has-non-key-properties? entity))
-    (let [entity-name (:name (:attrs entity))
+    (let [entity-name (safe-name (:name (:attrs entity)) :sql)
           pretty-name (singularise entity-name)
           property-names (map #(:name (:attrs %)) (insertable-properties entity))
           query-name (str "update-" pretty-name "!")
@@ -125,15 +134,15 @@
               "-- :doc updates an existing " pretty-name " record\n"
               "UPDATE " entity-name "\n"
               "SET "
-              (s/join ",\n\t" (map #(str % " = " (keyword %)) property-names))
+              (s/join ",\n\t" (map #(str (safe-name % :sql) " = " (keyword %)) property-names))
               "\n"
               (where-clause entity))}))
     {}))
 
 
-(defn search-query [entity]
+(defn search-query [entity application]
   "Generate an appropriate search query for string fields of this `entity`"
-  (let [entity-name (:name (:attrs entity))
+  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
         query-name (str "search-strings-" pretty-name)
         signature ":? :1"
@@ -155,20 +164,34 @@
                "-- :doc selects existing "
                pretty-name
                " records having any string field matching the parameter of the same name by substring match")
-             (str "SELECT * FROM lv_" entity-name)
-             "WHERE "
+             (str "SELECT DISTINCT * FROM lv_" entity-name)
              (s/join
-               "\n\tOR "
-               (filter
-                 string?
-                 (map
-                   #(if
-                      (#{"string" "date" "text"} (:type (:attrs %)))
-                      (str (-> % :attrs :name) " LIKE '%params." (-> % :attrs :name) "%'"))
-                   properties)))
-             (order-by-clause entity "lv_")
-             "--~ (if (:offset params) \"OFFSET :offset \")"
-             "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
+               "\n\t--~ "
+               (cons
+                 "WHERE false"
+                 (filter
+                   string?
+                   (map
+                     #(str
+                        "(if (:" (-> % :attrs :name) " params) \"OR "
+                        (case (base-type % application)
+                          ("string" "text")
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " LIKE '%:" (-> % :attrs :name) "%'")
+                          ("date" "time" "timestamp")
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " = ':" (-> % :attrs :name) "'")
+                          (str
+                            (safe-name (-> % :attrs :name) :sql)
+                            " = :"
+                            (-> % :attrs :name)))
+                        "\")")
+                     properties))))
+               (order-by-clause entity "lv_")
+               "--~ (if (:offset params) \"OFFSET :offset \")"
+               "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
 
 (defn select-query
@@ -176,7 +199,7 @@
   ([entity properties]
    (if
      (not (empty? properties))
-     (let [entity-name (:name (:attrs entity))
+     (let [entity-name (safe-name (:name (:attrs entity)) :sql)
            pretty-name (singularise entity-name)
            query-name (if (= properties (key-properties entity))
                         (str "get-" pretty-name)
@@ -216,7 +239,7 @@
   Parameters `:limit` and `:offset` may be supplied. If not present limit defaults
   to 100 and offset to 0."
   [entity]
-  (let [entity-name (:name (:attrs entity))
+  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
         query-name (str "list-" entity-name)
         signature ":? :*"]
@@ -234,7 +257,7 @@
            (list
              (str "-- :name " query-name " " signature)
              (str "-- :doc lists all existing " pretty-name " records")
-             (str "SELECT * FROM lv_" entity-name)
+             (str "SELECT DISTINCT * FROM lv_" entity-name)
              (order-by-clause entity "lv_")
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
@@ -298,80 +321,6 @@
               }))
         links))))
 
-(defn link-table-query
-  "Generate a query which links across the entity passed as `link`
-  from the entity passed as `near` to the entity passed as `far`.
-  TODO: not working?"
-  [near link far]
-  (if
-    (and
-      (entity? near)
-      (entity? link)
-      (entity? far))
-    (let [properties (-> link :content :properties vals)
-          links (apply
-                  merge
-                  (map
-                    #(hash-map (keyword (-> % :attrs :entity)) %)
-                    (filter #(-> % :attrs :entity) properties)))
-          near-name (-> near :attrs :name)
-          link-name (-> link :attrs :name)
-          far-name (-> far :attrs :name)
-          pretty-far (singularise far-name)
-          query-name (str "list-" link-name "-" near-name "-by-" pretty-far)
-          signature ":? :*"]
-      (hash-map
-        (keyword query-name)
-        {:name query-name
-         :signature signature
-         :entity link
-         :type :select-many-to-many
-         :near-entity near
-         :far-entity far
-         :query
-         (s/join
-           "\n"
-           (remove
-             empty?
-             (list
-               (str "-- :name " query-name " " signature)
-               (str "-- :doc lists all existing " near-name " records related through " link-name " to a given " pretty-far )
-               (str "SELECT "near-name ".*")
-               (str "FROM " near-name ", " link-name )
-               (str "WHERE " near-name "." (first (key-names near)) " = " link-name "." (singularise near-name) "_id" )
-               ("\tAND " link-name "." (singularise far-name) "_id = :id")
-               (order-by-clause near))))}))))
-
-
-(defn link-table-queries [entity application]
-  "Generate all the link queries in this `application` which link via this `entity`."
-  (let
-    [entities (map
-                ;; find the far-side entities
-                (fn
-                  [far-name]
-                  (children
-                    application
-                    (fn [x]
-                      (and
-                        (= (:tag x) :entity)
-                        (= (:name (:attrs x)) far-name)))))
-                ;; of those properties of this `entity` which are of type `entity`
-                (remove
-                  nil?
-                  (map
-                    #(-> % :attrs :entity)
-                    (children entity #(= (:tag %) :property)))))
-     pairs (combinations entities 2)]
-    (apply
-      merge
-      (map
-        #(merge
-           (link-table-query (nth % 0) entity (nth % 1))
-           (link-table-query (nth % 1) entity (nth % 0)))
-        pairs))))
-
-
 
 (defn delete-query [entity]
   "Generate an appropriate `delete` query for this `entity`"
@@ -405,7 +354,7 @@
      (delete-query entity)
      (select-query entity)
      (list-query entity)
-     (search-query entity)
+     (search-query entity application)
      (foreign-queries entity application)))
   ([application]
    (apply
@@ -417,22 +366,34 @@
 (defn to-hugsql-queries
   "Generate all [HugSQL](https://www.hugsql.org/) queries implied by this ADL `application` spec."
   [application]
-  (let [file-path (str *output-path* "resources/sql/queries.sql")]
-    (make-parents file-path)
-    (spit
-      file-path
-      (s/join
-        "\n\n"
-        (cons
-          (emit-header
-            "--"
-            "File queries.sql"
-            (str "autogenerated by adl.to-hugsql-queries at " (t/now))
-            "See [Application Description Language](https://github.com/simon-brooke/adl).")
-          (map
-            #(:query %)
-            (sort
-              #(compare (:name %1) (:name %2))
-              (vals
-                (queries application)))))))))
+  (let [filepath (str *output-path* "resources/sql/queries.auto.sql")]
+    (make-parents filepath)
+    (try
+      (spit
+        filepath
+        (s/join
+          "\n\n"
+          (cons
+            (emit-header
+              "--"
+              "File queries.sql"
+              (str "autogenerated by adl.to-hugsql-queries at " (t/now))
+              "See [Application Description Language](https://github.com/simon-brooke/adl).")
+            (map
+              #(:query %)
+              (sort
+                #(compare (:name %1) (:name %2))
+                (vals
+                  (queries application)))))))
+      (if (> *verbosity* 0)
+        (println (str "\tGenerated " filepath)))
+      (catch
+        Exception any
+        (println
+          (str
+            "ERROR: Exception "
+            (.getName (.getClass any))
+            (.getMessage any)
+            " while printing "
+            filepath))))))
 
