@@ -69,7 +69,9 @@
       (vector 'r)
       (list 'let (vector
                    'p
-                   (list 'support/massage-params (list :params 'r)))
+                   (list 'merge
+                         {:offset 0 :limit 25}
+                         (list 'support/massage-params (list :params 'r))))
             ;; TODO: we must take key params out of just params,
             ;; but we should take all other params out of form-params - because we need the key to
             ;; load the form in the first place, but just accepting values of other params would
@@ -86,6 +88,8 @@
                   (reduce
                     merge
                     {:record
+                     ;; TODO: this breaks. We need to check for the presence of the
+                     ;; actual key in the params.
                      (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
                            (list
                              (symbol

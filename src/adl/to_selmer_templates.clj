@@ -39,7 +39,7 @@
   {:tag :div
    :attrs {:class "big-link-container"}
    :content
-   [{:tag :a :attrs {:href url}
+   [{:tag :a :attrs {:href url :class "big-link"}
      :content (if
                 (vector? content)
                 content
@@ -62,22 +62,24 @@
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
-   (let [content (:content
-                   (first
-                     (or (children-with-tag spec k)
-                         (children-with-tag entity k)
-                         (children-with-tag
-                           (first
-                             (children-with-tag application :content))
-                           k))))]
+   (let [content
+         (:content
+          (first
+           (or (children-with-tag spec k)
+               (children-with-tag entity k)
+               (children-with-tag
+                (child-with-tag application :content)
+                k))))]
      (if
        content
-       (list
+       (flatten
+        (list
          (str "{% block " (name k) " %}")
-         (map
+         (doall
+          (map
            #(with-out-str (x/emit-element %))
-           content)
-         "{% endblock %}")))))
+           content))
+         "{% endblock %}"))))))
 
 
 (defn file-header
@@ -448,7 +450,7 @@
             :content
             [{:tag :input
               :attrs {:type "submit"
-                      :id "search"
+                      :id "search-widget"
                       :value "Search"}}]})))}]})
 
 
@@ -504,35 +506,6 @@
     "{% endfor %}"]})
 
 
-(defn- list-page-control
-  "What this needs to do is emit an HTML control which, when selected, requests the
-  next or previous page keeping the same search parameters; so it essentially needs
-  to be a submit button, not a link."
-  [forward?]
-  {:tag :div
-   :attrs {:class (if forward? "big-link-container" "back-link-container")}
-   :content
-   [{:tag :input
-     :attrs {:id "page"
-             :name "page"
-             :disabled (if
-                         forward?
-                         false
-                         "{% ifequal offset 0 %} false {% else %} true {% endifequal %}")
-             ;; TODO: real thought needs to happen on doing i18n for this!
-             :value (if forward? "Next" "Previous")}}]})
-
-
-(defn- list-tfoot
-  "Return a table footer element for the list view for this `list-spec` of this `entity` within
-  this `application`."
-  [list-spec entity application]
-  {:tag :tfoot
-   :content
-   [(list-page-control false)
-    (list-page-control true)]})
-
-
 (defn list-to-template
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
@@ -544,7 +517,22 @@
          (:name (:attrs entity))
          "-"
          (:name (:attrs list-spec)))]
-    {:big-links
+    {:back-links
+     {:tag :div
+      :content
+      [
+       {:tag :div :attrs {:class "back-link-container"}
+        :content
+        ["{% ifunequal offset 0 %}"
+         {:tag :a :attrs {:id "prev-selector" :class "back-link"}
+          :content ["Previous"]}
+         "{% else %}"
+         {:tag :a
+          :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
+          :content ["Back"]}
+         "{% endifunequal %}"]}
+       ]}
+     :big-links
      {:tag :div
       :content
       [{:tag :div :attrs {:class "big-link-container"}
@@ -558,25 +546,36 @@
               :action (str "{{servlet-context}}/" form-name)
               :method "POST"}
       :content
-      [
-       (csrf-widget)
-       {:tag :input :attrs {:id "offset" :type "hidden" :value "{{offset|0}}"}}
-       {:tag :input :attrs {:id "limit" :type "hidden" :value "{{limit|50}}"}}
-       (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
+      [(csrf-widget)
+       {:tag :input :attrs {:id "offset" :type "hidden" :value "{{params.offset|default:0}}"}}
+       {:tag :input :attrs {:id "limit" :type "hidden" :value "{{params.limit|default:50}}"}}
        {:tag :table
         :attrs {:caption (:name (:attrs entity))}
         :content
-        [(list-thead list-spec entity application)
-         (list-tbody list-spec entity application)
-         (list-tfoot list-spec entity application)]}]}
+          [(list-thead list-spec entity application)
+           (list-tbody list-spec entity application)
+           ]}]}
      :extra-script
-     (str "var form = document.getElementById('" form-name "');
+     (str "
+          var form = document.getElementById('" form-name "');
           var ow = document.getElementById('offset');
           var lw = document.getElementById('limit');
+          form.addEventListener('submit', function() {
+            ow.value='0';
+          });
+
+          {% ifunequal offset 0 %}
+          document.getElementById('prev-selector').addEventListener('click', function () {
+            ow.value=(parseInt(ow.value)-parseInt(lw.value));
+            console.log('Updated offset to ' + ow.value);
+            form.submit();
+          });
+          {% endifunequal %}
 
           document.getElementById('next-selector').addEventListener('click', function () {
-          ow.text=(parseInt(ow.text)+parseInt(lw.text));
-          //form.submit();
+            ow.value=(parseInt(ow.value)+parseInt(lw.value));
+            console.log('Updated offset to ' + ow.value);
+            form.submit();
           });")}))
 
 
@@ -621,15 +620,16 @@
   (let
     [first-class-entities
      (sort-by
-       #(:name (:attrs %))
-       (filter
-         #(children-with-tag % :list)
-         (children-with-tag application :entity)))]
-    {:content
-     {:tag :dl
-      :attrs {:class "index"}
-      :content
-      (apply
+      #(:name (:attrs %))
+      (filter
+       #(children-with-tag % :list)
+       (children-with-tag application :entity)))]
+    {:application-index
+     {:content
+      {:tag :dl
+       :attrs {:class "index"}
+       :content
+       (apply
         vector
         (interleave
          (map
@@ -651,60 +651,55 @@
                           :tag :p
                           :content (:content d)))
                        (children-with-tag % :documentation))))
-          first-class-entities)))}}))
+          first-class-entities)))}}}))
 
 
 (defn write-template-file
   [filename template application]
-  (if
-    template
-    (try
-      (spit
-       (str *output-path* filename)
-       (s/join
-        "\n"
-        (flatten
-         (list
-          (file-header filename application)
-          (doall
-           (map
-            #(let [content (template %)]
-               (list
-                (str "{% block " (name %) " %}")
-                (cond (string? content)
-                      content
-                      (map? content)
-                      (with-out-str
-                        (x/emit-element content))
-                      true
-                      (str "<!-- don't know what to do with '" content "' -->"))
-                "{% endblock %}")
-               (keys template))))
-          (file-footer filename application)))))
-      (catch Exception any
-        (spit
-          filepath
-          (s/join
+  (let [filepath (str *output-path* "resources/templates/auto/" filename)]
+    (if
+      template
+      (try
+        (do
+          (spit
+           filepath
+           (s/join
             "\n"
-            (list
+            (flatten
+             (list
               (file-header filename application)
-              (with-out-str
-                (x/emit-element template))
-              (file-footer filename application))))
-        (if (> *verbosity* 0) (println "\tGenerated " filepath))
+              (doall
+               (map
+                #(let [content (template %)]
+                   (list
+                    (str "{% block " (name %) " %}")
+                    (cond (string? content)
+                          content
+                          (map? content)
+                          (with-out-str
+                            (x/emit-element content))
+                          true
+                          (str "<!-- don't know what to do with '" content "' -->"))
+                    "{% endblock %}"))
+                   (keys template)))
+              (file-footer filename application)))))
+          (if (> *verbosity* 0) (println "\tGenerated " filepath)))
         (catch Exception any
           (let [report (str
-                         "ERROR: Exception "
-                         (.getName (.getClass any))
-                         (.getMessage any)
-                         " while printing "
-                         filename)]
-            (spit
-              filepath
-              (with-out-str
-                (println (str "<!-- " report "-->"))
-                (p/pprint template)))
-            (println report)))))
+                        "ERROR: Exception "
+                        (.getName (.getClass any))
+                        (.getMessage any)
+                        " while printing "
+                        filepath)]
+            (try
+              (spit
+               filepath
+               (with-out-str
+                 (println (str "<!-- " report "-->"))
+                 (p/pprint template)))
+              (catch Exception _ nil))
+            (println report)
+            (throw any)))))
     (str filepath)))
 
 
