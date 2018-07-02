@@ -523,13 +523,13 @@
       [
        {:tag :div :attrs {:class "back-link-container"}
         :content
-        ["{% ifunequal offset 0 %}"
-         {:tag :a :attrs {:id "prev-selector" :class "back-link"}
-          :content ["Previous"]}
-         "{% else %}"
-         {:tag :a
+        ["{% ifequal params.offset \"0\" %}"
+          {:tag :a
           :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
           :content ["Back"]}
+         "{% else %}"
+          {:tag :a :attrs {:id "prev-selector" :class "back-link"}
+          :content ["Previous"]}
          "{% endifunequal %}"]}
        ]}
      :big-links
@@ -564,7 +564,7 @@
             ow.value='0';
           });
 
-          {% ifunequal offset 0 %}
+          {% ifunequal params.offset \"0\" %}
           document.getElementById('prev-selector').addEventListener('click', function () {
             ow.value=(parseInt(ow.value)-parseInt(lw.value));
             console.log('Updated offset to ' + ow.value);

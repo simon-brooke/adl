@@ -183,6 +183,10 @@
                           (str
                             (safe-name (-> % :attrs :name) :sql)
                             " = ':" (-> % :attrs :name) "'")
+                          "entity"
+                          (str
+                           (safe-name (-> % :attrs :name) :sql)
+                            "_expanded LIKE '%:" (-> % :attrs :name) "%'")
                           (str
                             (safe-name (-> % :attrs :name) :sql)
                             " = :"
