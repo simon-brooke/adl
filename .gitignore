@@ -11,3 +11,9 @@ pom.xml.asc
 .hg/
 
 resources/auto/
+
+generated/resources/sql/
+
+generated/resources/templates/auto/
+
+generated/src/clj/youyesyet/routes/

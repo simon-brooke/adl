@@ -65,13 +65,20 @@
   "Generate and return the function body for the handler for this `query`."
   [query]
   (list
-    [{:keys ['params]}]
-    (list 'do (list (symbol (str "db/" (:name query))) 'params))
-    (case
-      (:type query)
-      (:delete-1 :update-1)
-      '(response/found "/")
-      nil)))
+    [{:keys ['params 'form-params]}]
+    (list 'let
+          (vector
+            'result
+            (list
+              (symbol (str "db/" (:name query)))
+              'db/*db*
+              (list 'support/massage-params
+                    'params 'form-params (key-names (:entity query)))))
+          (case
+            (:type query)
+            (:delete-1 :update-1)
+            '(response/found "/")
+            (list 'response/ok 'result)))))
 
 
 (defn generate-handler-src
@@ -155,7 +162,7 @@
                  "`."))
           :select-1
           (generate-handler-src
-            handler-name query :post
+            handler-name query :get
             (str "select one record from the `"
                  (-> query :entity :attrs :name)
                  "` table. Expects the following key(s) to be present in `params`: `"

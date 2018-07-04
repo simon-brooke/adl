@@ -144,7 +144,7 @@
   "Generate an appropriate search query for string fields of this `entity`"
   (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
-        query-name (str "search-strings-" pretty-name)
+        query-name (str "search-strings-" entity-name)
         signature ":? :1"
         properties (remove #(#{"link"}(:type (:attrs %))) (all-properties entity))]
     (hash-map

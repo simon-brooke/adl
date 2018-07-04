@@ -69,7 +69,7 @@
       (vector 'r)
       (list 'let (vector
                    'p
-                   (list 'support/massage-params (list :params 'r)))
+                   (list 'support/massage-params (list :params 'r) (list :form-params 'r) (key-names e)))
             ;; TODO: we must take key params out of just params,
             ;; but we should take all other params out of form-params - because we need the key to
             ;; load the form in the first place, but just accepting values of other params would
@@ -112,7 +112,7 @@
                        (symbol
                          (str
                            "db/search-strings-"
-                           (singularise (:name (:attrs e)))))
+                           (:name (:attrs e))))
                        (symbol "db/*db*")
                        'p)
                      (list
