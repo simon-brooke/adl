@@ -182,28 +182,49 @@
             (list
               'l/render
               (list 'support/resolve-template (str n ".html"))
-              '(:session r)
-              (merge
-                {:title (capitalise (:name (:attrs f)))
-                 :params  'p}
-                (case (:tag f)
-                  (:form :page)
-                  (reduce
-                    merge
-                    {:record
-                     (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
-                           (list
-                             (symbol
-                               (str "db/get-" (singularise (:name (:attrs e)))))
-                             (symbol "db/*db*")
-                             'p))}
-                    (map
-                      (fn [p]
-                        (hash-map
-                          (keyword (-> p :attrs :entity))
-                          (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
-                      (filter #(#{"entity" "link"} (:type (:attrs %)))
-                              (descendants-with-tag e :property))))
+              (list :session 'r)
+              (list 'merge
+                    {:title (capitalise (:name (:attrs f)))
+                     :params  'p}
+                    (case (:tag f)
+                      (:form :page)
+                      (list
+                        'reduce
+                        'merge
+                        (list 'merge
+                              (list 'cond (list :save-button 'p)
+                                    (list 'try
+                                          (list 'if
+                                                (list 'some (key-names e) (list 'map 'name (list 'keys 'p)))
+                                                (list 'do
+                                                      (list (symbol
+                                                              (str "db/update-" (singularise (-> e :attrs :name)) "!"))
+                                                            'db/*db*
+                                                            'p)
+                                                      {:message "Updated record"})
+                                                (list 'do
+                                                      (list (symbol
+                                                              (str "db/create-" (singularise (-> e :attrs :name)) "!"))
+                                                            'db/*db*
+                                                            'p)
+                                                      {:message "Saved record"}))
+                                          `(catch Exception any#
+                                             {:error (.getMessage any#)})))
+                              {:record
+                               (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
+                                     (list
+                                       (symbol
+                                         (str "db/get-" (singularise (:name (:attrs e)))))
+                                       (symbol "db/*db*")
+                                       'p))})
+                        (cons 'list
+                              (map
+                                (fn [p]
+                                  (hash-map
+                                    (keyword (-> p :attrs :entity))
+                                    (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
+                                (filter #(#{"entity" "link"} (:type (:attrs %)))
+                                        (descendants-with-tag e :property)))))
                   :list
                   {:records
                    (list
@@ -231,6 +252,7 @@
 ;; (def e (child-with-tag a :entity))
 ;; (def f (child-with-tag e :form))
 ;; (def n (path-part f e a))
+;; (make-handler f e a)
 ;; (vector
 ;;  'p
 ;;  (list 'merge

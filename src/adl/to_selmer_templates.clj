@@ -114,7 +114,6 @@
      "\n"
      (flatten
        (list
-         "{% endblock %}"
          (emit-content filename spec entity application :foot))))))
 
 
@@ -238,38 +237,42 @@
         magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))
         async? (and (number? magnitude) (> magnitude 1))
         widget-name (safe-name (:name (:attrs property)) :sql)]
-    {:tag :div
+    {:tag :span
      :attrs {:class "select-box" :farside farname :found (if farside "true" "false")}
      :content
      (apply
        vector
        (remove
          nil?
-         (list
-           (if
-             async?
-             {:tag :input
-              :attrs
-              {:name (str widget-name "_search_box")
-               :onchange (str "$.getJSON(\"/auto/json/seach-strings-" (-> farside :attrs :name)
-                              "?"
-                              (s/join (str "=\" + " widget-name "_search_box.text + \"&amp;")
-                                      (user-distinct-property-names farside))
-                              (str "=\" + " widget-name "_search_box.text")
-                              ", null, function (data) {updateMenuOptions(\""
-                              widget-name "\", \""
-                              (first (key-names farside))
-                              "\", [\""
-                              (s/join "\", \"" (user-distinct-property-names farside))
-                              "\"], data);})")}})
-           {:tag :select
-            :attrs (merge
-                     {:id widget-name
-                      :name widget-name}
-                     (if
-                       (= (:type (:attrs property)) "link")
-                       {:multiple "multiple"}))
-            :content (apply vector (get-options property form entity application))})))}))
+         (flatten
+           (list
+             (if
+               async?
+               (list
+                 {:tag :input
+                  :attrs
+                  {:name (str widget-name "_search_box")
+                   :onchange (str "$.getJSON(\"/auto/json/seach-strings-"
+                                  (-> farside :attrs :name)
+                                  "?"
+                                  (s/join (str "=\" + " widget-name "_search_box.text + \"&amp;")
+                                          (user-distinct-property-names farside))
+                                  (str "=\" + " widget-name "_search_box.text")
+                                  ", null, function (data) {updateMenuOptions(\""
+                                  widget-name "\", \""
+                                  (first (key-names farside))
+                                  "\", [\""
+                                  (s/join "\", \"" (user-distinct-property-names farside))
+                                  "\"], data);})")}}
+                 {:tag :br}))
+             {:tag :select
+              :attrs (merge
+                       {:id widget-name
+                        :name widget-name}
+                       (if
+                         (= (:type (:attrs property)) "link")
+                         {:multiple "multiple"}))
+              :content (apply vector (get-options property form entity application))}))))}))
 
 
 (defn compose-if-member-of-tag
@@ -378,11 +381,9 @@
 
 
 (defn compose-select-script-header [entity application]
-  ["{% block extra-head %}"
-   {:tag :script :attrs {:type "text/javascript"}
+  {:tag :script :attrs {:type "text/javascript"}
     :content
-    [(slurp "resources/js/select-widget-support.js")]}
-   "{% endblock %}"])
+    [(slurp "resources/js/select-widget-support.js")]})
 
 
 (defn form-to-template
@@ -417,7 +418,7 @@
                      (delete-widget form entity application)))}]}}
      (if
        (some #(= "select" (widget-type % application)) (properties entity))
-       {:header (compose-select-script-header entity application)}
+       {:extra-head (compose-select-script-header entity application)}
        {})))
 
 
@@ -467,13 +468,15 @@
    :content
    [{:tag :tr
      :content
-     (apply
-       vector
-       (map
-         #(hash-map
-            :content [(prompt %)]
-            :tag :th)
-         (children-with-tag list-spec :field)))}
+     (conj
+       (apply
+         vector
+         (map
+           #(hash-map
+              :content [(prompt %)]
+              :tag :th)
+           (children-with-tag list-spec :field)))
+       {:tag :th :content ["&nbsp;"]})}
     {:tag :tr
      :content
      (apply

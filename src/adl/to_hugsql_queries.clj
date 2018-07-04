@@ -114,10 +114,6 @@
 (defn update-query
   "Generate an appropriate `update` query for this `entity`"
   [entity]
-  (if
-    (and
-      (has-primary-key? entity)
-      (has-non-key-properties? entity))
     (let [entity-name (safe-name (:name (:attrs entity)) :sql)
           pretty-name (singularise entity-name)
           property-names (map #(:name (:attrs %)) (insertable-properties entity))
@@ -136,8 +132,7 @@
               "SET "
               (s/join ",\n\t" (map #(str (safe-name % :sql) " = " (keyword %)) property-names))
               "\n"
-              (where-clause entity))}))
-    {}))
+              (where-clause entity))})))
 
 
 (defn search-query [entity application]
