@@ -1,14 +1,14 @@
 (ns ^{:doc "Application Description Language: generate RING routes for REST requests."
       :author "Simon Brooke"}
   adl.to-json-routes
-  (:require [clojure.java.io :refer [file make-parents writer]]
-            [clojure.pprint :refer [pprint]]
-            [clojure.string :as s]
-            [clojure.xml :as x]
+  (:require [adl-support.utils :refer :all]
+            [adl.to-hugsql-queries :refer [queries]]
             [clj-time.core :as t]
             [clj-time.format :as f]
-            [adl-support.utils :refer :all]
-            [adl.to-hugsql-queries :refer [queries]]))
+            [clojure.java.io :refer [file make-parents writer]]
+            [clojure.pprint :refer [pprint]]
+            [clojure.string :as s]
+            [clojure.xml :as x]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -47,8 +47,9 @@
     (list
       :require
       '[adl-support.core :as support]
-      '[clojure.java.io :as io]
       '[clojure.core.memoize :as memo]
+      '[clojure.java.io :as io]
+      '[clojure.tools.logging :as log]
       '[compojure.core :refer [defroutes GET POST]]
       '[hugsql.core :as hugsql]
       '[noir.response :as nresponse]

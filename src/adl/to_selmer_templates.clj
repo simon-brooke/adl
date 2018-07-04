@@ -39,7 +39,7 @@
   {:tag :div
    :attrs {:class "big-link-container"}
    :content
-   [{:tag :a :attrs {:href url}
+   [{:tag :a :attrs {:href url :class "big-link"}
      :content (if
                 (vector? content)
                 content
@@ -62,22 +62,24 @@
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
-   (let [content (:content
-                   (first
-                     (or (children-with-tag spec k)
-                         (children-with-tag entity k)
-                         (children-with-tag
-                           (first
-                             (children-with-tag application :content))
-                           k))))]
+   (let [content
+         (:content
+          (first
+           (or (children-with-tag spec k)
+               (children-with-tag entity k)
+               (children-with-tag
+                (child-with-tag application :content)
+                k))))]
      (if
        content
-       (list
+       (flatten
+        (list
          (str "{% block " (name k) " %}")
-         (map
+         (doall
+          (map
            #(with-out-str (x/emit-element %))
-           content)
-         "{% endblock %}")))))
+           content))
+         "{% endblock %}"))))))
 
 
 (defn file-header
@@ -484,7 +486,7 @@
             :content
             [{:tag :input
               :attrs {:type "submit"
-                      :id "search"
+                      :id "search-widget"
                       :value "Search"}}]})))}]})
 
 
@@ -540,51 +542,77 @@
     "{% endfor %}"]})
 
 
-(defn- list-page-control
-  "What this needs to do is emit an HTML control which, when selected, requests the
-  next or previous page keeping the same search parameters; so it essentially needs
-  to be a submit button, not a link."
-  [forward?]
-  {:tag :div
-   :attrs {:class (if forward? "big-link-container" "back-link-container")}
-   :content
-   [{:tag :input
-     :attrs {:id "page"
-             :name "page"
-             :disabled (if
-                         forward?
-                         false
-                         "{% ifequal offset 0 %} false {% else %} true {% endifequal %}")
-             ;; TODO: real thought needs to happen on doing i18n for this!
-             :value (if forward? "Next" "Previous")}}]})
-
-
-(defn- list-tfoot
-  "Return a table footer element for the list view for this `list-spec` of this `entity` within
-  this `application`."
-  [list-spec entity application]
-  {:tag :tfoot
-   :content
-   [(list-page-control false)
-    (list-page-control true)]})
-
-
 (defn list-to-template
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
   template for the entity."
   [list-spec entity application]
-  {:content
-   {:tag :form
-   :attrs {:id "content" :class "list"}
-   :content
-   [(big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
-    {:tag :table
-     :attrs {:caption (:name (:attrs entity))}
+  (let [form-name
+        (str
+         "list-"
+         (:name (:attrs entity))
+         "-"
+         (:name (:attrs list-spec)))]
+    {:back-links
+     {:tag :div
+      :content
+      [
+       {:tag :div :attrs {:class "back-link-container"}
+        :content
+        ["{% ifequal params.offset \"0\" %}"
+          {:tag :a
+          :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
+          :content ["Back"]}
+         "{% else %}"
+          {:tag :a :attrs {:id "prev-selector" :class "back-link"}
+          :content ["Previous"]}
+         "{% endifunequal %}"]}
+       ]}
+     :big-links
+     {:tag :div
+      :content
+      [{:tag :div :attrs {:class "big-link-container"}
+        :content
+        [{:tag :a :attrs {:id "next-selector" :role "button" :class "big-link"}
+          :content ["Next"]}]}
+       (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))]}
      :content
-     [(list-thead list-spec entity application)
-      (list-tbody list-spec entity application)
-      (list-tfoot list-spec entity application)]}]}})
+     {:tag :form
+      :attrs {:id form-name :class "list"
+              :action (str "{{servlet-context}}/" form-name)
+              :method "POST"}
+      :content
+      [(csrf-widget)
+       {:tag :input :attrs {:id "offset" :type "hidden" :value "{{params.offset|default:0}}"}}
+       {:tag :input :attrs {:id "limit" :type "hidden" :value "{{params.limit|default:50}}"}}
+       {:tag :table
+        :attrs {:caption (:name (:attrs entity))}
+        :content
+          [(list-thead list-spec entity application)
+           (list-tbody list-spec entity application)
+           ]}]}
+     :extra-script
+     (str "
+          var form = document.getElementById('" form-name "');
+          var ow = document.getElementById('offset');
+          var lw = document.getElementById('limit');
+          form.addEventListener('submit', function() {
+            ow.value='0';
+          });
+
+          {% ifunequal params.offset \"0\" %}
+          document.getElementById('prev-selector').addEventListener('click', function () {
+            ow.value=(parseInt(ow.value)-parseInt(lw.value));
+            console.log('Updated offset to ' + ow.value);
+            form.submit();
+          });
+          {% endifunequal %}
+
+          document.getElementById('next-selector').addEventListener('click', function () {
+            ow.value=(parseInt(ow.value)+parseInt(lw.value));
+            console.log('Updated offset to ' + ow.value);
+            form.submit();
+          });")}))
 
 
 (defn entity-to-templates
@@ -628,80 +656,84 @@
   (let
     [first-class-entities
      (sort-by
-       #(:name (:attrs %))
-       (filter
-         #(children-with-tag % :list)
-         (children-with-tag application :entity)))]
+      #(:name (:attrs %))
+      (filter
+       #(children-with-tag % :list)
+       (children-with-tag application :entity)))]
     {:application-index
-     {:tag :dl
-      :attrs {:class "index"}
-      :content
-      (apply
+     {:content
+      {:tag :dl
+       :attrs {:class "index"}
+       :content
+       (apply
         vector
         (interleave
-          (map
-            #(hash-map
-               :tag :dt
-               :content
-               [{:tag :a
-                 :attrs {:href (path-part :list % application)}
-                 :content [(pretty-name %)]}])
-            first-class-entities)
-          (map
-            #(hash-map
-               :tag :dd
-               :content (apply
-                          vector
-                          (map
-                            (fn [d]
-                              (hash-map
-                                :tag :p
-                                :content (:content d)))
-                            (children-with-tag % :documentation))))
-            first-class-entities)))}}))
+         (map
+          #(hash-map
+            :tag :dt
+            :content
+            [{:tag :a
+              :attrs {:href (path-part :list % application)}
+              :content [(pretty-name %)]}])
+          first-class-entities)
+         (map
+          #(hash-map
+            :tag :dd
+            :content (apply
+                      vector
+                      (map
+                       (fn [d]
+                         (hash-map
+                          :tag :p
+                          :content (:content d)))
+                       (children-with-tag % :documentation))))
+          first-class-entities)))}}}))
 
 
 (defn write-template-file
   [filename template application]
   (let [filepath (str *output-path* "resources/templates/auto/" filename)]
-    (make-parents filepath)
     (if
       template
       (try
-        (spit
-          filepath
-          (s/join
+        (do
+          (spit
+           filepath
+           (s/join
             "\n"
             (flatten
-              (list
-                (file-header filename application)
-                (map
-                  #(cond
-                     (:tag %)
-                     (with-out-str
-                       (x/emit-element %))
-                     (string? %)
-                     %
-                     true
-                     (str ";; WTF? " %))
-                  (:header template))
-                "{% block content %}"
-                (with-out-str
-                  (x/emit-element (:content template)))
-                (file-footer filename application)))))
-        (if (> *verbosity* 0) (println "\tGenerated " filepath))
+             (list
+              (file-header filename application)
+              (doall
+               (map
+                #(let [content (template %)]
+                   (list
+                    (str "{% block " (name %) " %}")
+                    (cond (string? content)
+                          content
+                          (map? content)
+                          (with-out-str
+                            (x/emit-element content))
+                          true
+                          (str "<!-- don't know what to do with '" content "' -->"))
+                    "{% endblock %}"))
+                   (keys template)))
+              (file-footer filename application)))))
+          (if (> *verbosity* 0) (println "\tGenerated " filepath)))
         (catch Exception any
           (let [report (str
-                         "ERROR: Exception "
-                         (.getName (.getClass any))
-                         (.getMessage any)
-                         " while printing "
-                         filename)]
-            (spit
-              filepath
-              (with-out-str
-                (println (str "<!-- " report "-->"))
-                (p/pprint template)))
+                        "ERROR: Exception "
+                        (.getName (.getClass any))
+                        (.getMessage any)
+                        " while printing "
+                        filepath)]
+            (try
+              (spit
+               filepath
+               (with-out-str
+                 (println (str "<!-- " report "-->"))
+                 (p/pprint template)))
+              (catch Exception _ nil))
             (println report)
             (throw any)))))
     (str filepath)))
