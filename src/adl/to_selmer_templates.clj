@@ -59,27 +59,49 @@
 
 
 (defn emit-content
+  ([content]
+   (cond
+     (nil? content)
+     nil
+     (string? content)
+     content
+     (and (map? content) (:tag content))
+     (with-out-str
+       (x/emit-element content))
+     (seq? content)
+     (map emit-content content)
+     true
+     (str "<!-- don't know what to do with '" content "' -->")))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
    (let [content
          (:content
-          (first
-           (or (children-with-tag spec k)
-               (children-with-tag entity k)
-               (children-with-tag
-                (child-with-tag application :content)
-                k))))]
+           (first
+             (or (children-with-tag spec k)
+                 (children-with-tag entity k)
+                 (children-with-tag
+                   (child-with-tag application :content)
+                   k))))]
      (if
        content
        (flatten
-        (list
-         (str "{% block " (name k) " %}")
-         (doall
-          (map
-           #(with-out-str (x/emit-element %))
-           content))
-         "{% endblock %}"))))))
+         (list
+           (str "{% block " (name k) " %}")
+           (doall
+             (map
+               emit-content
+               content))
+           "{% endblock %}"))))))
+
+;; {:tag :div, :content
+;;  [{:tag :div, :attrs {:class big-link-container}, :content
+;;    [{:tag :a, :attrs {:id next-selector, :role button, :class big-link},
+;;      :content [Next]}]}
+;;   [{% ifmemberof admin %}
+;;    {:tag :div, :attrs {:class big-link-container}, :content
+;;      [{:tag :a, :attrs {:href form-electors-Elector, :class big-link}, :content [Add a new Elector]}]}
+;;    {% endifmemberof %}]]}
 
 
 (defn file-header
@@ -141,22 +163,56 @@
   "{% csrf-field %}")
 
 
+(defn compose-if-member-of-tag
+  [writable? & elts]
+  (let
+    [all-permissions (distinct (apply find-permissions elts))
+     permissions (map
+                   s/lower-case
+                   (if
+                     writable?
+                     (writable-by all-permissions)
+                     (visible-to all-permissions)))]
+    (s/join
+     " "
+     (flatten
+      (list
+       "{% ifmemberof"
+       permissions
+       "%}")))))
+
+
+(defn wrap-in-if-member-of
+  "Wrap this `content` in an if-member-of tag; if `writable?` is true,
+  allow those groups by whom it is writable, else those by whom it is
+  readable. `context` should be a sequence of adl elements from which
+  permissions may be obtained."
+  [content writable? & context]
+  [(apply compose-if-member-of-tag (cons writable? context))
+   content
+   "{% endifmemberof %}"])
+
+
 (defn save-widget
   "Return an appropriate 'save' widget for this `form` operating on this `entity` taken
   from this `application`.
   TODO: should be suppressed unless a member of a group which can insert or edit."
   [form entity application]
-  {:tag :p
-   :attrs {:class "widget action-safe"}
-   :content [{:tag :label
-              :attrs {:for "save-button" :class "action-safe"}
-              :content [(str "To save this " (:name (:attrs entity)) " record")]}
-             {:tag :input
-              :attrs {:id "save-button"
-                      :name "save-button"
-                      :class "action-safe"
-                      :type "submit"
-                      :value (str "Save!")}}]})
+  (wrap-in-if-member-of
+    {:tag :p
+     :attrs {:class "widget action-safe"}
+     :content [{:tag :label
+                :attrs {:for "save-button" :class "action-safe"}
+                :content [(str "To save this " (:name (:attrs entity)) " record")]}
+               {:tag :input
+                :attrs {:id "save-button"
+                        :name "save-button"
+                        :class "action-safe"
+                        :type "submit"
+                        :value (str "Save!")}}]}
+    true
+    entity
+    application))
 
 
 (defn delete-widget
@@ -164,17 +220,21 @@
   from this `application`.
   TODO: should be suppressed unless member of a group which can delete."
   [form entity application]
-  {:tag :p
-   :attrs {:class "widget action-dangerous"}
-   :content [{:tag :label
-              :attrs {:for "delete-button" :class "action-dangerous"}
-              :content [(str "To delete this " (:name (:attrs entity)) " record")]}
-             {:tag :input
-              :attrs {:id "delete-button"
-                      :name "delete-button"
-                      :class "action-dangerous"
-                      :type "submit"
-                      :value (str "Delete!")}}]})
+  (wrap-in-if-member-of
+    {:tag :p
+     :attrs {:class "widget action-dangerous"}
+     :content [{:tag :label
+                :attrs {:for "delete-button" :class "action-dangerous"}
+                :content [(str "To delete this " (:name (:attrs entity)) " record")]}
+               {:tag :input
+                :attrs {:id "delete-button"
+                        :name "delete-button"
+                        :class "action-dangerous"
+                        :type "submit"
+                        :value (str "Delete!")}}]}
+    true
+    entity
+    application))
 
 
 (defn get-options
@@ -224,7 +284,8 @@
          "boolean" "checkbox"
          "date" "date"
          "time" "time"
-         "text" ;; default
+         "text" "text-area"
+         "string" ;; default
          )))))
 
 
@@ -275,25 +336,6 @@
               :content (apply vector (get-options property form entity application))}))))}))
 
 
-(defn compose-if-member-of-tag
-  [property entity application writable?]
-  (let
-    [all-permissions (find-permissions property entity application)
-     permissions (map
-                   s/lower-case
-                   (if
-                     writable?
-                     (writable-by all-permissions)
-                     (visible-to all-permissions)))]
-    (s/join
-     " "
-     (flatten
-      (list
-       "{% ifmemberof"
-       permissions
-       "%}")))))
-
-
 (defn compose-widget-para
   [p f e a w content]
   {:tag :p
@@ -301,10 +343,10 @@
    :content [{:tag :label
               :attrs {:for w}
               :content [(prompt p f e a)]}
-             (compose-if-member-of-tag p e a true)
+             (compose-if-member-of-tag true p e a)
              content
              "{% else %}"
-             (compose-if-member-of-tag p e a false)
+             (compose-if-member-of-tag false p e a)
              {:tag :span
               :attrs {:id w
                       :name w
@@ -352,6 +394,12 @@
       "select"
       (compose-widget-para field-or-property form entity application widget-name
                            (select-widget property form entity application))
+      "text-area"
+      (compose-widget-para
+        field-or-property form entity application widget-name
+        {:tag :textarea
+         :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
+         :content [(str "{{record." widget-name "}}")]})
       ;; all others
       (compose-widget-para
         field-or-property form entity application widget-name
@@ -380,18 +428,23 @@
                     {:max (:maximum (:attrs typedef))}))}))))
 
 
-(defn compose-select-script-header [entity application]
-  {:tag :script :attrs {:type "text/javascript"}
-    :content
-    [(slurp "resources/js/select-widget-support.js")]})
+(defn embed-script-fragment
+  "Return the content of the file at `fielpath`, with these `substitutions`
+  made into it in order. Substitutions should be pairss [`pattern` `value`],
+  where `pattern` is a string, a char, or a regular expression."
+  ([filepath substitutions]
+   (let [v (slurp filepath)]
+     (reduce
+       (fn [s [pattern value]]
+         (s/replace s pattern value))
+       v
+       substitutions)))
+  ([filepath]
+   (embed-script-fragment filepath [])))
 
 
-(defn form-to-template
-  "Generate a template as specified by this `form` element for this `entity`,
-  taken from this `application`. If `form` is nill, generate a default form
-  template for the entity."
+(defn compose-form-content
   [form entity application]
-  (merge
     {:content
      {:tag :div
       :attrs {:id "content" :class "edit"}
@@ -415,11 +468,48 @@
                             (= (:distict (:attrs property)) :system))
                          (children-with-tag form :field)))
                      (save-widget form entity application)
-                     (delete-widget form entity application)))}]}}
-     (if
-       (some #(= "select" (widget-type % application)) (properties entity))
-       {:extra-head (compose-select-script-header entity application)}
-       {})))
+                     (delete-widget form entity application)))}]}})
+
+
+(defn compose-form-extra-head
+  [form entity application]
+  {:extra-head
+   (if
+     (some
+       #(= "text-area" (widget-type % application)) (properties entity))
+     "{% script \"js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
+     {% style \"js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")})
+
+
+ (defn compose-form-extra-tail
+   [form entity application]
+   {:extra-tail
+    {:tag :script :attrs {:type "text/javascript"}
+     :content
+     (apply
+       vector
+       (remove
+         nil?
+         (list
+           (if
+             (some
+               #(= "select" (widget-type % application)) (properties entity))
+             (embed-script-fragment  "resources/js/select-widget-support.js"))
+           (if
+             (some
+               #(= "text-area" (widget-type % application)) (properties entity))
+             (embed-script-fragment  "resources/js/text-area-md-support.js")))))}})
+
+
+(defn form-to-template
+  "Generate a template as specified by this `form` element for this `entity`,
+  taken from this `application`. If `form` is nill, generate a default form
+  template for the entity."
+  [form entity application]
+  (merge
+    (compose-form-extra-head form entity application)
+    (compose-form-content form entity application)
+    (compose-form-extra-tail form entity application)))
 
 
 (defn page-to-template
@@ -552,33 +642,43 @@
   [list-spec entity application]
   (let [form-name
         (str
-         "list-"
-         (:name (:attrs entity))
-         "-"
-         (:name (:attrs list-spec)))]
+          "list-"
+          (:name (:attrs entity))
+          "-"
+          (:name (:attrs list-spec)))]
     {:back-links
      {:tag :div
       :content
       [
-       {:tag :div :attrs {:class "back-link-container"}
-        :content
-        ["{% ifequal params.offset \"0\" %}"
+        {:tag :div :attrs {:class "back-link-container"}
+         :content
+         ["{% ifequal params.offset \"0\" %}"
           {:tag :a
-          :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
-          :content ["Back"]}
-         "{% else %}"
+           :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
+           :content ["Back"]}
+          "{% else %}"
           {:tag :a :attrs {:id "prev-selector" :class "back-link"}
-          :content ["Previous"]}
-         "{% endifunequal %}"]}
-       ]}
+           :content ["Previous"]}
+          "{% endifunequal %}"]}
+        ]}
      :big-links
      {:tag :div
       :content
-      [{:tag :div :attrs {:class "big-link-container"}
-        :content
-        [{:tag :a :attrs {:id "next-selector" :role "button" :class "big-link"}
-          :content ["Next"]}]}
-       (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))]}
+      (apply
+        vector
+        (remove
+          nil?
+          (flatten
+            (list
+              {:tag :div :attrs {:class "big-link-container"}
+               :content
+               [{:tag :a :attrs {:id "next-selector" :role "button" :class "big-link"}
+                 :content ["Next"]}]}
+              (wrap-in-if-member-of
+                (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
+                true
+                entity
+                application)))))}
      :content
      {:tag :form
       :attrs {:id form-name :class "list"
@@ -591,30 +691,30 @@
        {:tag :table
         :attrs {:caption (:name (:attrs entity))}
         :content
-          [(list-thead list-spec entity application)
-           (list-tbody list-spec entity application)
-           ]}]}
+        [(list-thead list-spec entity application)
+         (list-tbody list-spec entity application)
+         ]}]}
      :extra-script
      (str "
           var form = document.getElementById('" form-name "');
           var ow = document.getElementById('offset');
           var lw = document.getElementById('limit');
           form.addEventListener('submit', function() {
-            ow.value='0';
+          ow.value='0';
           });
 
           {% ifunequal params.offset \"0\" %}
           document.getElementById('prev-selector').addEventListener('click', function () {
-            ow.value=(parseInt(ow.value)-parseInt(lw.value));
-            console.log('Updated offset to ' + ow.value);
-            form.submit();
+          ow.value=(parseInt(ow.value)-parseInt(lw.value));
+          console.log('Updated offset to ' + ow.value);
+          form.submit();
           });
           {% endifunequal %}
 
           document.getElementById('next-selector').addEventListener('click', function () {
-            ow.value=(parseInt(ow.value)+parseInt(lw.value));
-            console.log('Updated offset to ' + ow.value);
-            form.submit();
+          ow.value=(parseInt(ow.value)+parseInt(lw.value));
+          console.log('Updated offset to ' + ow.value);
+          form.submit();
           });")}))
 
 
@@ -654,43 +754,63 @@
            (form-to-template nil entity application)})))))
 
 
-(defn application-to-template
-  [application]
-  (let
-    [first-class-entities
-     (sort-by
-      #(:name (:attrs %))
-      (filter
-       #(children-with-tag % :list)
-       (children-with-tag application :entity)))]
-    {:application-index
-     {:content
-      {:tag :dl
-       :attrs {:class "index"}
-       :content
-       (apply
-        vector
-        (interleave
-         (map
-          #(hash-map
-            :tag :dt
-            :content
-            [{:tag :a
-              :attrs {:href (path-part :list % application)}
-              :content [(pretty-name %)]}])
-          first-class-entities)
-         (map
-          #(hash-map
-            :tag :dd
-            :content (apply
-                      vector
-                      (map
-                       (fn [d]
-                         (hash-map
-                          :tag :p
-                          :content (:content d)))
-                       (children-with-tag % :documentation))))
-          first-class-entities)))}}}))
+(defn emit-entity-dt
+  [entity application]
+  (wrap-in-if-member-of
+   {:tag :dt
+    :content
+    [{:tag :a
+      :attrs {:href (path-part :list entity application)}
+      :content [(pretty-name entity)]}]}
+    false
+    entity
+    application))
+
+
+(defn emit-entity-dd
+  [entity application]
+  (wrap-in-if-member-of
+    {:tag :dd
+     :content
+     (apply
+       vector
+       (map
+         (fn [d]
+           (hash-map
+             :tag :p
+             :content (:content d)))
+         (children-with-tag entity :documentation)))}
+    false
+    entity
+    application))
+
+
+    (defn application-to-template
+      [application]
+      (let
+        [first-class-entities
+         (sort-by
+           #(:name (:attrs %))
+           (filter
+             #(children-with-tag % :list)
+             (children-with-tag application :entity)))]
+        {:application-index
+         {:content
+          {:tag :dl
+           :attrs {:class "index"}
+           :content
+           (apply
+             vector
+             (remove
+               nil?
+               (flatten
+                 (interleave
+                   (map
+                     #(emit-entity-dt % application)
+                     first-class-entities)
+                   (map
+                     #(emit-entity-dd % application)
+                     first-class-entities)))))}}}))
 
 
 (defn write-template-file
@@ -712,13 +832,7 @@
                 #(let [content (template %)]
                    (list
                     (str "{% block " (name %) " %}")
-                    (cond (string? content)
-                          content
-                          (map? content)
-                          (with-out-str
-                            (x/emit-element content))
-                          true
-                          (str "<!-- don't know what to do with '" content "' -->"))
+                    (emit-content content)
                     "{% endblock %}"))
                    (keys template)))
               (file-footer filename application)))))
