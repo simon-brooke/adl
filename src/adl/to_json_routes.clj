@@ -37,6 +37,12 @@
 ;;; to-hugsql-queries, because essentially we need one JSON entry point to wrap
 ;;; each query.
 
+;;; TODO: memoisation of handlers probably doesn't make sense, because every request
+;;; will be different. I don't think we can memoise HugSQL, at least not without
+;;; hacking the library (might be worth doing that and contributing a patch).
+;;; So the solution may be to an intervening namespace 'cache', which has one
+;;; memoised function for each hugsql query.
+
 (defn file-header [application]
   (list
     'ns
@@ -65,21 +71,25 @@
 (defn generate-handler-body
   "Generate and return the function body for the handler for this `query`."
   [query]
-  (list
-    [{:keys ['params 'form-params]}]
-    (list 'let
-          (vector
-            'result
-            (list
-              (symbol (str "db/" (:name query)))
-              'db/*db*
-              (list 'support/massage-params
-                    'params 'form-params (key-names (:entity query)))))
-          (case
-            (:type query)
-            (:delete-1 :update-1)
-            '(response/found "/")
-            (list 'response/ok 'result)))))
+  (let [action (list
+                 (symbol (str "db/" (:name query)))
+                 'db/*db*
+                 (list 'support/massage-params
+                       'params
+                       'form-params
+                       (key-names (:entity query))))]
+    (list
+     [{:keys ['params 'form-params]}]
+     (case
+       (:type query)
+       (:delete-1 :update-1)
+       (list
+         action
+         '(response/found "/"))
+       (list
+         'let
+         (vector 'result action)
+         (list 'response/ok 'result))))))
 
 
 (defn generate-handler-src

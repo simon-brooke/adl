@@ -306,7 +306,7 @@
                                     "\n\tAND " entity-name "." link-field " = :id")
                                (order-by-clause entity "lv_"))
                     "link" (let [link-table-name
-                                 (link-table-name entity far-entity)]
+                                 (link-table-name % entity far-entity)]
                              (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc links all existing " pretty-name " records related to a given " pretty-far)

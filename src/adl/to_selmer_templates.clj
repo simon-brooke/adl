@@ -146,15 +146,16 @@
   ([field-or-property form entity application]
    (prompt field-or-property))
   ([field-or-property]
-   (or
-     (first
-       (children
-         field-or-property
-         #(and
-            (= (:tag %) :prompt)
-            (= (:locale :attrs %) *locale*))))
-     (:name (:attrs field-or-property))
-     (:property (:attrs field-or-property)))))
+   (capitalise
+     (or
+       (first
+         (children
+           field-or-property
+           #(and
+              (= (:tag %) :prompt)
+              (= (:locale :attrs %) *locale*))))
+       (:name (:attrs field-or-property))
+       (:property (:attrs field-or-property))))))
 
 
 (defn csrf-widget

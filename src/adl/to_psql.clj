@@ -461,7 +461,7 @@
              #(and
                 (entity? %)
                 (= (:name (:attrs %)) (:entity (:attrs property)))))
-        link-table-name (link-table-name e1 e2)]
+        link-table-name (link-table-name property e1 e2)]
     (if
       ;; we haven't already emitted this one...
       (not (@emitted-link-tables link-table-name))
