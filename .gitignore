@@ -9,6 +9,7 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+.idea
 
 resources/auto/
 
@@ -17,3 +18,5 @@ generated/resources/sql/
 generated/resources/templates/auto/
 
 generated/src/clj/youyesyet/routes/
+
+*.iml

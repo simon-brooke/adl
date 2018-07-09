@@ -39,7 +39,7 @@
   {:tag :div
    :attrs {:class "big-link-container"}
    :content
-   [{:tag :a :attrs {:href url :class "big-link"}
+   [{:tag :a :attrs {:href  (str "{{servlet-context}}/" url) :class "big-link"}
      :content (if
                 (vector? content)
                 content
@@ -51,7 +51,7 @@
   {:tag :div
    :attrs {:class "back-link-container"}
    :content
-   [{:tag :a :attrs {:href url}
+   [{:tag :a :attrs {:href (str "{{servlet-context}}/" url)}
      :content (if
                 (vector? content)
                 content
@@ -60,18 +60,20 @@
 
 (defn emit-content
   ([content]
-   (cond
-     (nil? content)
-     nil
-     (string? content)
-     content
-     (and (map? content) (:tag content))
-     (with-out-str
-       (x/emit-element content))
-     (seq? content)
-     (map emit-content content)
-     true
-     (str "<!-- don't know what to do with '" content "' -->")))
+   (try
+     (cond
+       (nil? content)
+       nil
+       (string? content)
+       content
+       (and (map? content) (:tag content))
+       (with-out-str
+         (x/emit-element content))
+       (seq? content)
+       (map emit-content content)
+       true
+       (str "<!-- don't know what to do with '" content "' -->"))
+     (catch Exception _ (str "<!-- failed while trying to emit '" content " -->"))))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
@@ -93,15 +95,6 @@
                emit-content
                content))
            "{% endblock %}"))))))
-
-;; {:tag :div, :content
-;;  [{:tag :div, :attrs {:class big-link-container}, :content
-;;    [{:tag :a, :attrs {:id next-selector, :role button, :class big-link},
-;;      :content [Next]}]}
-;;   [{% ifmemberof admin %}
-;;    {:tag :div, :attrs {:class big-link-container}, :content
-;;      [{:tag :a, :attrs {:href form-electors-Elector, :class big-link}, :content [Add a new Elector]}]}
-;;    {% endifmemberof %}]]}
 
 
 (defn file-header
@@ -155,7 +148,8 @@
               (= (:tag %) :prompt)
               (= (:locale :attrs %) *locale*))))
        (:name (:attrs field-or-property))
-       (:property (:attrs field-or-property))))))
+       (:property (:attrs field-or-property))
+       "Missing prompt"))))
 
 
 (defn csrf-widget
@@ -165,15 +159,15 @@
 
 
 (defn compose-if-member-of-tag
-  [writable? & elts]
+  [privilege & elts]
   (let
     [all-permissions (distinct (apply find-permissions elts))
      permissions (map
                    s/lower-case
-                   (if
-                     writable?
-                     (writable-by all-permissions)
-                     (visible-to all-permissions)))]
+                   (case privilege
+                     :writeable (writeable-by all-permissions)
+                     :editable (writeable-by all-permissions true)
+                     :readable (visible-to all-permissions)))]
     (s/join
      " "
      (flatten
@@ -184,12 +178,12 @@
 
 
 (defn wrap-in-if-member-of
-  "Wrap this `content` in an if-member-of tag; if `writable?` is true,
-  allow those groups by whom it is writable, else those by whom it is
+  "Wrap this `content` in an if-member-of tag; if `writeable?` is true,
+  allow those groups by whom it is writeable, else those by whom it is
   readable. `context` should be a sequence of adl elements from which
   permissions may be obtained."
-  [content writable? & context]
-  [(apply compose-if-member-of-tag (cons writable? context))
+  [content privilege & context]
+  [(apply compose-if-member-of-tag (cons privilege context))
    content
    "{% endifmemberof %}"])
 
@@ -211,7 +205,7 @@
                         :class "action-safe"
                         :type "submit"
                         :value (str "Save!")}}]}
-    true
+    :editable
     entity
     application))
 
@@ -233,7 +227,7 @@
                         :class "action-dangerous"
                         :type "submit"
                         :value (str "Delete!")}}]}
-    true
+    :editable
     entity
     application))
 
@@ -275,9 +269,8 @@
              (:type (:attrs typedef))
              (:type (:attrs property)))]
      (if
-       (= (-> property :attrs :distinct) "system")
-       "hidden" ;; <- this is slightly wrong. There are some circumstances in which
-                ;; system-distinct properties might be user-editable
+       (and (= (-> property :attrs :distinct) "system") (= (-> property :attrs :immutable) "true"))
+       "hidden"
        (case t
          ("integer" "real" "money") "number"
          ("uploadable" "image") "file"
@@ -286,8 +279,8 @@
          "date" "date"
          "time" "time"
          "text" "text-area"
-         "string" ;; default
-         )))))
+         ;; default
+         "string")))))
 
 
 (defn select-widget
@@ -337,30 +330,49 @@
               :content (apply vector (get-options property form entity application))}))))}))
 
 
+(defn compose-readable-or-not-authorised
+  [p f e a w]
+  (list
+    (compose-if-member-of-tag :readable p e a)
+    {:tag :span
+     :attrs {:id w
+             :name w
+             :class "pseudo-widget disabled"}
+     :content [(str "{{record." w "}}")]}
+    "{% else %}"
+    {:tag :span
+     :attrs {:id w
+             :name w
+             :class "pseudo-widget not-authorised"}
+     :content [(str "You are not permitted to view " w " of " (:name (:attrs e)))]}
+    "{% endifmemberof %}"
+    ))
+
+
 (defn compose-widget-para
   [p f e a w content]
   {:tag :p
    :attrs {:class "widget"}
-   :content [{:tag :label
-              :attrs {:for w}
-              :content [(prompt p f e a)]}
-             (compose-if-member-of-tag true p e a)
-             content
-             "{% else %}"
-             (compose-if-member-of-tag false p e a)
-             {:tag :span
-              :attrs {:id w
-                      :name w
-                      :class "pseudo-widget disabled"}
-              :content [(str "{{record." w "}}")]}
-             "{% else %}"
-             {:tag :span
-              :attrs {:id w
-                      :name w
-                      :class "pseudo-widget not-authorised"}
-              :content [(str "You are not permitted to view " w " of " (:name (:attrs e)))]}
-             "{% endifmemberof %}"
-             "{% endifmemberof %}"]})
+   :content (apply
+              vector
+              (flatten
+                (list
+                  {:tag :label
+                   :attrs {:for w}
+                   :content [(prompt p f e a)]}
+                  (str "{% if {{record." (-> p :attrs :name) "}} %}")
+                  (compose-if-member-of-tag :editable p e a)
+                  content
+                  "{% else %}"
+                  (compose-readable-or-not-authorised p f e a w)
+                  "{% endifmemberof %}"
+                  "{% else %}"
+                  (compose-if-member-of-tag :writeable p e a)
+                  content
+                  "{% else %}"
+                   (compose-readable-or-not-authorised p f e a w)
+                  "{% endifmemberof %}"
+                  "{% endif %}")))})
 
 
 (defn widget
@@ -375,58 +387,62 @@
      property (if
                 (= (:tag field-or-property) :property)
                 field-or-property
-                (child-with-tag entity
-                                :property
-                                #(= (:name (:attrs %))
-                                    (:property (:attrs field-or-property)))))
+                (first
+                  (filter
+                    #(= (:name (:attrs %))
+                        (:property (:attrs field-or-property)))
+                    (descendants-with-tag entity
+                                          :property))))
      permissions (find-permissions field-or-property property form entity application)
      typedef (typedef property application)
      w-type (widget-type property application typedef)
      visible-to (visible-to permissions)
-     ;; if the form isn't actually a form, no widget is writable.
-     writable-by (if (= (:tag form) :form) (writable-by permissions))]
-    (case w-type
-      "hidden"
-      {:tag :input
-       :attrs {:id widget-name
-               :name widget-name
-               :type "hidden"
-               :value (str "{{record." widget-name "}}")}}
-      "select"
-      (compose-widget-para field-or-property form entity application widget-name
-                           (select-widget property form entity application))
-      "text-area"
-      (compose-widget-para
-        field-or-property form entity application widget-name
-        {:tag :textarea
-         :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
-         :content [(str "{{record." widget-name "}}")]})
-      ;; all others
-      (compose-widget-para
-        field-or-property form entity application widget-name
+     ;; if the form isn't actually a form, no widget is writeable.
+     writeable-by (if (= (:tag form) :form) (writeable-by permissions))]
+    (if
+      property
+      (case w-type
+        "hidden"
         {:tag :input
-         :attrs (merge
-                  {:id widget-name
-                   :name widget-name
-                   :type w-type
-                   :value (str "{{record." widget-name "}}")
-                   :maxlength (:size (:attrs property))
-                   :size (cond
-                           (nil? (:size (:attrs property)))
-                           "16"
-                           (try
-                             (> (read-string
-                                  (:size (:attrs property))) 60)
-                             (catch Exception _ false))
-                           "60"
-                           true
-                           (:size (:attrs property)))}
-                  (if
-                    (:minimum (:attrs typedef))
-                    {:min (:minimum (:attrs typedef))})
-                  (if
-                    (:maximum (:attrs typedef))
-                    {:max (:maximum (:attrs typedef))}))}))))
+         :attrs {:id widget-name
+                 :name widget-name
+                 :type "hidden"
+                 :value (str "{{record." widget-name "}}")}}
+        "select"
+        (compose-widget-para property form entity application widget-name
+                             (select-widget property form entity application))
+        "text-area"
+        (compose-widget-para
+          property form entity application widget-name
+          {:tag :textarea
+           :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
+           :content [(str "{{record." widget-name "}}")]})
+        ;; all others
+        (compose-widget-para
+          property form entity application widget-name
+          {:tag :input
+           :attrs (merge
+                    {:id widget-name
+                     :name widget-name
+                     :type w-type
+                     :value (str "{{record." widget-name "}}")
+                     :maxlength (:size (:attrs property))
+                     :size (cond
+                             (nil? (:size (:attrs property)))
+                             "16"
+                             (try
+                               (> (read-string
+                                    (:size (:attrs property))) 60)
+                               (catch Exception _ false))
+                             "60"
+                             true
+                             (:size (:attrs property)))}
+                    (if
+                      (:minimum (:attrs typedef))
+                      {:min (:minimum (:attrs typedef))})
+                    (if
+                      (:maximum (:attrs typedef))
+                      {:max (:maximum (:attrs typedef))}))})))))
 
 
 (defn embed-script-fragment
@@ -446,14 +462,16 @@
 
 (defn compose-form-content
   [form entity application]
-    {:content
-     {:tag :div
-      :attrs {:id "content" :class "edit"}
-      :content
-      [{:tag :form
-        :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
-                :method "POST"}
-        :content (flatten
+  {:content
+   {:tag :div
+    :attrs {:id "content" :class "edit"}
+    :content
+    [{:tag :form
+      :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
+              :method "POST"}
+      :content (apply
+                 vector
+                 (flatten
                    (list
                      (csrf-widget)
                      (map
@@ -469,7 +487,7 @@
                             (= (:distict (:attrs property)) :system))
                          (children-with-tag form :field)))
                      (save-widget form entity application)
-                     (delete-widget form entity application)))}]}})
+                     (delete-widget form entity application))))}]}})
 
 
 (defn compose-form-extra-head
@@ -587,6 +605,7 @@
 (defn edit-link
   [entity application parameters]
   (str
+    "{{servlet-context}}/"
     (editor-name entity application)
     "?"
     (s/join
@@ -677,7 +696,7 @@
                  :content ["Next"]}]}
               (wrap-in-if-member-of
                 (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
-                true
+                :writeable
                 entity
                 application)))))}
      :content
@@ -761,9 +780,9 @@
    {:tag :dt
     :content
     [{:tag :a
-      :attrs {:href (path-part :list entity application)}
+      :attrs {:href (str "{{servlet-context}}/" (path-part :list entity application))}
       :content [(pretty-name entity)]}]}
-    false
+    :readable
     entity
     application))
 
@@ -781,37 +800,37 @@
              :tag :p
              :content (:content d)))
          (children-with-tag entity :documentation)))}
-    false
+    :readable
     entity
     application))
 
 
-    (defn application-to-template
-      [application]
-      (let
-        [first-class-entities
-         (sort-by
-           #(:name (:attrs %))
-           (filter
-             #(children-with-tag % :list)
-             (children-with-tag application :entity)))]
-        {:application-index
-         {:content
-          {:tag :dl
-           :attrs {:class "index"}
-           :content
-           (apply
-             vector
-             (remove
-               nil?
-               (flatten
-                 (interleave
-                   (map
-                     #(emit-entity-dt % application)
-                     first-class-entities)
-                   (map
-                     #(emit-entity-dd % application)
-                     first-class-entities)))))}}}))
+(defn application-to-template
+  [application]
+  (let
+    [first-class-entities
+     (sort-by
+       #(:name (:attrs %))
+       (filter
+         #(children-with-tag % :list)
+         (children-with-tag application :entity)))]
+    {:application-index
+     {:content
+      {:tag :dl
+       :attrs {:class "index"}
+       :content
+       (apply
+         vector
+         (remove
+           nil?
+           (flatten
+             (interleave
+               (map
+                 #(emit-entity-dt % application)
+                 first-class-entities)
+               (map
+                 #(emit-entity-dd % application)
+                 first-class-entities)))))}}}))
 
 
 (defn write-template-file
