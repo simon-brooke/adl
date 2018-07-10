@@ -258,12 +258,16 @@
               (:farkey (:attrs property))
               (first (key-names farside))
               "id")]
-    [(str "{% for r in " farname " %}<option value='{{r."
+    ;; Yes, I know it looks BONKERS generating this as an HTML string. But there is a
+    ;; reason. We don't know whether the `selected` attribute should be present or
+    ;; absent until rendering.
+    [(str "{% for option in " (-> property :attrs :name)
+          " %}<option value='{{option."
           farkey
           "}}' {% ifequal record."
           (-> property :attrs :name)
-          " r." farkey "%}selected{% endifequal %}>"
-          (s/join " " (map #(str "{{r." (:name (:attrs %)) "}}") fs-distinct))
+          " option." farkey "%}selected{% endifequal %}>"
+          (s/join " " (map #(str "{{option." (:name (:attrs %)) "}}") fs-distinct))
           "</option>{% endfor %}")]))
 
 
@@ -292,50 +296,20 @@
 
 
 (defn select-widget
-  ;; TODO: rewrite for selectize https://github.com/selectize/selectize.js/blob/master/docs/usage.md
-  ;; https://gist.github.com/zabolotnov87/11142887
   [property form entity application]
   (let [farname (:entity (:attrs property))
         farside (first (children application #(= (:name (:attrs %)) farname)))
         magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))
         async? (and (number? magnitude) (> magnitude 1))
         widget-name (safe-name (:name (:attrs property)) :sql)]
-    {:tag :span
-     :attrs {:class "select-box" :farside farname :found (if farside "true" "false")}
-     :content
-     (apply
-       vector
-       (remove
-         nil?
-         (flatten
-           (list
-             (if
-               async?
-               (list
-                 {:tag :input
-                  :attrs
-                  {:name (str widget-name "_search_box")
-                   :onchange (str "$.getJSON(\"/auto/json/seach-strings-"
-                                  (-> farside :attrs :name)
-                                  "?"
-                                  (s/join (str "=\" + " widget-name "_search_box.text + \"&amp;")
-                                          (user-distinct-property-names farside))
-                                  (str "=\" + " widget-name "_search_box.text")
-                                  ", null, function (data) {updateMenuOptions(\""
-                                  widget-name "\", \""
-                                  (first (key-names farside))
-                                  "\", [\""
-                                  (s/join "\", \"" (user-distinct-property-names farside))
-                                  "\"], data);})")}}
-                 {:tag :br}))
-             {:tag :select
-              :attrs (merge
-                       {:id widget-name
-                        :name widget-name}
-                       (if
-                         (= (:type (:attrs property)) "link")
-                         {:multiple "multiple"}))
-              :content (apply vector (get-options property form entity application))}))))}))
+    {:tag :select
+     :attrs (merge
+              {:id widget-name
+               :name widget-name}
+              (if
+                (= (:type (:attrs property)) "link")
+                {:multiple "multiple"}))
+     :content (apply vector (get-options property form entity application))}))
 
 
 (defn compose-readable-or-not-authorised
@@ -353,8 +327,7 @@
              :name w
              :class "pseudo-widget not-authorised"}
      :content [(str "You are not permitted to view " w " of " (:name (:attrs e)))]}
-    "{% endifmemberof %}"
-    ))
+    "{% endifmemberof %}"))
 
 
 (defn compose-widget-para
@@ -454,7 +427,7 @@
 
 
 (defn embed-script-fragment
-  "Return the content of the file at `fielpath`, with these `substitutions`
+  "Return the content of the file at `filepath`, with these `substitutions`
   made into it in order. Substitutions should be pairss [`pattern` `value`],
   where `pattern` is a string, a char, or a regular expression."
   ([filepath substitutions]
@@ -603,31 +576,53 @@
 (defn compose-form-extra-head
   [form entity application]
   {:extra-head
-   (if
-     (some
-       #(= "text-area" (widget-type % application)) (properties entity))
-     "{% script \"js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
-     {% style \"js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")})
+   (apply
+     str
+     (remove
+       nil?
+       (list
+         (if
+           (some
+             #(= "text-area" (widget-type % application)) (properties entity))
+           "
+           {% script \"js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
+           {% style \"js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")
+         (if
+           (some
+             #(= "select" (widget-type % application)) (properties entity))
+           "
+           {% script \"/js/lib/node_modules/selectize/dist/js/standalone/selectize.min.js\" %}
+           {% style \"/js/lib/node_modules/selectize/dist/css/selectize.css\" %}"))))})
 
 
- (defn compose-form-extra-tail
-   [form entity application]
-   {:extra-tail
-    {:tag :script :attrs {:type "text/javascript"}
-     :content
-     (apply
-       vector
-       (remove
-         nil?
-         (list
-           (if
-             (some
-               #(= "select" (widget-type % application)) (properties entity))
-             (embed-script-fragment  "resources/js/select-widget-support.js"))
-           (if
-             (some
-               #(= "text-area" (widget-type % application)) (properties entity))
-             (embed-script-fragment  "resources/js/text-area-md-support.js")))))}})
+(defn compose-form-extra-tail
+  [form entity application]
+  {:extra-tail
+   {:tag :script :attrs {:type "text/javascript"}
+    :content
+    (apply
+      vector
+      (remove
+        nil?
+        (flatten
+          (list
+            (map
+              (fn [property]
+                (let
+                  [farname (:entity (:attrs property))
+                   farside (first (children application #(= (:name (:attrs %)) farname)))
+                   magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))]
+                  (if
+                    (> magnitude 2)
+                    (embed-script-fragment
+                      "resources/js/selectize-one.js"
+                      [["{{widget_id}}" (-> property :attrs :name)]]
+                      ))))
+              (children-with-tag entity :property #(= (-> % :attrs :type) "entity")))
+            (if
+              (some
+                #(= "text-area" (widget-type % application)) (properties entity))
+              (embed-script-fragment "resources/js/text-area-md-support.js"))))))}})
 
 
 (defn form-to-template

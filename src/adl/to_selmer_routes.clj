@@ -53,6 +53,7 @@
     '[clojure.java.io :as io]
     '[clojure.set :refer [subset?]]
     '[clojure.tools.logging :as log]
+    '[clojure.walk :refer [keywordize-keys]]
     '[compojure.core :refer [defroutes GET POST]]
     '[hugsql.core :as hugsql]
     '[noir.response :as nresponse]
@@ -65,35 +66,57 @@
 
 (defn make-form-handler-content
   [f e a n]
-  (let [warning (str "Error while fetching " (singularise (:name (:attrs e))) " record")]
+  (let [warning (list 'str (str "Error while fetching " (singularise (:name (:attrs e))) " record ") 'params)]
     ;; TODO: as yet makes no attempt to save the record
     (list 'let
           (vector
-           'record (list
-                    'support/do-or-log-error
-                    (list 'if (list 'subset? (key-names e) (set (list 'keys 'p)))
-                          (list
-                           (symbol
-                            (str "db/get-" (singularise (:name (:attrs e)))))
-                           (symbol "db/*db*")
-                           'p))
-                    :message warning
-                    :error-return {:warnings [warning]}))
+            'record (list
+                      'support/do-or-log-error
+                      ;;(list 'if (list 'subset? (key-names e) (list 'set (list 'keys 'params)))
+                            (list
+                              (symbol
+                                (str "db/get-" (singularise (:name (:attrs e)))))
+                              (symbol "db/*db*")
+                              'params)
+                      ;;)
+                      :message warning
+                      :error-return {:warnings [warning]}))
           (reduce
-           merge
-           {:warnings (list :warnings 'record)
-            :record (list 'assoc 'record :warnings nil)}
-           (map
-            (fn [p]
-              (hash-map
-               (keyword (-> p :attrs :entity))
-               (list 'support/do-or-log-error
-                     (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))
-                     :message (str "Error while fetching "
-                                   (singularise (:entity (:attrs p)))
-                                   " record"))))
-            (filter #(#{"entity" "link"} (:type (:attrs %)))
-                    (descendants-with-tag e :property)))))))
+            merge
+            {:error (list :warnings 'record)
+             :record (list 'dissoc 'record :warnings)}
+            (map
+              (fn [property]
+                (hash-map
+                  (keyword (-> property :attrs :name))
+                  (list
+                    'flatten
+                    (list
+                      'remove
+                      'nil?
+                      (list
+                        'list
+                        ;; Get the current value of the property, if it's an entity
+                        (if (= (-> property :attrs :type) "entity")
+                          (list 'support/do-or-log-error
+                                (list
+                                  (symbol
+                                    (str "db/get-" (singularise (:entity (:attrs property)))))
+                                  (symbol "db/*db*")
+                                  (hash-map (keyword (-> property :attrs :farkey))
+                                            (list (keyword (-> property :attrs :name)) 'record)))
+                                :message (str "Error while fetching "
+                                              (singularise (:entity (:attrs property)))
+                                              " record " (hash-map (keyword (-> property :attrs :farkey))
+                                            (list (keyword (-> property :attrs :name)) 'record)))))
+                        ;;; and the potential values of the property
+                        (list 'support/do-or-log-error
+                              (list (symbol (str "db/list-" (:entity (:attrs property)))) (symbol "db/*db*"))
+                              :message (str "Error while fetching "
+                                            (singularise (:entity (:attrs property)))
+                                            " list")))))))
+              (filter #(:entity (:attrs %))
+                      (descendants-with-tag e :property)))))))
 
 
 (defn make-page-handler-content
@@ -107,7 +130,7 @@
                                   (symbol
                                    (str "db/get-" (singularise (:name (:attrs e)))))
                                   (symbol "db/*db*")
-                                  'p))
+                                  'params))
                            :message warning
                            :error-return {:warnings [warning]}))
            {:warnings (list :warnings 'record)
@@ -124,17 +147,14 @@
      'if
      (list
       'some
-      (set (map #(-> % :attrs :name) (all-properties e)))
-      (list 'keys 'p))
+      (set (map #(keyword (-> % :attrs :name)) (all-properties e)))
+      (list 'keys 'params))
      (list
       'support/do-or-log-error
       (list
-       (symbol
-        (str
-         "db/search-strings-"
-         (singularise (:name (:attrs e)))))
+       (symbol (str "db/search-strings-" (:name (:attrs e))))
        (symbol "db/*db*")
-       'p)
+       'params)
       :message (str
                 "Error while searching "
                 (singularise (:name (:attrs e)))
@@ -171,10 +191,13 @@
     (list
       'defn
       (symbol n)
-      (vector 'r)
+      (vector 'request)
       (list 'let (vector
-                   'p
-                   (list 'support/massage-params (list :params 'r) (list :form-params 'r) (key-names e)))
+                   'params
+                   (list 'support/massage-params
+                         (list 'keywordize-keys (list :params 'request))
+                         (list 'keywordize-keys (list :form-params 'request))
+                         (key-names e true)))
             ;; TODO: we must take key params out of just params,
             ;; but we should take all other params out of form-params - because we need the key to
             ;; load the form in the first place, but just accepting values of other params would
@@ -182,71 +205,74 @@
             (list
               'l/render
               (list 'support/resolve-template (str n ".html"))
-              (list :session 'r)
+              (list :session 'request)
               (list 'merge
                     {:title (capitalise (:name (:attrs f)))
-                     :params  'p}
+                     :params  'params}
                     (case (:tag f)
-                      (:form :page)
-                      (list
-                        'reduce
-                        'merge
-                        (list 'merge
-                              (list 'cond (list :save-button 'p)
-                                    (list 'try
-                                          (list 'if
-                                                (list 'some (key-names e) (list 'map 'name (list 'keys 'p)))
-                                                (list 'do
-                                                      (list (symbol
-                                                              (str "db/update-" (singularise (-> e :attrs :name)) "!"))
-                                                            'db/*db*
-                                                            'p)
-                                                      {:message "Updated record"})
-                                                (list 'do
-                                                      (list (symbol
-                                                              (str "db/create-" (singularise (-> e :attrs :name)) "!"))
-                                                            'db/*db*
-                                                            'p)
-                                                      {:message "Saved record"}))
-                                          `(catch Exception any#
-                                             {:error (.getMessage any#)})))
-                              {:record
-                               (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
-                                     (list
-                                       (symbol
-                                         (str "db/get-" (singularise (:name (:attrs e)))))
-                                       (symbol "db/*db*")
-                                       'p))})
-                        (cons 'list
-                              (map
-                                (fn [p]
-                                  (hash-map
-                                    (keyword (-> p :attrs :entity))
-                                    (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
-                                (filter #(#{"entity" "link"} (:type (:attrs %)))
-                                        (descendants-with-tag e :property)))))
-                  :list
-                  {:records
-                   (list
-                     'if
-                     (list
-                       'not
-                       (list
-                         'empty?
-                         (list 'remove 'nil? (list 'vals 'p))))
-                     (list
-                       (symbol
-                         (str
-                           "db/search-strings-"
-                           (:name (:attrs e))))
-                       (symbol "db/*db*")
-                       'p)
-                     (list
-                       (symbol
-                         (str
-                           "db/list-"
-                           (:name (:attrs e))))
-                       (symbol "db/*db*") {}))})))))))
+                      :form (make-form-handler-content f e a n)
+                      :page (make-page-handler-content f e a n)
+                      :list (make-list-handler-content f e a n))))))))
+;;                       (:form :page)
+;;                       (list
+;;                         'reduce
+;;                         'merge
+;;                         (list 'merge
+;;                               (list 'cond (list :save-button 'p)
+;;                                     (list 'try
+;;                                           (list 'if
+;;                                                 (list 'some (key-names e) (list 'map 'name (list 'keys 'p)))
+;;                                                 (list 'do
+;;                                                       (list (symbol
+;;                                                               (str "db/update-" (singularise (-> e :attrs :name)) "!"))
+;;                                                             'db/*db*
+;;                                                             'p)
+;;                                                       {:message "Updated record"})
+;;                                                 (list 'do
+;;                                                       (list (symbol
+;;                                                               (str "db/create-" (singularise (-> e :attrs :name)) "!"))
+;;                                                             'db/*db*
+;;                                                             'p)
+;;                                                       {:message "Saved record"}))
+;;                                           `(catch Exception any#
+;;                                              {:error (.getMessage any#)})))
+;;                               {:record
+;;                                (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
+;;                                      (list
+;;                                        (symbol
+;;                                          (str "db/get-" (singularise (:name (:attrs e)))))
+;;                                        (symbol "db/*db*")
+;;                                        'p))})
+;;                         (cons 'list
+;;                               (map
+;;                                 (fn [p]
+;;                                   (hash-map
+;;                                     (keyword (-> p :attrs :entity))
+;;                                     (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
+;;                                 (filter #(#{"entity" "link"} (:type (:attrs %)))
+;;                                         (descendants-with-tag e :property)))))
+;;                   :list
+;;                   {:records
+;;                    (list
+;;                      'if
+;;                      (list
+;;                        'not
+;;                        (list
+;;                          'empty?
+;;                          (list 'remove 'nil? (list 'vals 'p))))
+;;                      (list
+;;                        (symbol
+;;                          (str
+;;                            "db/search-strings-"
+;;                            (:name (:attrs e))))
+;;                        (symbol "db/*db*")
+;;                        'p)
+;;                      (list
+;;                        (symbol
+;;                          (str
+;;                            "db/list-"
+;;                            (:name (:attrs e))))
+;;                        (symbol "db/*db*") {}))})))))))
 
 ;; (def a (x/parse "../youyesyet/youyesyet.canonical.adl.xml"))
 ;; (def e (child-with-tag a :entity))
