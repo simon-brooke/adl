@@ -73,7 +73,15 @@
        (map emit-content content)
        true
        (str "<!-- don't know what to do with '" content "' -->"))
-     (catch Exception _ (str "<!-- failed while trying to emit '" content " -->"))))
+     (catch Exception any
+       (str
+         "<!-- failed while trying to emit \n'"
+         (with-out-str (p/pprint content))
+         "';\n"
+         (-> any .getClass .getName)
+         ": "
+         (-> any .getMessage
+         " -->")))))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
@@ -460,13 +468,114 @@
    (embed-script-fragment filepath [])))
 
 
+(defn edit-link
+  [entity application parameters]
+  (str
+    "{{servlet-context}}/"
+    (editor-name entity application)
+    "?"
+    (s/join
+      "&amp;"
+      (map
+        #(str %1 "={{ record." %2 " }}")
+        (key-names entity)
+        parameters))))
+
+
+(defn list-tbody
+  "Return a table body element for the list view for this `list-spec` of this `entity` within
+  this `application`, using data from this source."
+  [source list-spec entity application]
+  {:tag :tbody
+   :content
+   [(str "{% for record in " source " %}")
+    {:tag :tr
+     :content
+     (apply
+       vector
+       (concat
+         (map
+           (fn [field]
+             {:tag :td :content
+              (let
+               [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
+                s (safe-name (:name (:attrs p)) :sql)
+                e (first
+                    (filter
+                      #(= (:name (:attrs %)) (:entity (:attrs p)))
+                      (children-with-tag application :entity)))
+                c (str "{{ record." s " }}")]
+               (if
+                 (= (:type (:attrs p)) "entity")
+                 [{:tag :a
+                   :attrs {:href (edit-link e application (list (:name (:attrs p))))}
+                   :content [(str "{{ record." s "_expanded }}")]}]
+                 [c]))})
+           (children-with-tag list-spec :field))
+         [{:tag :td
+          :content
+          [{:tag :a
+     :attrs
+     {:href (edit-link entity application (key-names entity))}
+     :content ["View"]}]}]))}
+    "{% endfor %}"]})
+
+
+(defn compose-form-auxlist
+  [auxlist form entity application]
+  (let [property (child-with-tag
+                   entity
+                   :property
+                   #(= (-> % :attrs :name) (-> auxlist :attrs :property)))
+        farside (child-with-tag
+                  application
+                  :entity
+                  #(= (-> % :attrs :name)(-> property :attrs :entity)))]
+    (if
+      (and property farside)
+      {:tag :div
+       :attrs {:class "auxlist"}
+       :content
+       [{:tag :h2
+         :content [(prompt auxlist form entity application)]}
+        {:tag :table
+         :content
+         [{:tag :thead
+           :content
+           [{:tag :tr
+             :content
+             (apply
+               vector
+               (flatten
+                 (list
+                   (map
+                     #(hash-map
+                        :tag :th
+                        :content [(prompt % form entity application)])
+                     (children-with-tag auxlist :field))
+                   {:tag :th :content ["&nbsp;"]})))}]}
+          (list-tbody (-> property :attrs :name) auxlist farside application)]}]})))
+
+
+(defn compose-form-auxlists
+  [form entity application]
+  (remove
+    nil?
+    (map
+      #(compose-form-auxlist % form entity application)
+      (children-with-tag form :auxlist))))
+
+
 (defn compose-form-content
   [form entity application]
   {:content
    {:tag :div
     :attrs {:id "content" :class "edit"}
     :content
-    [{:tag :form
+    (apply
+      vector
+      (cons
+        {:tag :form
       :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
               :method "POST"}
       :content (apply
@@ -487,7 +596,8 @@
                             (= (:distict (:attrs property)) :system))
                          (children-with-tag form :field)))
                      (save-widget form entity application)
-                     (delete-widget form entity application))))}]}})
+                     (delete-widget form entity application))))}
+         (compose-form-auxlists form entity application)))}})
 
 
 (defn compose-form-extra-head
@@ -602,59 +712,6 @@
                       :value "Search"}}]})))}]})
 
 
-(defn edit-link
-  [entity application parameters]
-  (str
-    "{{servlet-context}}/"
-    (editor-name entity application)
-    "?"
-    (s/join
-      "&amp;"
-      (map
-        #(str %1 "={{ record." %2 " }}")
-        (key-names entity)
-        parameters))))
-
-
-(defn list-tbody
-  "Return a table body element for the list view for this `list-spec` of this `entity` within
-  this `application`."
-  [list-spec entity application]
-  {:tag :tbody
-   :content
-   ["{% for record in records %}"
-    {:tag :tr
-     :content
-     (apply
-       vector
-       (concat
-         (map
-           (fn [field]
-             {:tag :td :content
-              (let
-               [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
-                s (safe-name (:name (:attrs p)) :sql)
-                e (first
-                    (filter
-                      #(= (:name (:attrs %)) (:entity (:attrs p)))
-                      (children-with-tag application :entity)))
-                c (str "{{ record." s " }}")]
-               (if
-                 (= (:type (:attrs p)) "entity")
-                 [{:tag :a
-                   :attrs {:href (edit-link e application (list (:name (:attrs p))))}
-                   :content [(str "{{ record." s "_expanded }}")]}]
-                 [c]))})
-           (children-with-tag list-spec :field))
-         [{:tag :td
-          :content
-          [{:tag :a
-     :attrs
-     {:href (edit-link entity application (key-names entity))}
-     :content ["View"]}]}]))}
-    "{% endfor %}"]})
-
-
 (defn list-to-template
   "Generate a template as specified by this `list` element for this `entity`,
   taken from this `application`. If `list` is nill, generate a default list
@@ -712,7 +769,7 @@
         :attrs {:caption (:name (:attrs entity))}
         :content
         [(list-thead list-spec entity application)
-         (list-tbody list-spec entity application)
+         (list-tbody "records" list-spec entity application)
          ]}]}
      :extra-script
      (str "
