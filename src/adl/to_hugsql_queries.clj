@@ -140,7 +140,7 @@
   (let [entity-name (safe-name (:name (:attrs entity)) :sql)
         pretty-name (singularise entity-name)
         query-name (str "search-strings-" entity-name)
-        signature ":? :1"
+        signature ":? :*"
         properties (remove #(#{"link"}(:type (:attrs %))) (all-properties entity))]
     (hash-map
       (keyword query-name)
@@ -168,12 +168,12 @@
                    string?
                    (map
                      #(str
-                        "(if (:" (-> % :attrs :name) " params) \"OR "
-                        (case (base-type % application)
+                        "(if (:" (-> % :attrs :name) " params) (str \"OR "
+                        (case (-> % :attrs :type)
                           ("string" "text")
                           (str
                             (safe-name (-> % :attrs :name) :sql)
-                            " LIKE '%:" (-> % :attrs :name) "%'")
+                            " LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
                           ("date" "time" "timestamp")
                           (str
                             (safe-name (-> % :attrs :name) :sql)
@@ -181,12 +181,12 @@
                           "entity"
                           (str
                            (safe-name (-> % :attrs :name) :sql)
-                            "_expanded LIKE '%:" (-> % :attrs :name) "%'")
+                            "_expanded LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
                           (str
                             (safe-name (-> % :attrs :name) :sql)
                             " = :"
                             (-> % :attrs :name)))
-                        "\")")
+                        "\"))")
                      properties))))
                (order-by-clause entity "lv_")
                "--~ (if (:offset params) \"OFFSET :offset \")"

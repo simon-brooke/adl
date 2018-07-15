@@ -665,11 +665,7 @@
                      "time" "time"
                      "text")
         base-name (:property (:attrs field))
-        search-name (safe-name
-                      (if
-                        (= (:type (:attrs property)) "entity")
-                        (str base-name "_expanded") base-name)
-                      :sql)]
+        search-name (safe-name base-name :sql)]
     (hash-map
       :tag :th
       :content
@@ -728,18 +724,10 @@
     {:back-links
      {:tag :div
       :content
-      [
-        {:tag :div :attrs {:class "back-link-container"}
+      [{:tag :div :attrs {:class "back-link-container"}
          :content
-         ["{% ifequal params.offset \"0\" %}"
-          {:tag :a
-           :attrs {:id "back-link" :class "back-link" :href "{{servlet-context}}/admin"}
-           :content ["Back"]}
-          "{% else %}"
-          {:tag :a :attrs {:id "prev-selector" :class "back-link"}
-           :content ["Previous"]}
-          "{% endifunequal %}"]}
-        ]}
+         [{:tag :a :attrs {:id "prev-selector" :class "back-link"}
+           :content ["Previous"]}]}]}
      :big-links
      {:tag :div
       :content
@@ -765,8 +753,8 @@
               :method "POST"}
       :content
       [(csrf-widget)
-       {:tag :input :attrs {:id "offset" :type "hidden" :value "{{params.offset|default:0}}"}}
-       {:tag :input :attrs {:id "limit" :type "hidden" :value "{{params.limit|default:50}}"}}
+       {:tag :input :attrs {:id "offset" :name "offset" :type "hidden" :value "{{params.offset|default:0}}"}}
+       {:tag :input :attrs {:id "limit" :name "limit" :type "hidden" :value "{{params.limit|default:50}}"}}
        {:tag :table
         :attrs {:caption (:name (:attrs entity))}
         :content
@@ -779,21 +767,26 @@
           var ow = document.getElementById('offset');
           var lw = document.getElementById('limit');
           form.addEventListener('submit', function() {
-          ow.value='0';
+            ow.value='0';
           });
 
-          {% ifunequal params.offset \"0\" %}
-          document.getElementById('prev-selector').addEventListener('click', function () {
-          ow.value=(parseInt(ow.value)-parseInt(lw.value));
-          console.log('Updated offset to ' + ow.value);
-          form.submit();
-          });
-          {% endifunequal %}
+          var prevSelector = document.getElementById('prev-selector');
+          if (prevSelector != null) {
+            prevSelector.addEventListener('click', function () {
+              if (parseInt(ow.value)===0) {
+                window.location = '{{servlet-context}}/admin';
+              } else {
+                ow.value=(parseInt(ow.value)-parseInt(lw.value));
+                console.log('Updated offset to ' + ow.value);
+                form.submit();
+              }
+            });
+          }
 
           document.getElementById('next-selector').addEventListener('click', function () {
-          ow.value=(parseInt(ow.value)+parseInt(lw.value));
-          console.log('Updated offset to ' + ow.value);
-          form.submit();
+            ow.value=(parseInt(ow.value)+parseInt(lw.value));
+            console.log('Updated offset to ' + ow.value);
+            form.submit();
           });")}))
 
 
