@@ -266,8 +266,14 @@
           farkey
           "}}' {% ifequal record."
           (-> property :attrs :name)
-          " option." farkey "%}selected{% endifequal %}>"
-          (s/join " " (map #(str "{{option." (:name (:attrs %)) "}}") fs-distinct))
+          " option." farkey "%}selected='selected'{% endifequal %}>"
+          (s/join " " (map
+                        #(str
+                           "{{option."
+                           (:name (:attrs %))
+                           (if (= (-> % :attrs :type) "entity") "_expanded")
+                           "}}")
+                        fs-distinct))
           "</option>{% endfor %}")]))
 
 
@@ -616,7 +622,8 @@
                     (> magnitude 2)
                     (embed-script-fragment
                       "resources/js/selectize-one.js"
-                      [["{{widget_id}}" (-> property :attrs :name)]]
+                      [["{{widget_id}}" (-> property :attrs :name)]
+                       ["{{widget_value}}" (str "{{record." (-> property :attrs :name) "}}")]]
                       ))))
               (children-with-tag entity :property #(= (-> % :attrs :type) "entity")))
             (if

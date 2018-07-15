@@ -1,11 +1,12 @@
 /**
- * selectize one select widget. Substitute the actual id of the widget for `{{widget_id}}`.
+ * selectize one select widget. Substitute the actual id of the widget for `{{widget_id}}`,
+ * and the current value for {{widget_value}}.
  */
 $('#{{widget_id}}').selectize({
   valueField: 'id',
   labelField: 'name',
   searchField: 'name',
-  options: [],
+  hideSelected: false,
   create: false,
 
   load: function(query, callback) {
@@ -25,4 +26,4 @@ $('#{{widget_id}}').selectize({
       }
     });
   }
-});
+})[0].selectize.setValue({{widget_value}}, true);
