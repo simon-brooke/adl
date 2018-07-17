@@ -1,7 +1,7 @@
           var simplemde = new SimpleMDE({
             autosave: {
               enabled: true,
-              uniqueId: "Smeagol-{{page}}",
+              uniqueId: "adl-generated-{{page}}",
               delay: 1000,
             },
             indentWithTabs: true,

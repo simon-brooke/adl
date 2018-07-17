@@ -20,3 +20,6 @@ generated/resources/templates/auto/
 generated/src/clj/youyesyet/routes/
 
 *.iml
+
+node_modules/
+

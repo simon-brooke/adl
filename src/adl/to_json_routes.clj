@@ -85,10 +85,13 @@
        (:delete-1 :update-1)
        (list
          action
+         `(log/debug (str ~(:name query) " called with params " ~'params "."))
          '(response/found "/"))
        (list
          'let
          (vector 'result action)
+         `(log/debug (~(symbol (str "db/" (:name query) "-sqlvec")) ~'params))
+         `(log/debug (str ~(str "'" (:name query) "' with params ") ~'params " returned " (count ~'result) " records."))
          (list 'response/ok 'result))))))
 
 

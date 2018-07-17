@@ -3,9 +3,9 @@
  * and the current value for {{widget_value}}.
  */
 $('#{{widget_id}}').selectize({
-  valueField: 'id',
-  labelField: 'name',
-  searchField: 'name',
+  valueField: '{{key}}',
+  labelField: '{{field}}',
+  searchField: '{{field}}',
   hideSelected: false,
   create: false,
 
@@ -13,7 +13,7 @@ $('#{{widget_id}}').selectize({
     console.log('Desperately seeking ' + query);
     if (query === null || !query.length) return callback();
     $.ajax({
-      url: '/json/auto/search-strings-electors?name=' + query,
+      url: '/json/auto/search-strings-{{entity}}?{{field}}=' + query,
       type: 'GET',
       dataType: 'jsonp',
       error: function() {
@@ -26,4 +26,4 @@ $('#{{widget_id}}').selectize({
       }
     });
   }
-})[0].selectize.setValue({{widget_value}}, true);
+})[0].selectize.setValue('{{widget_value}}', true);

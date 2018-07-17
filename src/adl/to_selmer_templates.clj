@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
-  (:require [adl-support.utils :refer :all]
+  (:require [adl.to-hugsql-queries :refer [expanded-token]]
+            [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents]]
             [clojure.pprint :as p]
             [clojure.string :as s]
@@ -70,7 +71,7 @@
        (with-out-str
          (x/emit-element content))
        (seq? content)
-       (map emit-content content)
+       (map emit-content (remove nil? content))
        true
        (str "<!-- don't know what to do with '" content "' -->"))
      (catch Exception any
@@ -80,8 +81,8 @@
          "';\n"
          (-> any .getClass .getName)
          ": "
-         (-> any .getMessage
-         " -->")))))
+         (-> any .getMessage)
+         " -->"))))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
@@ -138,26 +139,6 @@
      (flatten
        (list
          (emit-content filename spec entity application :foot))))))
-
-
-(defn prompt
-  "Return an appropriate prompt for the given `field-or-property` taken from this
-  `form` of this `entity` of this `application`, in the context of the current
-  binding of `*locale*`. TODO: something more sophisticated about i18n"
-  ([field-or-property form entity application]
-   (prompt field-or-property))
-  ([field-or-property]
-   (capitalise
-     (or
-       (first
-         (children
-           field-or-property
-           #(and
-              (= (:tag %) :prompt)
-              (= (:locale :attrs %) *locale*))))
-       (:name (:attrs field-or-property))
-       (:property (:attrs field-or-property))
-       "Missing prompt"))))
 
 
 (defn csrf-widget
@@ -240,6 +221,24 @@
     application))
 
 
+(defn select-property
+  "Return the property on which we will by default do a user search on this `entity`."
+  [entity]
+  (descendant-with-tag
+      entity
+      :property
+      #(#{"user" "all"} (-> % :attrs :distinct))))
+
+
+(defn select-field-name
+  [entity]
+  (let [p (select-property entity)]
+    (if
+      (-> p :attrs :entity)
+      (str (safe-name p :sql) expanded-token)
+      (-> p :attrs :name))))
+
+
 (defn get-options
   "Produce template code to get options for this `property` of this `entity` taken from
   this `application`."
@@ -267,14 +266,8 @@
           "}}' {% ifequal record."
           (-> property :attrs :name)
           " option." farkey "%}selected='selected'{% endifequal %}>"
-          (s/join " " (map
-                        #(str
-                           "{{option."
-                           (:name (:attrs %))
-                           (if (= (-> % :attrs :type) "entity") "_expanded")
-                           "}}")
-                        fs-distinct))
-          "</option>{% endfor %}")]))
+          "{{option." (select-field-name farside)
+          "}}</option>{% endfor %}")]))
 
 
 (defn widget-type
@@ -371,15 +364,12 @@
                    (if (= (:tag field-or-property) :property)
                      (:name (:attrs field-or-property))
                      (:property (:attrs field-or-property))) :sql)
-     property (if
-                (= (:tag field-or-property) :property)
-                field-or-property
-                (first
-                  (filter
-                    #(= (:name (:attrs %))
-                        (:property (:attrs field-or-property)))
-                    (descendants-with-tag entity
-                                          :property))))
+     property (case
+                (:tag field-or-property)
+                :property field-or-property
+                :field (property-for-field field-or-property entity)
+                ;; default
+                nil)
      permissions (find-permissions field-or-property property form entity application)
      typedef (typedef property application)
      w-type (widget-type property application typedef)
@@ -440,7 +430,9 @@
    (let [v (slurp filepath)]
      (reduce
        (fn [s [pattern value]]
-         (s/replace s pattern value))
+         (if (and pattern value)
+           (s/replace s pattern value)
+           s))
        v
        substitutions)))
   ([filepath]
@@ -555,28 +547,30 @@
       vector
       (cons
         {:tag :form
-      :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
-              :method "POST"}
-      :content (apply
-                 vector
-                 (flatten
-                   (list
-                     (csrf-widget)
-                     (map
-                       #(widget % form entity application)
-                       (children-with-tag (child-with-tag entity :key) :properties))
-                     (map
-                       #(widget % form entity application)
-                       (remove
-                         #(let
-                            [property (filter
-                                        (fn [p] (= (:name (:attrs p)) (:property (:attrs %))))
-                                        (descendants-with-tag entity :property))]
-                            (= (:distict (:attrs property)) :system))
-                         (children-with-tag form :field)))
-                     (save-widget form entity application)
-                     (delete-widget form entity application))))}
-         (compose-form-auxlists form entity application)))}})
+         :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
+                 :method "POST"}
+         :content (apply
+                    vector
+                    (remove
+                      nil?
+                      (flatten
+                        (list
+                          (csrf-widget)
+                          (map
+                            #(widget % form entity application)
+                            (children-with-tag (child-with-tag entity :key) :property))
+                          (map
+                            #(widget % form entity application)
+                            (remove
+                              #(let
+                                 [property (filter
+                                             (fn [p] (= (:name (:attrs p)) (:property (:attrs %))))
+                                             (descendants-with-tag entity :property))]
+                                 (= (:distict (:attrs property)) :system))
+                              (children-with-tag form :field)))
+                          (save-widget form entity application)
+                          (delete-widget form entity application)))))}
+        (compose-form-auxlists form entity application)))}})
 
 
 (defn compose-form-extra-head
@@ -588,14 +582,18 @@
        nil?
        (list
          (if
-           (some
-             #(= "text-area" (widget-type % application)) (properties entity))
+           (child-with-tag
+             form
+             :field
+             #(= "text-area" (widget-type (property-for-field % entity) application)))
            "
            {% script \"js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
            {% style \"js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")
          (if
-           (some
-             #(= "select" (widget-type % application)) (properties entity))
+           (child-with-tag
+             form
+             :field
+             #(= "select" (widget-type (property-for-field % entity) application)))
            "
            {% script \"/js/lib/node_modules/selectize/dist/js/standalone/selectize.min.js\" %}
            {% style \"/js/lib/node_modules/selectize/dist/css/selectize.css\" %}"))))})
@@ -613,9 +611,12 @@
         (flatten
           (list
             (map
-              (fn [property]
+              (fn [field]
                 (let
-                  [farname (:entity (:attrs property))
+                  [property (child-with-tag entity :property #(=
+                                                                (-> field :attrs :property)
+                                                                (-> % :attrs :name)))
+                   farname (:entity (:attrs property))
                    farside (first (children application #(= (:name (:attrs %)) farname)))
                    magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))]
                   (if
@@ -623,12 +624,17 @@
                     (embed-script-fragment
                       "resources/js/selectize-one.js"
                       [["{{widget_id}}" (-> property :attrs :name)]
-                       ["{{widget_value}}" (str "{{record." (-> property :attrs :name) "}}")]]
-                      ))))
-              (children-with-tag entity :property #(= (-> % :attrs :type) "entity")))
+                       ["{{widget_value}}" (str "{{record." (-> property :attrs :name) "}}")]
+                       ["{{entity}}" farname]
+                       ["{{field}}" (select-field-name farside)]
+                       ["{{key}}" (first (key-names farside))]]))))
+              (children-with-tag
+                form :field
+                #(= "select" (widget-type (property-for-field % entity) application))))
             (if
-              (some
-                #(= "text-area" (widget-type % application)) (properties entity))
+              (child-with-tag
+                form :field
+                #(= "text-area" (widget-type (property-for-field % entity) application)))
               (embed-script-fragment "resources/js/text-area-md-support.js"))))))}})
 
 
@@ -690,7 +696,7 @@
          vector
          (map
            #(hash-map
-              :content [(prompt %)]
+              :content [(prompt % list-spec entity application)]
               :tag :th)
            (children-with-tag list-spec :field)))
        {:tag :th :content ["&nbsp;"]})}

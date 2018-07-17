@@ -32,6 +32,8 @@
 ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def expanded-token "_expanded")
+
 
 (defn where-clause
   "Generate an appropriate `where` clause for queries on this `entity`;
@@ -55,14 +57,14 @@
 (defn order-by-clause
   "Generate an appropriate `order by` clause for queries on this `entity`"
   ([entity]
-   (order-by-clause entity ""))
+   (order-by-clause entity "" false))
   ([entity prefix]
+   (order-by-clause entity prefix false))
+  ([entity prefix expanded?]
   (let
     [entity-name (safe-name (:name (:attrs entity)) :sql)
-     preferred (map
-                 #(safe-name (:name (:attrs %)) :sql)
-                 (filter #(#{"user" "all"} (-> % :attrs :distinct))
-                         (children entity #(= (:tag %) :property))))]
+     preferred (filter #(#{"user" "all"} (-> % :attrs :distinct))
+                         (children entity #(= (:tag %) :property)))]
     (if
       (empty? preferred)
       ""
@@ -71,8 +73,15 @@
         (s/join
           (str ",\n\t" prefix entity-name ".")
           (map
-            #(safe-name % :sql)
-            (flatten (cons preferred (key-names entity))))))))))
+            #(if
+               (and expanded? (= "entity" (-> % :attrs :type)))
+               (str (safe-name % :sql) expanded-token)
+               (safe-name % :sql))
+            (flatten (cons preferred (key-properties entity))))))))))
+
+;; (def a (x/parse "../youyesyet/youyesyet.adl.xml"))
+;; (def e (child-with-tag a :entity #(= "dwellings" (-> % :attrs :name))))
+;; (order-by-clause e "" true)
 
 
 (defn insert-query
@@ -163,34 +172,38 @@
              (s/join
                "\n\t--~ "
                (cons
-                 "WHERE false"
+                 "WHERE true"
                  (filter
                    string?
                    (map
-                     #(str
-                        "(if (:" (-> % :attrs :name) " params) (str \"OR "
+                     #(let
+                        [sn (safe-name (-> % :attrs :name) :sql)]
+                        (str
+                        "(if (:" (-> % :attrs :name) " params) (str \"AND "
                         (case (-> % :attrs :type)
                           ("string" "text")
                           (str
-                            (safe-name (-> % :attrs :name) :sql)
-                            " LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
+                            sn
+                            " LIKE '%\" (:" (-> % :attrs :name) " params) \"%' ")
                           ("date" "time" "timestamp")
                           (str
-                            (safe-name (-> % :attrs :name) :sql)
+                            sn
                             " = ':" (-> % :attrs :name) "'")
                           "entity"
                           (str
-                           (safe-name (-> % :attrs :name) :sql)
+                           sn
                             "_expanded LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
                           (str
-                            (safe-name (-> % :attrs :name) :sql)
+                            sn
                             " = :"
                             (-> % :attrs :name)))
-                        "\"))")
+                        "\"))"))
                      properties))))
-               (order-by-clause entity "lv_")
+               (order-by-clause entity "lv_" true)
                "--~ (if (:offset params) \"OFFSET :offset \")"
                "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
+
+;; (search-query e a)
 
 
 (defn select-query
@@ -257,7 +270,7 @@
              (str "-- :name " query-name " " signature)
              (str "-- :doc lists all existing " pretty-name " records")
              (str "SELECT DISTINCT * FROM lv_" entity-name)
-             (order-by-clause entity "lv_")
+             (order-by-clause entity "lv_" false)
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
@@ -304,7 +317,7 @@
                                (str "WHERE lv_" entity-name "." (first (key-names entity)) " = "
                                     entity-name "." (first (key-names entity))
                                     "\n\tAND " entity-name "." link-field " = :id")
-                               (order-by-clause entity "lv_"))
+                               (order-by-clause entity "lv_" false))
                     "link" (let [link-table-name
                                  (link-table-name % entity far-entity)]
                              (list
