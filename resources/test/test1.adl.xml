@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC "-//JOURNEYMAN//DTD ADL 1.4//EN" "http://www.journeyman.cc/adl/stable/adl/schemas/adl-1.4.dtd">
+<application xmlns:h="http://www.w3.org/TR/html4/" xmlns="http://www.journeyman.cc/adl/stable/adl/schemas/adl-1.4.dtd" name="test1" version="0.0.1">
+	<documentation>This is a very simple test document just to exercise validator and generators.</documentation>
+	<content>
+		<head>
+			<h:meta xmlns="http://www.w3.org/1999/xhtml" name="generator" content="Application Description Language framework"/>
+		</head>
+		<top>
+			<h:h1 xmlns="http://www.w3.org/1999/xhtml">Test 1</h:h1>
+		</top>
+		<foot>
+			<h:p xmlns="http://www.w3.org/1999/xhtml" class="footer">That's all folks!</h:p>
+		</foot>
+	</content>
+	<group name="public">
+		<documentation>All users</documentation>
+	</group>
+	<group name="admin">
+		<documentation>Administrative users</documentation>
+	</group>
+	<entity name="person">
+		<documentation>A person</documentation>
+		<prompt prompt="Person" locale="en-GB"/>
+		<key>
+			<property name="id" type="integer" distinct="system" required="true" immutable="true">
+				<generator action="native"/>
+			</property>
+		</key>
+		<property name="name" type="string" size="32" distinct="user" required="true">
+			<!-- documentation>The name of the person</documentation -->
+			<prompt prompt="Name" locale="en-GB"/>
+			<prompt prompt="Nomme" locale="fr-FR"/>
+		</property>
+		<property name="gender" type="string" size="8" default="Unknown">
+			<option value="Female">
+				<prompt prompt="Femme" locale="fr-FR"/>
+				<prompt prompt="Female" locale="en-GB"/>
+			</option>
+			<option value="Male">
+				<prompt prompt="Homme" locale="fr-FR"/>
+				<prompt prompt="Male" locale="en-GB"/>
+			</option>
+			<option value="Non-bin">
+				<prompt prompt="Non binaire" locale="fr-FR"/>
+				<prompt prompt="Non-binary" locale="en-GB"/>
+			</option>
+			<option value="Unknown">
+				<prompt prompt="Inconnu" locale="fr-FR"/>
+				<prompt prompt="Unknown" locale="en-GB"/>
+			</option>
+		</property>
+		<property name="age" type="integer">
+		</property>
+		<property name="address" type="entity" entity="address"/>
+		<form name="edit-person" properties="listed">
+			<field property="name"/>
+			<field property="gender"/>
+			<field property="age"/>
+			<field property="address"/>
+			<permission group="admin" permission="all"/>
+			<permission group="public" permission="insert"/>
+		</form>
+		<page name="inspect-person" properties="all"/>
+		<list name="list-people" properties="all" on-select="edit-person"/>
+	</entity>
+	<entity name="address">
+		<key>
+			<property name="id" type="integer" distinct="system" required="true" immutable="true">
+				<generator action="native"/>
+			</property>
+		</key>
+		<property name="street" type="string" size="128" distinct="user"/>
+		<property name="town" type="string" size="64"/>
+		<property name="postcode" type="string" size="12" distinct="user"/>
+	</entity>
+</application>

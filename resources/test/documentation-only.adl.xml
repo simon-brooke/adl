@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC "-//JOURNEYMAN//DTD ADL 1.4//EN"
+    "http://www.journeyman.cc/adl/stable/adl/schemas/adl-1.4.dtd">
+<application name='test1' version='0.0.1'>
+	<!--
+             xmlns:h="http://www.w3.org/TR/html4/"
+             xmlns="ttp://www.journeyman.cc/adl/stable/adl/schemas/adl-1.4.dtd" -->
+	<documentation>Some test documentation</documentation>
+</application>

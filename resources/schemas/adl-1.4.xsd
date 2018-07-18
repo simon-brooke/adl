@@ -1,0 +1,547 @@
+<schema
+  xmlns='http://www.w3.org/2000/10/XMLSchema'
+  targetNamespace='http://www.w3.org/namespace/'
+  xmlns:t='http://www.w3.org/namespace/'>
+
+ <element name='application'>
+  <complexType>
+   <sequence>
+    <element ref='t:specification' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:content' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:typedef' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:group' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:entity' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='version' type='string' use='optional'/>
+   <attribute name='revision' type='string' use='optional'/>
+   <attribute name='currency' type='string' use='optional'/>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='typedef'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:in-implementation' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:help' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='type' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='string'/>
+      <enumeration value='integer'/>
+      <enumeration value='real'/>
+      <enumeration value='money'/>
+      <enumeration value='date'/>
+      <enumeration value='time'/>
+      <enumeration value='timestamp'/>
+      <enumeration value='uploadable'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='size' type='string' use='optional'/>
+   <attribute name='pattern' type='string' use='optional'/>
+   <attribute name='minimum' type='string' use='optional'/>
+   <attribute name='maximum' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='in-implementation'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='target' type='string' use='required'/>
+   <attribute name='value' type='string' use='required'/>
+   <attribute name='kind' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='group'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='parent' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='entity'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:prompt' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:content' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:key' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:property' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:permission' minOccurs='0' maxOccurs='unbounded'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:form'/>
+     <element ref='t:page'/>
+     <element ref='t:list'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='natural-key' type='string' use='optional'/>
+   <attribute name='table' type='string' use='optional'/>
+   <attribute name='foreign' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='documentation'>
+  <complexType mixed='true'>
+   <sequence minOccurs='0' maxOccurs='unbounded'>
+    <element ref='t:reference'/>
+   </sequence>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='key'>
+  <complexType>
+   <sequence>
+    <element ref='t:property' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='property'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:generator' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:permission'/>
+     <element ref='t:option'/>
+     <element ref='t:prompt'/>
+     <element ref='t:help'/>
+     <element ref='t:ifmissing'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='type' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='entity'/>
+      <enumeration value='link'/>
+      <enumeration value='list'/>
+      <enumeration value='defined'/>
+      <enumeration value='string'/>
+      <enumeration value='integer'/>
+      <enumeration value='real'/>
+      <enumeration value='money'/>
+      <enumeration value='date'/>
+      <enumeration value='time'/>
+      <enumeration value='timestamp'/>
+      <enumeration value='uploadable'/>
+      <enumeration value='boolean'/>
+      <enumeration value='text'/>
+      <enumeration value='geopos'/>
+      <enumeration value='image'/>
+      <enumeration value='message'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='default' type='string' use='optional'/>
+   <attribute name='typedef' type='string' use='optional'/>
+   <attribute name='distinct' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='none'/>
+      <enumeration value='all'/>
+      <enumeration value='user'/>
+      <enumeration value='system'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='entity' type='string' use='optional'/>
+   <attribute name='farkey' type='string' use='optional'/>
+   <attribute name='required' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='immutable' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='size' type='string' use='optional'/>
+   <attribute name='column' type='string' use='optional'/>
+   <attribute name='concrete' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='cascade' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='all'/>
+      <enumeration value='all-delete-orphan'/>
+      <enumeration value='delete'/>
+      <enumeration value='manual'/>
+      <enumeration value='save-update'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='generator'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:param' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+   <attribute name='action' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='assigned'/>
+      <enumeration value='guid'/>
+      <enumeration value='manual'/>
+      <enumeration value='native'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='class' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='param'>
+  <complexType mixed='true'>
+   <attribute name='name' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='option'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:prompt' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+   <attribute name='value' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='permission'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='group' type='string' use='required'/>
+   <attribute name='permission' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='none'/>
+      <enumeration value='read'/>
+      <enumeration value='insert'/>
+      <enumeration value='noedit'/>
+      <enumeration value='edit'/>
+      <enumeration value='all'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='pragma'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='value' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='prompt'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='prompt' type='string' use='required'/>
+   <attribute name='locale' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='help'>
+  <complexType mixed='true'>
+   <attribute name='locale' type='string' use='required'/>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='ifmissing'>
+  <complexType mixed='true'>
+   <attribute name='locale' type='string' use='required'/>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='form'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:head'/>
+     <element ref='t:top'/>
+     <element ref='t:foot'/>
+     <element ref='t:field'/>
+     <element ref='t:fieldgroup'/>
+     <element ref='t:auxlist'/>
+     <element ref='t:verb'/>
+     <element ref='t:permission'/>
+     <element ref='t:pragma'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='properties' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='all'/>
+      <enumeration value='user-distinct'/>
+      <enumeration value='listed'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='page'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:head'/>
+     <element ref='t:top'/>
+     <element ref='t:foot'/>
+     <element ref='t:field'/>
+     <element ref='t:fieldgroup'/>
+     <element ref='t:auxlist'/>
+     <element ref='t:verb'/>
+     <element ref='t:permission'/>
+     <element ref='t:pragma'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='properties' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='all'/>
+      <enumeration value='user-distinct'/>
+      <enumeration value='listed'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='order'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='property' type='string' use='required'/>
+   <attribute name='sequence' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='canonical'/>
+      <enumeration value='reverse-canonical'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='list'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:head'/>
+     <element ref='t:top'/>
+     <element ref='t:foot'/>
+     <element ref='t:field'/>
+     <element ref='t:fieldgroup'/>
+     <element ref='t:auxlist'/>
+     <element ref='t:verb'/>
+     <element ref='t:permission'/>
+     <element ref='t:pragma'/>
+     <element ref='t:order'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='properties' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='all'/>
+      <enumeration value='user-distinct'/>
+      <enumeration value='listed'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='onselect' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='auxlist'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:prompt'/>
+     <element ref='t:field'/>
+     <element ref='t:fieldgroup'/>
+     <element ref='t:auxlist'/>
+     <element ref='t:verb'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='properties' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='all'/>
+      <enumeration value='user-distinct'/>
+      <enumeration value='listed'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name='property' type='string' use='required'/>
+   <attribute name='onselect' type='string' use='optional'/>
+   <attribute name='canadd' use='optional'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='fieldgroup'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:prompt'/>
+     <element ref='t:permission'/>
+     <element ref='t:field'/>
+     <element ref='t:fieldgroup'/>
+     <element ref='t:auxlist'/>
+     <element ref='t:verb'/>
+    </choice>
+   </sequence>
+   <attribute name='name' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='field'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:prompt'/>
+     <element ref='t:help'/>
+     <element ref='t:permission'/>
+    </choice>
+   </sequence>
+   <attribute name='property' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='verb'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <choice minOccurs='0' maxOccurs='unbounded'>
+     <element ref='t:prompt'/>
+     <element ref='t:help'/>
+     <element ref='t:permission'/>
+    </choice>
+   </sequence>
+   <attribute name='verb' type='string' use='required'/>
+   <attribute name='dangerous' use='required'>
+    <simpleType>
+     <restriction base='string'>
+      <enumeration value='true'/>
+      <enumeration value='false'/>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name='content'>
+  <complexType>
+   <choice minOccurs='0' maxOccurs='unbounded'>
+    <element ref='t:head'/>
+    <element ref='t:top'/>
+    <element ref='t:foot'/>
+   </choice>
+  </complexType>
+ </element>
+
+ <element name='head'>
+  <complexType mixed='true'>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='top'>
+  <complexType mixed='true'>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='foot'>
+  <complexType mixed='true'>
+   <attribute name='xmlns' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='specification'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:reference' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+   <attribute name='url' type='string' use='optional'/>
+   <attribute name='name' type='string' use='required'/>
+   <attribute name='abbr' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='reference'>
+  <complexType>
+   <sequence>
+    <element ref='t:documentation' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+   <attribute name='abbr' type='string' use='optional'/>
+   <attribute name='section' type='string' use='optional'/>
+   <attribute name='entity' type='string' use='optional'/>
+   <attribute name='property' type='string' use='optional'/>
+  </complexType>
+ </element>
+</schema>
