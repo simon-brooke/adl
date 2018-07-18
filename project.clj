@@ -1,4 +1,4 @@
-(defproject adl "1.4.1-SNAPSHOT"
+(defproject adl "1.4.1"
   :description "An application to transform an ADL application specification document into skeleton code for a Clojure web-app"
   :url "http://example.com/FIXME"
   :license {:name "GNU General Public License,version 2.0 or (at your option) any later version"
