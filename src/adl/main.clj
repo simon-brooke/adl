@@ -2,6 +2,7 @@
       :author "Simon Brooke"}
   adl.main
   (:require [adl-support.utils :refer :all]
+            [adl-support.print-usage :refer [print-usage]]
             [adl.to-hugsql-queries :as h]
             [adl.to-json-routes :as j]
             [adl.to-psql :as p]
@@ -52,43 +53,13 @@
    ])
 
 
-(defn- doc-part
-  "An `option` in cli-options comprises a sequence of strings followed by
-  keyword/value pairs. Return all the strings before the first keyword."
-  [option]
-  (if
-    (keyword? (first option)) nil
-    (cons (first option) (doc-part (rest option)))))
-
-(defn map-part
-  "An `option` in cli-options comprises a sequence of strings followed by
-  keyword/value pairs. Return the keyword/value pairs as a map."
-  [option]
-  (cond
-    (empty? option) nil
-    (keyword? (first option)) (apply hash-map option)
-    true
-    (map-part (rest option))))
-
-(defn print-usage []
-  (println
-    (join
-      "\n"
-      (flatten
-        (list
-          (join
-            (list
-              "Usage: java -jar adl-"
-              (or (System/getProperty "adl.version") "[VERSION]")
-              "-SNAPSHOT-standalone.jar -options [adl-file]"))
-          "where options include:"
-          (map
-            #(let
-               [doc-part (doc-part %)
-                default (:default (map-part %))
-                default-string (if default (str "; (default: " default ")"))]
-               (str "\t" (join ", " (butlast doc-part)) ": " (last doc-part) default-string))
-            cli-options))))))
+(defn usage [parsed-options]
+  "Show a usage message. `parsed-options` should be options as
+  parsed by [clojure.tools.cli](https://github.com/clojure/tools.cli)"
+  (print-usage
+    "adl"
+    parsed-options
+    {"adl-file" "An XML file conforming to the ADL DTD"}))
 
 
 (defn -main
@@ -97,16 +68,16 @@
   (let [options (parse-opts args cli-options)]
     (cond
       (empty? args)
-      (print-usage)
+      (usage options)
       (not (empty? (:errors options)))
       (do
         (doall
           (map
             println
             (:errors options)))
-        (print-usage))
+        (usage options))
       (-> options :options :help)
-      (print-usage)
+      (usage options)
       true
       (do
         (let [p (:path (:options options))

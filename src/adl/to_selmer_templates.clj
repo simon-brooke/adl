@@ -587,8 +587,8 @@
              :field
              #(= "text-area" (widget-type (property-for-field % entity) application)))
            "
-           {% script \"js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
-           {% style \"js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")
+           {% script \"/js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
+           {% style \"/js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")
          (if
            (child-with-tag
              form
