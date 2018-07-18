@@ -635,7 +635,8 @@
               (child-with-tag
                 form :field
                 #(= "text-area" (widget-type (property-for-field % entity) application)))
-              (embed-script-fragment "resources/js/text-area-md-support.js"))))))}})
+              (embed-script-fragment "resources/js/text-area-md-support.js"
+                                     [["{{page}}" (-> form :attrs :name)]]))))))}})
 
 
 (defn form-to-template
