@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <xsl:stylesheet version="1.0"
-  xmlns="http://bowyer.journeyman.cc/adl/1.4/"
-  xmlns:adl="http://bowyer.journeyman.cc/adl/1.4/"
+  xmlns="http://bowyer.journeyman.cc/adl/1.4.1/"
+  xmlns:adl="http://bowyer.journeyman.cc/adl/1.4.1/"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output encoding="UTF-8" method="xml" indent="yes" />
 
 	<xsl:param name="locale" select="en-GB"/>
 
-	<xsl:param name="css-stylesheet" 
+	<xsl:param name="css-stylesheet"
 			   select="'http://libs.cygnets.co.uk/adl/unstable/ADL/documentation.css'"/>
 
 	<xsl:param name="detail" select="full"/>
@@ -337,7 +337,7 @@
       </tr>
     </xsl:if>
   </xsl:template>
-  
+
   <xsl:template match="adl:typedef">
     <hr/>
     <a>
@@ -378,10 +378,10 @@
     <xsl:apply-templates select="adl:documentation"/>
     <a href="#top">[back to top]</a>
   </xsl:template>
-  
+
 	<xsl:template match="adl:prompt">
-		<!-- If I'm the prompt for the current locale, show me; 
-    if I'm the default prompt, show me only if there isn't 
+		<!-- If I'm the prompt for the current locale, show me;
+    if I'm the default prompt, show me only if there isn't
     one for the default locale -->
 		<xsl:choose>
       <xsl:when test="not($locale) and @locale='en-GB'">
@@ -404,8 +404,8 @@
 	</xsl:template>
 
 	<xsl:template match="adl:help">
-		<!-- If I'm the helptext for the current locale, show me; 
-    if I'm the default helptext, show me only if there isn't 
+		<!-- If I'm the helptext for the current locale, show me;
+    if I'm the default helptext, show me only if there isn't
     one for the default locale -->
 		<xsl:choose>
       <xsl:when test="not($locale) and @locale='en-GB'">
@@ -492,7 +492,7 @@
         </xsl:attribute>
       </a>
       <h4>
-				Form '<xsl:value-of select="@name"/>' of entity 
+				Form '<xsl:value-of select="@name"/>' of entity
         <a>
           <xsl:attribute name="href">
             <xsl:value-of select="concat('#entity-', ancestor::adl:entity/@name)"/>
@@ -581,7 +581,7 @@
             <xsl:value-of select="concat('#entity-', ancestor::adl:entity/@name)"/>
           </xsl:attribute>
           <xsl:value-of select="ancestor::adl:entity/@name"/>
-        </a>, on select 
+        </a>, on select
         <a>
           <xsl:attribute name="href">
             <xsl:value-of select="concat( '#page-', ancestor::adl:entity/@name, '-', @onselect)"/>
@@ -729,7 +729,7 @@
 			<td>
         <a>
           <xsl:attribute name="href">
-            <xsl:variable name="propname" select="@property"/> 
+            <xsl:variable name="propname" select="@property"/>
             <xsl:variable name="targetent">
               <xsl:choose>
                 <xsl:when test="ancestor::adl:entity//adl:property[@name=$propname]/@entity">
