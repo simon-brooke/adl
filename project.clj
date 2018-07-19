@@ -12,4 +12,14 @@
                  [hiccup "1.0.5"]]
   :aot  [adl.main]
   :main adl.main
-  :plugins [[lein-codox "0.10.3"]])
+  :plugins [[lein-codox "0.10.3"]
+            [lein-release "1.0.5"]]
+
+  :release-tasks [["vcs" "assert-committed"]
+                  ["change" "version" "leiningen.release/bump-version" "release"]
+                  ["vcs" "commit"]
+                  ;; ["vcs" "tag"] -- not working, problems with secret key
+                  ["clean"]
+                  ["uberjar"]
+                  ["change" "version" "leiningen.release/bump-version"]
+                  ["vcs" "commit"]])

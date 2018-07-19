@@ -3,7 +3,7 @@
   adl.to-selmer-templates
   (:require [adl.to-hugsql-queries :refer [expanded-token]]
             [adl-support.utils :refer :all]
-            [clojure.java.io :refer [file make-parents]]
+            [clojure.java.io :refer [file make-parents resource]]
             [clojure.pprint :as p]
             [clojure.string :as s]
             [clojure.xml :as x]
@@ -423,11 +423,11 @@
 
 
 (defn embed-script-fragment
-  "Return the content of the file at `filepath`, with these `substitutions`
+  "Return the content of the file at `resource-path`, with these `substitutions`
   made into it in order. Substitutions should be pairss [`pattern` `value`],
   where `pattern` is a string, a char, or a regular expression."
-  ([filepath substitutions]
-   (let [v (slurp filepath)]
+  ([resource-path substitutions]
+   (let [v (slurp (resource resource-path))]
      (reduce
        (fn [s [pattern value]]
          (if (and pattern value)
@@ -435,8 +435,8 @@
            s))
        v
        substitutions)))
-  ([filepath]
-   (embed-script-fragment filepath [])))
+  ([resource-path]
+   (embed-script-fragment resource-path [])))
 
 
 (defn edit-link
@@ -622,7 +622,7 @@
                   (if
                     (> magnitude 2)
                     (embed-script-fragment
-                      "resources/js/selectize-one.js"
+                      "js/selectize-one.js"
                       [["{{widget_id}}" (-> property :attrs :name)]
                        ["{{widget_value}}" (str "{{record." (-> property :attrs :name) "}}")]
                        ["{{entity}}" farname]
@@ -635,7 +635,7 @@
               (child-with-tag
                 form :field
                 #(= "text-area" (widget-type (property-for-field % entity) application)))
-              (embed-script-fragment "resources/js/text-area-md-support.js"
+              (embed-script-fragment "js/text-area-md-support.js"
                                      [["{{page}}" (-> form :attrs :name)]]))))))}})
 
 
@@ -899,6 +899,7 @@
       template
       (try
         (do
+          (make-parents filepath)
           (spit
            filepath
            (s/join
@@ -967,6 +968,7 @@
                    (str
                      "ERROR: Exception "
                      (.getName (.getClass any))
+                     " "
                      (.getMessage any)
                      " while writing "
                      filename))))))
