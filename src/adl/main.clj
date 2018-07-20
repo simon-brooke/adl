@@ -6,6 +6,7 @@
             [adl.to-psql :as p]
             [adl.to-selmer-routes :as s]
             [adl.to-selmer-templates :as t]
+            [adl-support.core :refer [*warn*]]
             [adl-support.print-usage :refer [print-usage]]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [as-file file make-parents resource]]
@@ -108,7 +109,7 @@
                  (p/to-psql application)
                  (s/to-selmer-routes application)
                  (t/to-selmer-templates application))
-               (println (str "ERROR: File not found: " %)))
+               (*warn* (str "ERROR: File not found: " %)))
             (-> options :arguments)))))))
 
 

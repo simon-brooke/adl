@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
-  (:require [adl.to-hugsql-queries :refer [expanded-token]]
+  (:require [adl-support.core :refer [*warn*]]
+            [adl.to-hugsql-queries :refer [expanded-token]]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents resource]]
             [clojure.pprint :as p]
@@ -916,7 +917,7 @@
                     "{% endblock %}"))
                    (keys template)))
               (file-footer filename application)))))
-          (if (> *verbosity* 0) (println "\tGenerated " filepath)))
+          (if (> *verbosity* 0) (*warn* "\tGenerated " filepath)))
         (catch Exception any
           (let [report (str
                         "ERROR: Exception "
@@ -928,10 +929,10 @@
               (spit
                filepath
                (with-out-str
-                 (println (str "<!-- " report "-->"))
+                 (*warn* (str "<!-- " report "-->"))
                  (p/pprint template)))
               (catch Exception _ nil))
-            (println report)
+            (*warn* report)
             (throw any)))))
     (str filepath)))
 
@@ -964,7 +965,7 @@
              (try
                (write-template-file filename (templates-map %) application)
                (catch Exception any
-                 (println
+                 (*warn*
                    (str
                      "ERROR: Exception "
                      (.getName (.getClass any))

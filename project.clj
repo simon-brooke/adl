@@ -2,10 +2,10 @@
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
-  :license {:name "GNU General Public License,version 2.0 or (at your option) any later version"
-            :url "https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"}
+  :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
+            :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.2"]
+  :dependencies [[adl-support "0.1.1-SNAPSHOT"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
