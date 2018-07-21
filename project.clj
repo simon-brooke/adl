@@ -1,4 +1,4 @@
-(defproject adl "1.4.3"
+(defproject adl "1.4.3-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
@@ -20,9 +20,6 @@
 
   :plugins [[lein-codox "0.10.3"]
             [lein-release "1.0.5"]]
-
-  :lein-release {:scm :git
-                 :deploy-via :clojars}
 
   ;; `lein release` doesn't work with `git flow release`. To use
   ;; `lein release`, first merge `develop` into `master`, and then, in branch
