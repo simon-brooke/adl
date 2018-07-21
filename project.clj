@@ -1,11 +1,11 @@
-(defproject adl "1.4.2-SNAPSHOT"
+(defproject adl "1.4.2"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
   :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
             :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.1-SNAPSHOT"]
+  :dependencies [[adl-support "0.1.3"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
@@ -33,5 +33,7 @@
                   ["vcs" "commit"]
                   ;; ["vcs" "tag"] -- not working, problems with secret key
                   ["uberjar"]
+                  ["install"]
+                  ["deploy" "clojars"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]])
