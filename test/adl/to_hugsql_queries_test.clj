@@ -2,7 +2,7 @@
   (:require [clojure.string :as s]
             [clojure.test :refer :all]
             [adl.to-hugsql-queries :refer :all]
-            [adl.utils :refer :all]))
+            [adl-support.utils :refer :all]))
 
 (defn string-equal-ignore-whitespace?
   "I don't want unit tests to fail just because emitted whitespace changes."

@@ -1,18 +1,20 @@
 (ns ^{:doc "Application Description Language - command line invocation."
       :author "Simon Brooke"}
   adl.main
-  (:require [adl-support.utils :refer :all]
-            [adl-support.print-usage :refer [print-usage]]
-            [adl.to-hugsql-queries :as h]
+  (:require [adl.to-hugsql-queries :as h]
             [adl.to-json-routes :as j]
             [adl.to-psql :as p]
             [adl.to-selmer-routes :as s]
             [adl.to-selmer-templates :as t]
-            [clojure.java.io :refer [make-parents]]
-            [clojure.string :refer [join]]
+            [adl-support.core :refer [*warn*]]
+            [adl-support.print-usage :refer [print-usage]]
+            [adl-support.utils :refer :all]
+            [clojure.java.io :refer [as-file file make-parents resource]]
+            [clojure.string :refer [includes? join split]]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.xml :as x]
-            [environ.core :refer [env]])
+            [environ.core :refer [env]]
+            [saxon :as sax])
   (:gen-class))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -62,8 +64,58 @@
     {"adl-file" "An XML file conforming to the ADL DTD"}))
 
 
+(def adl->canonical
+  "A function which takes ADL text as its single argument and returns
+  canonicalised ADL text as its result."
+  (sax/compile-xslt (resource "transforms/adl2canonical.xslt")))
+
+
+(defn canonicalise
+  "Canonicalise the ADL document indicated by this `filepath` (if it is not
+  already canonical) and return a path to the canonical version."
+  [filepath]
+  (if
+    ;; if it says it's canonical, we'll just believe it.
+    (includes? filepath ".canonical.")
+    filepath
+    (let
+      [parts (split (.getName (as-file filepath)) #"\.")
+       outpath (file
+                 *output-path*
+                 (join
+                   "."
+                   (cons (first parts) (cons "canonical" (rest parts)))))]
+      (spit outpath (adl->canonical (sax/compile-xml (slurp filepath))))
+      (.getAbsolutePath outpath))))
+
+
+(defn process
+  "Process these parsed `options`."
+  [options]
+  (do
+    (let [p (:path (:options options))
+          op (if (.endsWith p "/") p (str p "/"))]
+      (binding [*output-path* op
+                *locale* (-> options :options :locale)
+                *verbosity* (-> options :options :verbosity)]
+        (make-parents *output-path*)
+        (doall
+          (map
+            #(if
+               (.exists (java.io.File. %))
+               (let [application (x/parse (canonicalise %))]
+                 (h/to-hugsql-queries application)
+                 (j/to-json-routes application)
+                 (p/to-psql application)
+                 (s/to-selmer-routes application)
+                 (t/to-selmer-templates application))
+               (*warn* (str "ERROR: File not found: " %)))
+            (-> options :arguments)))))))
+
+
 (defn -main
-  "Expects as arg the path-name of an ADL file."
+  "Parses options and arguments. Expects as args the path-name of one or
+  more ADL files."
   [& args]
   (let [options (parse-opts args cli-options)]
     (cond
@@ -79,25 +131,7 @@
       (-> options :options :help)
       (usage options)
       true
-      (do
-        (let [p (:path (:options options))
-              op (if (.endsWith p "/") p (str p "/"))]
-          (binding [*output-path* op
-                    *locale* (-> options :options :locale)
-                    *verbosity* (-> options :options :verbosity)]
-            (make-parents *output-path*)
-            (doall
-              (map
-                #(if
-                   (.exists (java.io.File. %))
-                   (let [application (x/parse %)]
-                     (h/to-hugsql-queries application)
-                     (j/to-json-routes application)
-                     (p/to-psql application)
-                     (s/to-selmer-routes application)
-                     (t/to-selmer-templates application))
-                   (println (str "ERROR: File not found: " %)))
-                (-> options :arguments)))))))))
+      (process options))))
 
 
 

@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language: generate routes for user interface requests."
       :author "Simon Brooke"}
   adl.to-selmer-routes
-  (:require [adl-support.utils :refer :all]
+  (:require [adl-support.core :refer [*warn*]]
+            [adl-support.utils :refer :all]
             [clj-time.core :as t]
             [clj-time.format :as f]
             [clojure.java.io :refer [file make-parents writer]]
@@ -395,10 +396,10 @@
           (pprint (make-defroutes application))
           (println)))
       (if (> *verbosity* 0)
-        (println (str "\tGenerated " filepath)))
+        (*warn* (str "\tGenerated " filepath)))
       (catch
         Exception any
-        (println
+        (*warn*
          (str
           "ERROR: Exception "
           (.getName (.getClass any))

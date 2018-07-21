@@ -69,17 +69,6 @@
      (remove :tag (remove nil? (map first (map
          #(try-validate ~o '%)
          ~validations))))))
-;; ]
-;;     ;; if *any* succeeded, we succeeded
-;;     ;; otherwise, one of these is the valid error - but which? The answer, in my case
-;;     ;; is that if there is any which did not fail on the :tag check, then that is the
-;;     ;; interesting one. But generally?
-;;     (try
-;;       (doall (map #(println (str "ERROR: " %)) suspicious))
-;;       (empty? suspicious)
-;;       (catch Exception _ (println "ERROR while trying to print errors")
-;;       true))))
-
 
 ;;; the remainder of this file is a fairly straight translation of the ADL 1.4 DTD into Clojure
 

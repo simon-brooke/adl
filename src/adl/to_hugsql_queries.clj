@@ -1,13 +1,14 @@
 (ns ^{:doc "Application Description Language - generate HUGSQL queries file."
       :author "Simon Brooke"}
   adl.to-hugsql-queries
-  (:require [clojure.java.io :refer [file make-parents]]
+  (:require [adl-support.core :refer [*warn*]]
+            [adl-support.utils :refer :all]
+            [clojure.java.io :refer [file make-parents]]
             [clojure.math.combinatorics :refer [combinations]]
             [clojure.string :as s]
             [clojure.xml :as x]
             [clj-time.core :as t]
-            [clj-time.format :as f]
-            [adl-support.utils :refer :all]))
+            [clj-time.format :as f]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -398,10 +399,10 @@
                 (vals
                   (queries application)))))))
       (if (> *verbosity* 0)
-        (println (str "\tGenerated " filepath)))
+        (*warn* (str "\tGenerated " filepath)))
       (catch
         Exception any
-        (println
+        (*warn*
           (str
             "ERROR: Exception "
             (.getName (.getClass any))

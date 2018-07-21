@@ -3,7 +3,7 @@
     Application Description Language framework
     adl2canonical.xsl
 
-    (c) 2007 Cygnet Solutions Ltd
+    (c) 2007 Simon Brooke
 
     Transform ADL into a canonical form, expanding and making explicit
     things left implicit in the manually maintained form. Specifically,

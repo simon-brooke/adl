@@ -6,8 +6,8 @@ A language for describing applications, from which code can be automatically gen
 
 A document describing the proposed application should be written in XML using the DTD `resources/schemas/adl-1.4.1.dtd`. It may then be transformed into a C# or Java application using the XSL transforms, see **History** below, but this code is very out of date and the resulting application is unlikely to be very usable. Alternatively, it can be transformed into a Clojure [Luminus](http://www.luminusweb.net/) application using the Clojure transformation, as follows:
 
-    simon@fletcher:~/workspace/adl$ java -jar target/adl-1.4.1-SNAPSHOT-standalone.jar --help
-    Usage: java -jar adl-[VERSION]-SNAPSHOT-standalone.jar -options [adl-file]
+    simon@fletcher:~/workspace/adl$ java -jar target/adl-[VERSION]-standalone.jar --help
+    Usage: java -jar adl-[VERSION]-standalone.jar -options [adl-file]
     where options include:
       -a, --abstract-key-name-convention [string]: the abstract key name convention to use for generated key fields (TODO: not yet implemented); (default: id)
       -h, --help: Show this message
@@ -39,11 +39,15 @@ The idea is that the ADL framework should autogenerate 95% of your application. 
 
 ### The DTD
 
-A Document Type Definition is the core of this; the current version is `adl-1.4.dtd`.
+A Document Type Definition is the core of this; the current version is `adl-1.4.1.dtd`.
 
 ### The Clojure transformer application
 
 This is the future direction of the project. Currently it converts a valid ADL XML document into most of the files required for a Clojure web-app. Shortly it will produce a complete Clojure [Luminus](http://www.luminusweb.net/) web-app. In future it may produce web-apps in other languages and frameworks.
+
+### A Leiningen plugin
+
+A [Leiningen](https://leiningen.org) plugin is available.
 
 ### XSL transforms
 
@@ -65,6 +69,8 @@ All of this worked (well) back in 2010, but it relied on some proprietary librar
 
 Back in 2007, XSLT seemed a really good technology for doing this sort of thing. But it's prolix, and while back then I was expert in it, I don't really use it much now. So my plan is to write future transforms in Clojure, and, because these days I work mostly in Clojure, the transforms I shall write will mostly target the Clojure ecosystem.
 
+Ultimately ADL will probably transition from XML to [EDN](https://github.com/edn-format/edn).
+
 This doesn't mean you can't pick up the framework and write transforms in other languages and/or to other language ecosystems. In fact, I'd encourage you to do so.
 
 ## Contributing
@@ -75,4 +81,4 @@ I will happily accept pull requests for new XSL transforms (although I'd like so
 
 Copyright © Simon Brooke 2007-2018; some work was done under contract to [Cygnet Solutions Ltd](http://cygnets.co.uk/), but they have kindly transferred the copyright back to me.
 
-Distributed under the Gnu GPL version 2 or any later version; I am open to licensing this project under additional licences if required.
+Distributed under the Gnu LGPL version 3 or any later version; I am open to licensing this project under additional licences if required.

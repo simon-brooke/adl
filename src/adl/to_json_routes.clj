@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language: generate RING routes for REST requests."
       :author "Simon Brooke"}
   adl.to-json-routes
-  (:require [adl-support.utils :refer :all]
+  (:require [adl-support.core :refer [*warn*]]
+            [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]
             [clj-time.core :as t]
             [clj-time.format :as f]
@@ -274,10 +275,10 @@
               (sort (keys handlers-map))))
           (pprint (defroutes handlers-map))))
       (if (> *verbosity* 0)
-        (println (str "\tGenerated " filepath)))
+        (*warn* (str "\tGenerated " filepath)))
       (catch
         Exception any
-        (println
+        (*warn*
           (str
             "ERROR: Exception "
             (.getName (.getClass any))
