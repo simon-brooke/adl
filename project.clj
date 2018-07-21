@@ -1,4 +1,4 @@
-(defproject adl "1.4.3-SNAPSHOT"
+(defproject adl "1.4.3"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
@@ -21,9 +21,15 @@
   :plugins [[lein-codox "0.10.3"]
             [lein-release "1.0.5"]]
 
+;;   :lein-release {:scm :git
+;;                  :deploy-via :clojars} ;; :deploy-via :clojars fails - with an scp error.
+
   ;; `lein release` doesn't work with `git flow release`. To use
   ;; `lein release`, first merge `develop` into `master`, and then, in branch
   ;; `master`, run `lein release`
+
+  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+                                    :sign-releases true}]]
 
   :release-tasks [["vcs" "assert-committed"]
                   ["clean"]
