@@ -1,4 +1,4 @@
-(defproject adl "1.4.3"
+(defproject adl "1.4.3-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
@@ -25,9 +25,6 @@
   ;; `lein release`, first merge `develop` into `master`, and then, in branch
   ;; `master`, run `lein release`
 
-  :scm :git
-  :deploy-via :clojars
-
   :release-tasks [["vcs" "assert-committed"]
                   ["clean"]
                   ["test"]
@@ -37,6 +34,6 @@
                   ;; ["vcs" "tag"] -- not working, problems with secret key
                   ["uberjar"]
                   ["install"]
-                  ["deploy"]
+                  ["deploy" "clojars"]
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]])
