@@ -34,6 +34,6 @@
                   ;; ["vcs" "tag"] -- not working, problems with secret key
                   ["uberjar"]
                   ["install"]
-                  ["deploy" "clojars"]
+                  ;; ["deploy" "clojars"] -- also not working
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]])

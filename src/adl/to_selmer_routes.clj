@@ -203,14 +203,9 @@
                          (list 'keywordize-keys (list :params 'request))
                          (list 'keywordize-keys (list :form-params 'request))
                          (key-names e true)))
-            ;; TODO: we must take key params out of just params,
-            ;; but we should take all other params out of form-params - because we need the key to
-            ;; load the form in the first place, but just accepting values of other params would
-            ;; allow spoofing.
             (list
               'l/render
               (list 'support/resolve-template (str n ".html"))
-              (list :session 'request)
               (list 'merge
                     {:title (capitalise (:name (:attrs f)))
                      :params  'params}
@@ -218,66 +213,6 @@
                       :form (make-form-handler-content f e a n)
                       :page (make-page-handler-content f e a n)
                       :list (make-list-handler-content f e a n))))))))
-;;                       (:form :page)
-;;                       (list
-;;                         'reduce
-;;                         'merge
-;;                         (list 'merge
-;;                               (list 'cond (list :save-button 'p)
-;;                                     (list 'try
-;;                                           (list 'if
-;;                                                 (list 'some (key-names e) (list 'map 'name (list 'keys 'p)))
-;;                                                 (list 'do
-;;                                                       (list (symbol
-;;                                                               (str "db/update-" (singularise (-> e :attrs :name)) "!"))
-;;                                                             'db/*db*
-;;                                                             'p)
-;;                                                       {:message "Updated record"})
-;;                                                 (list 'do
-;;                                                       (list (symbol
-;;                                                               (str "db/create-" (singularise (-> e :attrs :name)) "!"))
-;;                                                             'db/*db*
-;;                                                             'p)
-;;                                                       {:message "Saved record"}))
-;;                                           `(catch Exception any#
-;;                                              {:error (.getMessage any#)})))
-;;                               {:record
-;;                                (list 'if (list 'empty? (list 'remove 'nil? (list 'vals 'p))) []
-;;                                      (list
-;;                                        (symbol
-;;                                          (str "db/get-" (singularise (:name (:attrs e)))))
-;;                                        (symbol "db/*db*")
-;;                                        'p))})
-;;                         (cons 'list
-;;                               (map
-;;                                 (fn [p]
-;;                                   (hash-map
-;;                                     (keyword (-> p :attrs :entity))
-;;                                     (list (symbol (str "db/list-" (:entity (:attrs p)))) (symbol "db/*db*"))))
-;;                                 (filter #(#{"entity" "link"} (:type (:attrs %)))
-;;                                         (descendants-with-tag e :property)))))
-;;                   :list
-;;                   {:records
-;;                    (list
-;;                      'if
-;;                      (list
-;;                        'not
-;;                        (list
-;;                          'empty?
-;;                          (list 'remove 'nil? (list 'vals 'p))))
-;;                      (list
-;;                        (symbol
-;;                          (str
-;;                            "db/search-strings-"
-;;                            (:name (:attrs e))))
-;;                        (symbol "db/*db*")
-;;                        'p)
-;;                      (list
-;;                        (symbol
-;;                          (str
-;;                            "db/list-"
-;;                            (:name (:attrs e))))
-;;                        (symbol "db/*db*") {}))})))))))
 
 ;; (def a (x/parse "../youyesyet/youyesyet.canonical.adl.xml"))
 ;; (def e (child-with-tag a :entity))
