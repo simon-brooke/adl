@@ -1,4 +1,4 @@
-(defproject adl "1.4.3"
+(defproject adl "1.4.4-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
