@@ -120,6 +120,7 @@
                  (list
                    'memo/ttl
                    (cons 'fn (generate-handler-body query-map))
+                   {}
                    :ttl/threshold
                    (* (volatility (:entity query-map)) 1000))))))))
 

@@ -2,6 +2,8 @@
 
 A language for describing applications, from which code can be automatically generated.
 
+[![Clojars Project](https://img.shields.io/clojars/v/adl.svg)](https://clojars.org/adl)
+
 ## Usage
 
 A document describing the proposed application should be written in XML using the DTD `resources/schemas/adl-1.4.1.dtd`. It may then be transformed into a C# or Java application using the XSL transforms, see **History** below, but this code is very out of date and the resulting application is unlikely to be very usable. Alternatively, it can be transformed into a Clojure [Luminus](http://www.luminusweb.net/) application using the Clojure transformation, as follows:
