@@ -96,7 +96,10 @@
                                     #(safe-name (:name (:attrs %)) :sql)
                                     (insertable-properties entity))
         query-name (str "create-" pretty-name "!")
-        signature ":! :n"]
+        signature (if (has-primary-key? entity)
+                    ":? :1" ;; bizarrely, if you want to return the keys,
+                            ;; you have to use a query signature.
+                    ":! :n")]
     (hash-map
       (keyword query-name)
       {:name query-name
