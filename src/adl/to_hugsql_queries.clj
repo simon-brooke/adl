@@ -273,7 +273,7 @@
            (list
              (str "-- :name " query-name " " signature)
              (str "-- :doc lists all existing " pretty-name " records")
-             (str "SELECT DISTINCT * FROM lv_" entity-name)
+             (str "SELECT DISTINCT lv_" entity-name ".* FROM lv_" entity-name)
              (order-by-clause entity "lv_" false)
              "--~ (if (:offset params) \"OFFSET :offset \")"
              "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
@@ -317,7 +317,7 @@
                     "entity" (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT * \nFROM lv_" entity-name ", " entity-name)
+                               (str "SELECT lv_" entity-name ".* \nFROM lv_" entity-name ", " entity-name)
                                (str "WHERE lv_" entity-name "." (first (key-names entity)) " = "
                                     entity-name "." (first (key-names entity))
                                     "\n\tAND " entity-name "." link-field " = :id")
