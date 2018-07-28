@@ -62,7 +62,7 @@
 
 (defn emit-content
   ([content]
-   (try
+   (do-or-warn
      (cond
        (nil? content)
        nil
@@ -82,7 +82,7 @@
          "';\n"
          (-> any .getClass .getName)
          ": "
-         (-> any .getMessage)
+         (.getMessage any)
          " -->"))))
   ([filename application k]
    (emit-content filename nil nil application k))
@@ -356,9 +356,46 @@
                   "{% endif %}")))})
 
 
+(defn compose-input-widget-para
+  "Generate an input widget for this `field-or-property` of this `form` for
+  this `entity` taken from within this `application`, in context of a para
+  also containing its label."
+  [property form entity application widget-name]
+  (let
+    [typedef (typedef property application)
+     w-type (widget-type property application typedef)]
+    (compose-widget-para
+     property form entity application widget-name
+     {:tag :input
+      :attrs (merge
+              {:id widget-name
+               :name widget-name
+               :type w-type
+               :value (str "{{record." widget-name "}}")
+               :maxlength (:size (:attrs property))
+               :size (cond
+                      (nil? (:size (:attrs property)))
+                      "16"
+                      (try
+                        (> (read-string
+                            (:size (:attrs property))) 60)
+                        (catch Exception _ false))
+                      "60"
+                      true
+                      (:size (:attrs property)))}
+              ;; TODO: should match pattern from typedef
+              (if
+                (:minimum (:attrs typedef))
+                {:min (:minimum (:attrs typedef))})
+              (if
+                (:maximum (:attrs typedef))
+                {:max (:maximum (:attrs typedef))}))})))
+
+
 (defn widget
   "Generate a widget for this `field-or-property` of this `form` for this `entity`
-  taken from within this `application`."
+  taken from within this `application`, in context of a para also containing its
+  label."
   [field-or-property form entity application]
   (let
     [widget-name (safe-name
@@ -370,13 +407,7 @@
                 :property field-or-property
                 :field (property-for-field field-or-property entity)
                 ;; default
-                nil)
-     permissions (find-permissions field-or-property property form entity application)
-     typedef (typedef property application)
-     w-type (widget-type property application typedef)
-     visible-to (visible-to permissions)
-     ;; if the form isn't actually a form, no widget is writeable.
-     writeable-by (if (= (:tag form) :form) (writeable-by permissions))]
+                nil)]
     (if
       property
       (case w-type
@@ -396,31 +427,7 @@
            :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
            :content [(str "{{record." widget-name "}}")]})
         ;; all others
-        (compose-widget-para
-          property form entity application widget-name
-          {:tag :input
-           :attrs (merge
-                    {:id widget-name
-                     :name widget-name
-                     :type w-type
-                     :value (str "{{record." widget-name "}}")
-                     :maxlength (:size (:attrs property))
-                     :size (cond
-                             (nil? (:size (:attrs property)))
-                             "16"
-                             (try
-                               (> (read-string
-                                    (:size (:attrs property))) 60)
-                               (catch Exception _ false))
-                             "60"
-                             true
-                             (:size (:attrs property)))}
-                    (if
-                      (:minimum (:attrs typedef))
-                      {:min (:minimum (:attrs typedef))})
-                    (if
-                      (:maximum (:attrs typedef))
-                      {:max (:maximum (:attrs typedef))}))})))))
+        (compose-input-widget-para property form entity application widget-name)))))
 
 
 (defn embed-script-fragment
@@ -898,7 +905,7 @@
   (let [filepath (str *output-path* "resources/templates/auto/" filename)]
     (if
       template
-      (try
+      (do-or-warn
         (do
           (make-parents filepath)
           (spit
@@ -917,7 +924,9 @@
                     "{% endblock %}"))
                    (keys template)))
               (file-footer filename application)))))
-          (if (> *verbosity* 0) (*warn* "\tGenerated " filepath)))
+          (if
+            (pos? *verbosity*)
+            (*warn* "\tGenerated " filepath)))
         (catch Exception any
           (let [report (str
                         "ERROR: Exception "
@@ -925,7 +934,7 @@
                         (.getMessage any)
                         " while printing "
                         filepath)]
-            (try
+            (do-or-warn
               (spit
                filepath
                (with-out-str
@@ -962,7 +971,7 @@
         #(if
            (templates-map %)
            (let [filename (str (name %) ".html")]
-             (try
+             (do-or-warn
                (write-template-file filename (templates-map %) application)
                (catch Exception any
                  (*warn*

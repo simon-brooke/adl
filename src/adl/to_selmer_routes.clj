@@ -50,6 +50,7 @@
         (f/unparse (f/formatters :basic-date-time) (t/now)))
    (list
     :require
+    '[adl-support.forms-support :refer :all]
     '[adl-support.core :as support]
     '[clojure.java.io :as io]
     '[clojure.set :refer [subset?]]
@@ -67,21 +68,15 @@
 
 (defn make-form-handler-content
   [f e a n]
-  (let [warning (list 'str (str "Error while fetching " (singularise (:name (:attrs e))) " record ") 'params)]
+  (let [entity-name (singularise (:name (:attrs e)))]
     ;; TODO: as yet makes no attempt to save the record
     (list 'let
           (vector
             'record (list
-                      'support/do-or-log-error
-                      ;;(list 'if (list 'subset? (key-names e) (list 'set (list 'keys 'params)))
-                            (list
-                              (symbol
-                                (str "db/get-" (singularise (:name (:attrs e)))))
-                              (symbol "db/*db*")
-                              'params)
-                      ;;)
-                      :message warning
-                      :error-return {:warnings [warning]}))
+                     'get-current-value
+                     (symbol (str "db/get-" entity-name))
+                     'params
+                     entity-name))
           (reduce
             merge
             {:error (list :warnings 'record)
@@ -199,10 +194,7 @@
       (vector 'request)
       (list 'let (vector
                    'params
-                   (list 'support/massage-params
-                         (list 'keywordize-keys (list :params 'request))
-                         (list 'keywordize-keys (list :form-params 'request))
-                         (key-names e true)))
+                   (list 'support/massage-params 'request))
             (list
               'l/render
               (list 'support/resolve-template (str n ".html"))
@@ -303,7 +295,7 @@
   [application]
   (let [filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto.clj")]
     (make-parents filepath)
-    (try
+    (do-or-warn
       (with-open [output (writer filepath)]
         (binding [*out* output]
           (pprint (file-header application))
@@ -330,15 +322,7 @@
           (println)
           (pprint (make-defroutes application))
           (println)))
-      (if (> *verbosity* 0)
-        (*warn* (str "\tGenerated " filepath)))
-      (catch
-        Exception any
-        (*warn*
-         (str
-          "ERROR: Exception "
-          (.getName (.getClass any))
-          (.getMessage any)
-          " while printing "
-          filepath))))))
+      (if
+        (pos? *verbosity*)
+        (*warn* (str "\tGenerated " filepath))))))
 

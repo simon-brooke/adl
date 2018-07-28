@@ -92,25 +92,24 @@
 (defn process
   "Process these parsed `options`."
   [options]
-  (do
-    (let [p (:path (:options options))
-          op (if (.endsWith p "/") p (str p "/"))]
-      (binding [*output-path* op
-                *locale* (-> options :options :locale)
-                *verbosity* (-> options :options :verbosity)]
-        (make-parents *output-path*)
-        (doall
-          (map
-            #(if
-               (.exists (java.io.File. %))
-               (let [application (x/parse (canonicalise %))]
-                 (h/to-hugsql-queries application)
-                 (j/to-json-routes application)
-                 (p/to-psql application)
-                 (s/to-selmer-routes application)
-                 (t/to-selmer-templates application))
-               (*warn* (str "ERROR: File not found: " %)))
-            (-> options :arguments)))))))
+  (let [p (:path (:options options))
+        op (if (.endsWith p "/") p (str p "/"))]
+    (binding [*output-path* op
+              *locale* (-> options :options :locale)
+              *verbosity* (-> options :options :verbosity)]
+      (make-parents *output-path*)
+      (doall
+       (map
+        #(if
+           (.exists (java.io.File. %))
+           (let [application (x/parse (canonicalise %))]
+             (h/to-hugsql-queries application)
+             (j/to-json-routes application)
+             (p/to-psql application)
+             (s/to-selmer-routes application)
+             (t/to-selmer-templates application))
+           (*warn* (str "ERROR: File not found: " %)))
+        (:arguments options))))))
 
 
 (defn -main
@@ -121,7 +120,7 @@
     (cond
       (empty? args)
       (usage options)
-      (not (empty? (:errors options)))
+      (seq (:errors options))
       (do
         (doall
           (map
