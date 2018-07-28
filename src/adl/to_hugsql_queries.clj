@@ -1,7 +1,7 @@
 (ns ^{:doc "Application Description Language - generate HUGSQL queries file."
       :author "Simon Brooke"}
   adl.to-hugsql-queries
-  (:require [adl-support.core :refer [*warn*]]
+  (:require [adl-support.core :refer :all]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents]]
             [clojure.math.combinatorics :refer [combinations]]

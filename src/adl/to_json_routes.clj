@@ -1,7 +1,7 @@
 (ns ^{:doc "Application Description Language: generate RING routes for REST requests."
       :author "Simon Brooke"}
   adl.to-json-routes
-  (:require [adl-support.core :refer [*warn*]]
+  (:require [adl-support.core :refer :all]
             [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]
             [clj-time.core :as t]
