@@ -3,6 +3,7 @@
       :author "Simon Brooke"}
   adl.to-selmer-templates
   (:require [adl-support.core :refer :all]
+            [adl-support.forms-support :refer :all]
             [adl.to-hugsql-queries :refer [expanded-token]]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents resource]]
@@ -577,7 +578,7 @@
                      (children-with-tag auxlist :field))
                    {:tag :th :content ["&nbsp;"]})))}]}
           (list-tbody
-           (-> property :attrs :name)
+           (auxlist-data-name auxlist)
            auxlist
            farside
            application)]}]})))

@@ -298,7 +298,7 @@
                farkey (-> % :attrs :farkey)
                link-type (-> % :attrs :type)
                link-field (-> % :attrs :name)
-               query-name (str "list-" entity-name "-by-" pretty-far)
+               query-name (list-related-query-name entity far-entity)
                signature ":? :*"]
            (hash-map
              (keyword query-name)

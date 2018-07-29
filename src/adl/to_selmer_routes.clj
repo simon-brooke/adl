@@ -89,17 +89,72 @@
 
 
 (defn compose-get-menu-options
-  [e property]
+  [property application]
   ;; TODO: doesn't handle the case of type="link"
-  (hash-map
-   (keyword (-> property :attrs :name))
-   (list
-    'get-menu-options
-    (singularise (-> e :attrs :name))
-    (query-name e :search-strings)
-    (query-name e :search-strings)
-    (keyword (-> property :attrs :farkey))
-    (list (keyword (-> property :attrs :name)) 'params))))
+  (case (-> property :attrs :type)
+    "entity" (if-let [e (child-with-tag
+                        application
+                        :entity
+                        #(= (-> % :attrs :name)
+                            (-> property :attrs :entity)))]
+              (hash-map
+               (keyword (-> property :attrs :name))
+               (list
+                'get-menu-options
+                (singularise (-> e :attrs :name))
+                (query-name e :search-strings)
+                (query-name e :search-strings)
+                (keyword (-> property :attrs :farkey))
+                (list (keyword (-> property :attrs :name)) 'params)))
+              {})
+;;     "link" (list
+;;            'do
+;;            (list
+;;             'comment
+;;             "Can't yet handle link properties")
+;;            {})
+;;     (list
+;;      'do
+;;      (list
+;;       'comment
+;;       (str "Unexpedted type " (-> property :atts :type)))
+     {}))
+
+
+(defn compose-fetch-auxlist-data
+  [auxlist entity application]
+  (let [p-name (-> auxlist :attrs :property)
+        property (child-with-tag entity
+                                 :property
+                                 #(= (-> % :attrs :name) p-name))
+        f-name (-> property :attrs :entity)
+        farside (child-with-tag application
+                                :entity
+                                #(= (-> % :attrs :name) f-name))]
+    (if (and (entity? entity) (entity? farside))
+      (hash-map
+       (keyword (auxlist-data-name auxlist))
+       (list
+        (symbol (str "db/" (list-related-query-name entity farside)))
+        'db/*db*
+        {:id (list :id 'params)}))
+      (do
+        (if-not
+          (entity? entity)
+          (*warn*
+           (str
+            "Entity '"
+            (-> entity :attrs :name)
+            "' passed to compose-fetch-auxlist-data is a non-entity")))
+        (if-not
+          (entity? farside)
+          (*warn*
+           (str
+            "Entity '"
+            f-name
+            "' (" farside ")
+            found in compose-fetch-auxlist-data is a non-entity")))
+        nil))))
 
 
 (defn make-form-get-handler-content
@@ -112,10 +167,14 @@
     merge
     {:error (list :warnings 'record)
      :record (list 'dissoc 'record :warnings)}
-    (map
-     #(compose-get-menu-options e %)
-     (filter #(:entity (:attrs %))
-             (descendants-with-tag e :property))))))
+    (concat
+     (map
+      #(compose-get-menu-options % a)
+      (filter #(:entity (:attrs %))
+              (descendants-with-tag e :property)))
+     (map
+      #(compose-fetch-auxlist-data % e a)
+      (descendants-with-tag f :auxlist))))))
 
 
 (defn make-page-get-handler-content
