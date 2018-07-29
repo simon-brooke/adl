@@ -65,58 +65,67 @@
     (vector (symbol (str (:name (:attrs application)) ".routes.manual")) :as 'm))))
 
 
+(defn compose-fetch-record
+  [e]
+  (let
+    [entity-name (singularise (:name (:attrs e)))
+     warning (str
+              "Error while fetching "
+              entity-name
+              " record")]
+    (list
+     'if
+     (list
+      'all-keys-present?
+      'params (set (key-names e true)))
+     (list
+      'support/do-or-log-error
+      (list
+       (query-name e :get)
+       (symbol "db/*db*")
+       'params)
+      :message warning
+      :error-return {:warnings [warning]}))))
+
+
+(defn compose-get-menu-options
+  [e property]
+  ;; TODO: doesn't handle the case of type="link"
+  (hash-map
+   (keyword (-> property :attrs :name))
+   (list
+    'get-menu-options
+    (singularise (-> e :attrs :name))
+    (query-name e :search-strings)
+    (query-name e :search-strings)
+    (keyword (-> property :attrs :farkey))
+    (list (keyword (-> property :attrs :name)) 'params))))
+
+
 (defn make-form-get-handler-content
   [f e a n]
-  (let [entity-name (singularise (:name (:attrs e)))]
-    ;; TODO: as yet makes no attempt to save the record
-    (list 'let
-          (vector
-           'record (list
-                    'get-current-value
-                    (symbol (str "db/get-" entity-name))
-                    'params
-                    entity-name))
-          (reduce
-           merge
-           {:error (list :warnings 'record)
-            :record (list 'dissoc 'record :warnings)}
-           (map
-            (fn [property]
-              (hash-map
-               (keyword (-> property :attrs :name))
-               (list
-                'flatten
-                (list
-                 'remove
-                 'nil?
-                 (list
-                  'list
-                  ;; Get the current value of the property, if it's an entity
-                  (if (= (-> property :attrs :type) "entity")
-                    (list 'get-menu-options
-                          (-> e :attrs :name)
-                          (-> property :attrs :farkey)
-                          (list (keyword (-> property :attrs :name)) 'params))))))))
-             (filter #(:entity (:attrs %))
-                    (descendants-with-tag e :property)))))))
+  (list
+   'let
+   (vector
+    'record (compose-fetch-record e))
+   (reduce
+    merge
+    {:error (list :warnings 'record)
+     :record (list 'dissoc 'record :warnings)}
+    (map
+     #(compose-get-menu-options e %)
+     (filter #(:entity (:attrs %))
+             (descendants-with-tag e :property))))))
 
 
 (defn make-page-get-handler-content
   [f e a n]
-  (let [warning (str "Error while fetching " (singularise (:name (:attrs e))) " record")]
-    (list 'let
-          (vector 'record (list
-                           'support/handler-content-log-error
-                           (list 'if (list 'subset? (list 'keys 'p) (key-names e)) []
-                                 (list
-                                  (symbol
-                                   (str "db/get-" (singularise (:name (:attrs e)))))
-                                  (symbol "db/*db*")
-                                  'params))
-                           :message warning
-                           :error-return {:warnings [warning]}))
-          {:warnings (list :warnings 'record)
-           :record (list 'assoc 'record :warnings nil)})))
+  (list
+   'let
+   (vector
+    'record (compose-fetch-record e))
+   {:warnings (list :warnings 'record)
+    :record (list 'assoc 'record :warnings nil)}))
 
 
 (defn make-list-get-handler-content
@@ -130,45 +139,55 @@
      (list
       'some
       (set (map #(keyword (-> % :attrs :name)) (all-properties e)))
-      (list 'keys 'params))
-     (list 'do
-           (list (symbol "log/debug") (list (symbol (str "db/search-strings-" (:name (:attrs e)) "-sqlvec")) 'params))
-           (list
-            'support/do-or-log-error
-            (list
-             (symbol (str "db/search-strings-" (:name (:attrs e))))
-             (symbol "db/*db*")
-             'params)
-            :message (str
-                      "Error while searching "
-                      (singularise (:name (:attrs e)))
-                      " records")
-            :error-return {:warnings [(str
-                                       "Error while searching "
-                                       (singularise (:name (:attrs e)))
-                                       " records")]}))
-     (list 'do
-           (list (symbol "log/debug") (list (symbol (str "db/list-" (:name (:attrs e)) "-sqlvec")) 'params))
-           (list
-            'support/do-or-log-error
-            (list
-             (symbol
-              (str
-               "db/list-"
-               (:name (:attrs e))))
-             (symbol "db/*db*") {})
-            :message (str
-                      "Error while fetching "
-                      (singularise (:name (:attrs e)))
-                      " records")
-            :error-return {:warnings [(str
-                                       "Error while fetching "
-                                       (singularise (:name (:attrs e)))
-                                       " records")]}))))
-   (list 'if
-         (list :warnings 'records)
-         'records
-         {:records 'records})))
+      (list
+       'keys 'params))
+     (list
+      'do
+      (list
+       (symbol "log/debug")
+       (list
+        (symbol
+         (str "db/search-strings-" (:name (:attrs e)) "-sqlvec")) 'params))
+      (list
+       'support/do-or-log-error
+       (list
+        (symbol (str "db/search-strings-" (:name (:attrs e))))
+        (symbol "db/*db*")
+        'params)
+       :message (str
+                 "Error while searching "
+                 (singularise (:name (:attrs e)))
+                 " records")
+       :error-return {:warnings [(str
+                                  "Error while searching "
+                                  (singularise (:name (:attrs e)))
+                                  " records")]}))
+     (list
+      'do
+      (list
+       (symbol "log/debug")
+       (list (symbol (str "db/list-" (:name (:attrs e)) "-sqlvec")) 'params))
+      (list
+       'support/do-or-log-error
+       (list
+        (symbol
+         (str
+          "db/list-"
+          (:name (:attrs e))))
+        (symbol "db/*db*") {})
+       :message (str
+                 "Error while fetching "
+                 (singularise (:name (:attrs e)))
+                 " records")
+       :error-return {:warnings [(str
+                                  "Error while fetching "
+                                  (singularise (:name (:attrs e)))
+                                  " records")]}))))
+   (list
+    'if
+    (list :warnings 'records)
+    'records
+    {:records 'records})))
 
 
 (defn handler-name
@@ -250,9 +269,9 @@
         'request
         :params
         (list
-        'merge
-        'params
-        'result)))
+         'merge
+         'params
+         'result)))
       'result))))
 
 
