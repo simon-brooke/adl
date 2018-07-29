@@ -1,7 +1,7 @@
 (ns ^{:doc "Application Description Language: generate RING routes for REST requests."
       :author "Simon Brooke"}
   adl.to-json-routes
-  (:require [adl-support.core :refer [*warn*]]
+  (:require [adl-support.core :refer :all]
             [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]
             [clj-time.core :as t]
@@ -53,7 +53,8 @@
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (list
       :require
-      '[adl-support.core :as support]
+      '[adl-support.core :refer :all]
+      '[adl-support.rest-support :refer :all]
       '[clojure.core.memoize :as memo]
       '[clojure.java.io :as io]
       '[clojure.tools.logging :as log]
@@ -72,28 +73,38 @@
 (defn generate-handler-body
   "Generate and return the function body for the handler for this `query`."
   [query]
-  (let [action (list
-                 (symbol (str "db/" (:name query)))
-                 'db/*db*
-                 (list 'support/massage-params
-                       'params
-                       'form-params
-                       (key-names (:entity query))))]
+  (list
+   ['request]
+   (list
+    'let
+    ['params '(massage-params request)]
     (list
-     [{:keys ['params 'form-params]}]
-     (case
-       (:type query)
-       (:delete-1 :update-1)
+     'valid-user-or-forbid
+     (list
+      'with-params-or-error
+      (list
+       'do-or-server-fail
        (list
-         action
-         `(log/debug (str ~(:name query) " called with params " ~'params "."))
-         '(response/found "/"))
-       (list
-         'let
-         (vector 'result action)
-         `(log/debug (~(symbol (str "db/" (:name query) "-sqlvec")) ~'params))
-         `(log/debug (str ~(str "'" (:name query) "' with params ") ~'params " returned " (count ~'result) " records."))
-         (list 'response/ok 'result))))))
+        (symbol (str "db/" (:name query)))
+        'db/*db*
+        'params)
+       (case (:type query)
+         :insert-1 201 ;; created
+         :delete-1 204 ;; no content
+         ;; default
+         200)) ;; OK
+      'params
+      (set
+       (map
+        #(keyword (:name (:attrs %)))
+        (case (:type query)
+          (:insert-1 :update-1)
+          (-> query :entity insertable-properties)
+          (:select-1 :delete-1)
+          (-> query :entity key-properties)
+          ;; default
+          nil))))
+     'request))))
 
 
 (defn generate-handler-src
@@ -262,7 +273,7 @@
   (let [handlers-map (make-handlers-map application)
         filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto_json.clj")]
     (make-parents filepath)
-    (try
+    (do-or-warn
       (with-open [output (writer filepath)]
         (binding [*out* output]
           (pprint (file-header application))
@@ -275,16 +286,7 @@
                 h)
               (sort (keys handlers-map))))
           (pprint (defroutes handlers-map))))
-      (if (> *verbosity* 0)
-        (*warn* (str "\tGenerated " filepath)))
-      (catch
-        Exception any
-        (*warn*
-          (str
-            "ERROR: Exception "
-            (.getName (.getClass any))
-            (.getMessage any)
-            " while printing "
-            filepath))))))
+      (if (pos? *verbosity*)
+        (*warn* (str "\tGenerated " filepath))))))
 
 

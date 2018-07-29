@@ -19,54 +19,67 @@
     (= a b)))
 
 (deftest entity-tests
-  (let [xml {:tag :entity,
-             :attrs {:name "address"},
+  (let [application {:tag :application,
+             :attrs {:version "0.1.1", :name "test-app"},
              :content
-             [{:tag :key,
-               :attrs nil,
+             [{:tag :entity,
+               :attrs {:name "address"},
                :content
-               [{:tag :property,
-                 :attrs
-                 {:immutable "true",
-                  :required "true",
-                  :distinct "system",
-                  :type "integer",
-                  :name "id"},
+               [{:tag :key,
+                 :attrs nil,
                  :content
-                 [{:tag :generator, :attrs {:action "native"}, :content nil}]}]}
-              {:tag :property,
-               :attrs
-               {:distinct "user", :size "128", :type "string", :name "street"},
-               :content nil}
-              {:tag :property,
-               :attrs {:size "64", :type "string", :name "town"},
-               :content nil}
-              {:tag :property,
-               :attrs
-               {:distinct "user", :size "12", :type "string", :name "postcode"},
-               :content nil}]}]
+                 [{:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "system",
+                    :type "integer",
+                    :name "id"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  {:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "all",
+                    :generator "assigned"
+                    :type "string",
+                    :size "12"
+                    :name "postcode"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  ]}
+                {:tag :property,
+                 :attrs
+                 {:distinct "user", :size "128", :type "string", :name "street"},
+                 :content nil}
+                {:tag :property,
+                 :attrs {:size "64", :type "string", :name "town"},
+                 :content nil}
+                ]}]}
+        entity (child-with-tag application :entity)]
     (testing "user distinct properties should provide the default ordering"
       (let [expected
             "ORDER BY address.street,
             address.postcode,
             address.id"
-            actual (order-by-clause xml)]
+            actual (order-by-clause entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "keys name extraction"
-      (let [expected '("id")
-            actual (key-names xml)]
+      (let [expected #{"id"}
+            actual (key-names entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "primary key test"
       (let [expected true
-            actual (has-primary-key? xml)]
+            actual (has-primary-key? entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "non-key properties test"
       (let [expected true
-            actual (has-non-key-properties? xml)]
+            actual (has-non-key-properties? entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query generation"
-      (let [expected "-- :name create-addres! :! :n
-            -- :doc creates a new addres record
+      (let [expected "-- :name create-address! :! :n
+            -- :doc creates a new address record
             INSERT INTO address (street,
               town,
               postcode)
@@ -74,25 +87,25 @@
               ':town',
               ':postcode')
             returning id\n\n"
-            actual (:query (first (vals (insert-query xml))))]
+            actual (:query (first (vals (insert-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query signature"
       (let [expected ":! :n"
-            actual (:signature (first (vals (insert-query xml))))]
+            actual (:signature (first (vals (insert-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query generation"
-      (let [expected "-- :name update-addres! :! :n
-            -- :doc updates an existing addres record
+      (let [expected "-- :name update-address! :! :n
+            -- :doc updates an existing address record
             UPDATE address
             SET street = :street,
               town = :town,
               postcode = :postcode
             WHERE address.id = :id\n\n"
-            actual (:query (first (vals (update-query xml))))]
+            actual (:query (first (vals (update-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query signature"
       (let [expected ":! :n"
-            actual (:signature (first (vals (update-query xml))))]
+            actual (:signature (first (vals (update-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query generation"
       (let [expected "-- :name search-strings-addres :? :1
@@ -106,22 +119,22 @@
               address.id
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
-            actual (:query (first (vals (search-query xml))))]
+            actual (:query (first (vals (search-query entity application))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query signature"
       (let [expected ":? :1"
-            actual (:signature (first (vals (search-query xml))))]
+            actual (:signature (first (vals (search-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "select query generation"
       (let [expected "-- :name get-addres :? :1
             -- :doc selects an existing addres record
             SELECT * FROM address
             WHERE address.id = :id\n\n"
-            actual (:query (first (vals (select-query xml))))]
+            actual (:query (first (vals (select-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "select query signature"
       (let [expected ":? :1"
-            actual (:signature (first (vals (select-query xml))))]
+            actual (:signature (first (vals (select-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "list query generation"
       (let [expected "-- :name list-address :? :*
@@ -132,75 +145,79 @@
               address.id
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
-            actual (:query (first (vals (list-query xml))))]
+            actual (:query (first (vals (list-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "list query signature"
       (let [expected ":? :*"
-            actual (:signature (first (vals (list-query xml))))]
+            actual (:signature (first (vals (list-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation"
       (let [expected "-- :name delete-addres! :! :n
             -- :doc updates an existing addres record
             DELETE FROM address
             WHERE address.id = :id\n\n"
-            actual (:query (first (vals (delete-query xml))))]
+            actual (:query (first (vals (delete-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query signature"
       (let [expected ":! :n"
-            actual (:signature (first (vals (delete-query xml))))]
+            actual (:signature (first (vals (delete-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
 
   ))
 
 (deftest complex-key-tests
-  (let [xml {:tag :entity,
-             :attrs {:name "address"},
+  (let [application {:tag :application,
+             :attrs {:version "0.1.1", :name "test-app"},
              :content
-             [{:tag :key,
-               :attrs nil,
+             [{:tag :entity,
+               :attrs {:name "address"},
                :content
-               [{:tag :property,
-                 :attrs
-                 {:immutable "true",
-                  :required "true",
-                  :distinct "system",
-                  :type "integer",
-                  :name "id"},
+               [{:tag :key,
+                 :attrs nil,
                  :content
-                 [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                 [{:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "system",
+                    :type "integer",
+                    :name "id"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  {:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "all",
+                    :generator "assigned"
+                    :type "string",
+                    :size "12"
+                    :name "postcode"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  ]}
                 {:tag :property,
                  :attrs
-                 {:immutable "true",
-                  :required "true",
-                  :distinct "all",
-                  :generator "assigned"
-                  :type "string",
-                  :size "12"
-                  :name "postcode"},
-                 :content
-                 [{:tag :generator, :attrs {:action "native"}, :content nil}]}
-                ]}
-              {:tag :property,
-               :attrs
-               {:distinct "user", :size "128", :type "string", :name "street"},
-               :content nil}
-              {:tag :property,
-               :attrs {:size "64", :type "string", :name "town"},
-               :content nil}
-              ]}]
+                 {:distinct "user", :size "128", :type "string", :name "street"},
+                 :content nil}
+                {:tag :property,
+                 :attrs {:size "64", :type "string", :name "town"},
+                 :content nil}
+                ]}]}
+        entity (child-with-tag application :entity)]
     (testing "user distinct properties should provide the default ordering"
       (let [expected "ORDER BY address.street,
             address.postcode,
             address.id"
-            actual (order-by-clause xml)]
+            actual (order-by-clause entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "keys name extraction"
-      (let [expected '("id" "postcode")
-            actual (key-names xml)]
+      (let [expected #{"id" "postcode"}
+            actual (key-names entity)]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "insert query generation - compound key, non system generated field in key"
-      (let [expected "-- :name create-addres! :! :n
-            -- :doc creates a new addres record
+      (let [expected "-- :name create-address! :! :n
+            -- :doc creates a new address record
             INSERT INTO address (street,
               town,
               postcode)
@@ -209,17 +226,17 @@
               ':postcode')
             returning id,
             postcode\n\n"
-            actual (:query (first (vals (insert-query xml))))]
+            actual (:query (first (vals (insert-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query generation - compound key"
-      (let [expected "-- :name update-addres! :! :n
-            -- :doc updates an existing addres record
+      (let [expected "-- :name update-address! :! :n
+            -- :doc updates an existing address record
             UPDATE address
             SET street = :street,
               town = :town
             WHERE address.id = :id
               AND address.postcode = ':postcode'\n\n"
-            actual (:query (first (vals (update-query xml))))]
+            actual (:query (first (vals (update-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query generation - user-distinct field in key"
       (let [expected  "-- :name search-strings-addres :? :1
@@ -233,7 +250,7 @@
               address.id
             --~ (if (:offset params) \"OFFSET :offset \")
             --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
-            actual (:query (first (vals (search-query xml))))]
+            actual (:query (first (vals (search-query entity application))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation - compound key"
       (let [expected "-- :name delete-addres! :! :n
@@ -241,6 +258,6 @@
             DELETE FROM address
             WHERE address.id = :id
               AND address.postcode = ':postcode'\n\n"
-            actual (:query (first (vals (delete-query xml))))]
+            actual (:query (first (vals (delete-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))))
 

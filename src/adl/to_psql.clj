@@ -1,7 +1,7 @@
 (ns ^{:doc "Application Description Language: generate Postgres database definition."
       :author "Simon Brooke"}
   adl.to-psql
-  (:require [adl-support.core :refer [*warn*]]
+  (:require [adl-support.core :refer :all]
             [adl-support.utils :refer :all]
             [adl.to-hugsql-queries :refer [queries]]
             [clojure.java.io :refer [file make-parents writer]]
@@ -111,7 +111,12 @@
 (defn emit-field-type
   [property entity application key?]
   (case (:type (:attrs property))
-    "integer" (if key? "SERIAL" "INTEGER")
+    "integer" (if
+                (and
+                 key?
+                 (system-generated? property))
+                "SERIAL"
+                "INTEGER")
     "real" "DOUBLE PRECISION"
     ("string" "image" "uploadable")
     (str "VARCHAR(" (:size (:attrs property)) ")")
@@ -150,8 +155,8 @@
               #(if (selector (:permission (:attrs %)))
                  (safe-name (:group (:attrs %)) :sql))
               permissions)))]
-    (if
-      (not (empty? group-names))
+    (if-not
+      (empty? group-names)
       (s/join
         " "
         (list
@@ -318,12 +323,12 @@
                          (str (safe-name entity) "." (field-name %)))
                        (str (safe-name entity) "." (field-name %)))
                     (filter
-                      #(not (= (:type (:attrs %)) "link"))
+                      #(not= (:type (:attrs %)) "link")
                       (all-properties entity) )))))
             (str
               "FROM " (s/join ", " (set (compose-convenience-view-select-list entity application true))))
-            (if
-              (not (empty? entity-fields))
+            (if-not
+              (empty? entity-fields)
               (str
                 "WHERE "
                 (s/join
@@ -408,7 +413,7 @@
              (list
                doc-comment
                (map
-                 #(:content %)
+                 :content
                  (children-with-tag entity :documentation))))
            (s/join
              " "
@@ -427,7 +432,7 @@
                      (map
                        #(emit-property % entity application false)
                        (filter
-                         #(not (= (:type (:attrs %)) "link"))
+                         #(not= (:type (:attrs %)) "link")
                          (children-with-tag entity :property)))))))
              "\n);")
            (map
@@ -532,7 +537,7 @@
     (str "(https://github.com/simon-brooke/adl) at "
          (f/unparse (f/formatters :basic-date-time) (t/now)))
     (map
-      #(:content %)
+      :content
       (children-with-tag application :documentation))))
 
 
@@ -568,18 +573,10 @@
                    (:name (:attrs application))
                    ".postgres.sql")]
     (make-parents filepath)
-    (try
+    (do-or-warn
       (spit filepath (emit-application application))
-      (if (> *verbosity* 0)
-        (*warn* (str "\tGenerated " filepath)))
-      (catch
-        Exception any
-        (*warn*
-          (str
-            "ERROR: Exception "
-            (.getName (.getClass any))
-            (.getMessage any)
-            " while printing "
-            filepath))))))
+      (if
+        (pos? *verbosity*)
+        (*warn* (str "\tGenerated " filepath))))))
 
 

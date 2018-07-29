@@ -1,7 +1,8 @@
-(ns ^{:doc "Application Description Language - generate Selmer templates for the HTML pages implied by an ADL file."
+(ns ^{:doc "Application Description Language - generate Selmer templates for
+      the HTML pages implied by an ADL file."
       :author "Simon Brooke"}
   adl.to-selmer-templates
-  (:require [adl-support.core :refer [*warn*]]
+  (:require [adl-support.core :refer :all]
             [adl.to-hugsql-queries :refer [expanded-token]]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents resource]]
@@ -41,7 +42,9 @@
   {:tag :div
    :attrs {:class "big-link-container"}
    :content
-   [{:tag :a :attrs {:href  (str "{{servlet-context}}/" url) :class "big-link"}
+   [{:tag :a
+     :attrs {:href  (str "{{servlet-context}}/" url)
+             :class "big-link"}
      :content (if
                 (vector? content)
                 content
@@ -62,7 +65,7 @@
 
 (defn emit-content
   ([content]
-   (try
+   (do-or-warn
      (cond
        (nil? content)
        nil
@@ -75,15 +78,7 @@
        (map emit-content (remove nil? content))
        true
        (str "<!-- don't know what to do with '" content "' -->"))
-     (catch Exception any
-       (str
-         "<!-- failed while trying to emit \n'"
-         (with-out-str (p/pprint content))
-         "';\n"
-         (-> any .getClass .getName)
-         ": "
-         (-> any .getMessage)
-         " -->"))))
+    (str "Failed while writing " content)))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
@@ -143,7 +138,8 @@
 
 
 (defn csrf-widget
-  "For the present, just return the standard cross site scripting protection field statement"
+  "For the present, just return the standard cross site scripting protection
+  field statement"
   []
   "{% csrf-field %}")
 
@@ -179,16 +175,20 @@
 
 
 (defn save-widget
-  "Return an appropriate 'save' widget for this `form` operating on this `entity` taken
-  from this `application`.
-  TODO: should be suppressed unless a member of a group which can insert or edit."
+  "Return an appropriate 'save' widget for this `form` operating on this
+  `entity` taken from this `application`.
+  TODO: should be suppressed unless a member of a group which can insert
+  or edit."
   [form entity application]
   (wrap-in-if-member-of
     {:tag :p
      :attrs {:class "widget action-safe"}
      :content [{:tag :label
                 :attrs {:for "save-button" :class "action-safe"}
-                :content [(str "To save this " (:name (:attrs entity)) " record")]}
+                :content [(str
+                           "To save this "
+                           (:name (:attrs entity))
+                           " record")]}
                {:tag :input
                 :attrs {:id "save-button"
                         :name "save-button"
@@ -201,16 +201,20 @@
 
 
 (defn delete-widget
-  "Return an appropriate 'save' widget for this `form` operating on this `entity` taken
-  from this `application`.
+  "Return an appropriate 'save' widget for this `form` operating on this
+  `entity` taken from this `application`.
   TODO: should be suppressed unless member of a group which can delete."
   [form entity application]
   (wrap-in-if-member-of
     {:tag :p
      :attrs {:class "widget action-dangerous"}
      :content [{:tag :label
-                :attrs {:for "delete-button" :class "action-dangerous"}
-                :content [(str "To delete this " (:name (:attrs entity)) " record")]}
+                :attrs {:for "delete-button"
+                        :class "action-dangerous"}
+                :content [(str
+                           "To delete this "
+                           (:name (:attrs entity))
+                           " record")]}
                {:tag :input
                 :attrs {:id "delete-button"
                         :name "delete-button"
@@ -223,7 +227,8 @@
 
 
 (defn select-property
-  "Return the property on which we will by default do a user search on this `entity`."
+  "Return the property on which we will by default do a user search on this
+  `entity`."
   [entity]
   (descendant-with-tag
       entity
@@ -241,8 +246,8 @@
 
 
 (defn get-options
-  "Produce template code to get options for this `property` of this `entity` taken from
-  this `application`."
+  "Produce template code to get options for this `property` of this `entity`
+  taken from this `application`."
   [property form entity application]
   (let
     [type (:type (:attrs property))
@@ -258,9 +263,9 @@
               (:farkey (:attrs property))
               (first (key-names farside))
               "id")]
-    ;; Yes, I know it looks BONKERS generating this as an HTML string. But there is a
-    ;; reason. We don't know whether the `selected` attribute should be present or
-    ;; absent until rendering.
+    ;; Yes, I know it looks BONKERS generating this as an HTML string. But
+    ;; there is a reason. We don't know whether the `selected` attribute
+    ;; should be present or absent until rendering.
     [(str "{% for option in " (-> property :attrs :name)
           " %}<option value='{{option."
           farkey
@@ -281,7 +286,9 @@
              (:type (:attrs typedef))
              (:type (:attrs property)))]
      (if
-       (and (= (-> property :attrs :distinct) "system") (= (-> property :attrs :immutable) "true"))
+       (and
+        (= (-> property :attrs :distinct) "system")
+        (= (-> property :attrs :immutable) "true"))
        "hidden"
        (case t
          ("integer" "real" "money") "number"
@@ -298,8 +305,13 @@
 (defn select-widget
   [property form entity application]
   (let [farname (:entity (:attrs property))
-        farside (first (children application #(= (:name (:attrs %)) farname)))
-        magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))
+        farside (first
+                 (children
+                  application
+                  #(= (:name (:attrs %)) farname)))
+        magnitude (try
+                    (read-string (:magnitude (:attrs farside)))
+                    (catch Exception _ 7))
         async? (and (number? magnitude) (> magnitude 1))
         widget-name (safe-name (:name (:attrs property)) :sql)]
     {:tag :select
@@ -309,7 +321,9 @@
               (if
                 (= (:type (:attrs property)) "link")
                 {:multiple "multiple"}))
-     :content (apply vector (get-options property form entity application))}))
+     :content (apply
+               vector
+               (get-options property form entity application))}))
 
 
 (defn compose-readable-or-not-authorised
@@ -326,7 +340,11 @@
      :attrs {:id w
              :name w
              :class "pseudo-widget not-authorised"}
-     :content [(str "You are not permitted to view " w " of " (:name (:attrs e)))]}
+     :content [(str
+                "You are not permitted to view "
+                w
+                " of "
+                (:name (:attrs e)))]}
     "{% endifmemberof %}"))
 
 
@@ -356,9 +374,46 @@
                   "{% endif %}")))})
 
 
+(defn compose-input-widget-para
+  "Generate an input widget for this `field-or-property` of this `form` for
+  this `entity` taken from within this `application`, in context of a para
+  also containing its label."
+  [property form entity application widget-name]
+  (let
+    [typedef (typedef property application)
+     w-type (widget-type property application typedef)]
+    (compose-widget-para
+     property form entity application widget-name
+     {:tag :input
+      :attrs (merge
+              {:id widget-name
+               :name widget-name
+               :type w-type
+               :value (str "{{record." widget-name "}}")
+               :maxlength (:size (:attrs property))
+               :size (cond
+                      (nil? (:size (:attrs property)))
+                      "16"
+                      (try
+                        (> (read-string
+                            (:size (:attrs property))) 60)
+                        (catch Exception _ false))
+                      "60"
+                      true
+                      (:size (:attrs property)))}
+              ;; TODO: should match pattern from typedef
+              (if
+                (:minimum (:attrs typedef))
+                {:min (:minimum (:attrs typedef))})
+              (if
+                (:maximum (:attrs typedef))
+                {:max (:maximum (:attrs typedef))}))})))
+
+
 (defn widget
-  "Generate a widget for this `field-or-property` of this `form` for this `entity`
-  taken from within this `application`."
+  "Generate a widget for this `field-or-property` of this `form` for this
+  `entity` taken from within this `application`, in context of a para also
+  containing its label."
   [field-or-property form entity application]
   (let
     [widget-name (safe-name
@@ -371,12 +426,8 @@
                 :field (property-for-field field-or-property entity)
                 ;; default
                 nil)
-     permissions (find-permissions field-or-property property form entity application)
      typedef (typedef property application)
-     w-type (widget-type property application typedef)
-     visible-to (visible-to permissions)
-     ;; if the form isn't actually a form, no widget is writeable.
-     writeable-by (if (= (:tag form) :form) (writeable-by permissions))]
+     w-type (widget-type property application typedef)]
     (if
       property
       (case w-type
@@ -387,46 +438,33 @@
                  :type "hidden"
                  :value (str "{{record." widget-name "}}")}}
         "select"
-        (compose-widget-para property form entity application widget-name
-                             (select-widget property form entity application))
+        (compose-widget-para
+         property
+         form
+         entity
+         application
+         widget-name
+         (select-widget property form entity application))
         "text-area"
         (compose-widget-para
-          property form entity application widget-name
-          {:tag :textarea
-           :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
-           :content [(str "{{record." widget-name "}}")]})
+         property form entity application widget-name
+         {:tag :textarea
+          :attrs {:rows "8" :cols "60" :id widget-name :name widget-name}
+          :content [(str "{{record." widget-name "}}")]})
         ;; all others
-        (compose-widget-para
-          property form entity application widget-name
-          {:tag :input
-           :attrs (merge
-                    {:id widget-name
-                     :name widget-name
-                     :type w-type
-                     :value (str "{{record." widget-name "}}")
-                     :maxlength (:size (:attrs property))
-                     :size (cond
-                             (nil? (:size (:attrs property)))
-                             "16"
-                             (try
-                               (> (read-string
-                                    (:size (:attrs property))) 60)
-                               (catch Exception _ false))
-                             "60"
-                             true
-                             (:size (:attrs property)))}
-                    (if
-                      (:minimum (:attrs typedef))
-                      {:min (:minimum (:attrs typedef))})
-                    (if
-                      (:maximum (:attrs typedef))
-                      {:max (:maximum (:attrs typedef))}))})))))
+        (compose-input-widget-para
+         property
+         form
+         entity
+         application
+         widget-name)))))
 
 
 (defn embed-script-fragment
-  "Return the content of the file at `resource-path`, with these `substitutions`
-  made into it in order. Substitutions should be pairss [`pattern` `value`],
-  where `pattern` is a string, a char, or a regular expression."
+  "Return the content of the file at `resource-path`, with these
+  `substitutions` made into it in order. Substitutions should be pairs
+  [`pattern` `value`], where `pattern` is a string, a char, or a regular
+  expression."
   ([resource-path substitutions]
    (let [v (slurp (resource resource-path))]
      (reduce
@@ -455,8 +493,8 @@
 
 
 (defn list-tbody
-  "Return a table body element for the list view for this `list-spec` of this `entity` within
-  this `application`, using data from this source."
+  "Return a table body element for the list view for this `list-spec` of
+  this `entity` within this `application`, using data from this source."
   [source list-spec entity application]
   {:tag :tbody
    :content
@@ -470,7 +508,12 @@
            (fn [field]
              {:tag :td :content
               (let
-               [p (first (filter #(= (:name (:attrs %)) (:property (:attrs field))) (all-properties entity)))
+               [p (first
+                   (filter
+                    #(=
+                      (:name (:attrs %))
+                      (:property (:attrs field)))
+                    (all-properties entity)))
                 s (safe-name (:name (:attrs p)) :sql)
                 e (first
                     (filter
@@ -480,7 +523,10 @@
                (if
                  (= (:type (:attrs p)) "entity")
                  [{:tag :a
-                   :attrs {:href (edit-link e application (list (:name (:attrs p))))}
+                   :attrs {:href (edit-link
+                                  e
+                                  application
+                                  (list (:name (:attrs p))))}
                    :content [(str "{{ record." s "_expanded }}")]}]
                  [c]))})
            (children-with-tag list-spec :field))
@@ -498,11 +544,15 @@
   (let [property (child-with-tag
                    entity
                    :property
-                   #(= (-> % :attrs :name) (-> auxlist :attrs :property)))
+                   #(=
+                     (-> % :attrs :name)
+                     (-> auxlist :attrs :property)))
         farside (child-with-tag
                   application
                   :entity
-                  #(= (-> % :attrs :name)(-> property :attrs :entity)))]
+                  #(=
+                    (-> % :attrs :name)
+                    (-> property :attrs :entity)))]
     (if
       (and property farside)
       {:tag :div
@@ -526,7 +576,11 @@
                         :content [(prompt % form entity application)])
                      (children-with-tag auxlist :field))
                    {:tag :th :content ["&nbsp;"]})))}]}
-          (list-tbody (-> property :attrs :name) auxlist farside application)]}]})))
+          (list-tbody
+           (-> property :attrs :name)
+           auxlist
+           farside
+           application)]}]})))
 
 
 (defn compose-form-auxlists
@@ -545,33 +599,40 @@
     :attrs {:id "content" :class "edit"}
     :content
     (apply
-      vector
-      (cons
-        {:tag :form
-         :attrs {:action (str "{{servlet-context}}/" (editor-name entity application))
-                 :method "POST"}
-         :content (apply
-                    vector
-                    (remove
-                      nil?
-                      (flatten
-                        (list
-                          (csrf-widget)
-                          (map
-                            #(widget % form entity application)
-                            (children-with-tag (child-with-tag entity :key) :property))
-                          (map
-                            #(widget % form entity application)
-                            (remove
-                              #(let
-                                 [property (filter
-                                             (fn [p] (= (:name (:attrs p)) (:property (:attrs %))))
-                                             (descendants-with-tag entity :property))]
-                                 (= (:distict (:attrs property)) :system))
-                              (children-with-tag form :field)))
-                          (save-widget form entity application)
-                          (delete-widget form entity application)))))}
-        (compose-form-auxlists form entity application)))}})
+     vector
+     (cons
+      {:tag :form
+       :attrs {:action (str
+                        "{{servlet-context}}/"
+                        (editor-name entity application))
+               :method "POST"}
+       :content (apply
+                 vector
+                 (remove
+                  nil?
+                  (flatten
+                   (list
+                    (csrf-widget)
+                    (map
+                     #(widget % form entity application)
+                     (children-with-tag
+                      (child-with-tag entity :key)
+                      :property))
+                    (map
+                     #(widget % form entity application)
+                     (remove
+                      #(let
+                         [property
+                          (filter
+                           (fn
+                             [p]
+                             (= (:name (:attrs p)) (:property (:attrs %))))
+                           (descendants-with-tag entity :property))]
+                         (= (:distict (:attrs property)) :system))
+                      (children-with-tag form :field)))
+                    (save-widget form entity application)
+                    (delete-widget form entity application)))))}
+      (compose-form-auxlists form entity application)))}})
 
 
 (defn compose-form-extra-head
@@ -586,7 +647,9 @@
            (child-with-tag
              form
              :field
-             #(= "text-area" (widget-type (property-for-field % entity) application)))
+             #(=
+               "text-area"
+               (widget-type (property-for-field % entity) application)))
            "
            {% script \"/js/lib/node_modules/simplemde/dist/simplemde.min.js\" %}
            {% style \"/js/lib/node_modules/simplemde/dist/simplemde.min.css\" %}")
@@ -594,7 +657,9 @@
            (child-with-tag
              form
              :field
-             #(= "select" (widget-type (property-for-field % entity) application)))
+             #(=
+               "select"
+               (widget-type (property-for-field % entity) application)))
            "
            {% script \"/js/lib/node_modules/selectize/dist/js/standalone/selectize.min.js\" %}
            {% style \"/js/lib/node_modules/selectize/dist/css/selectize.css\" %}"))))})
@@ -606,38 +671,54 @@
    {:tag :script :attrs {:type "text/javascript"}
     :content
     (apply
-      vector
-      (remove
-        nil?
-        (flatten
-          (list
-            (map
-              (fn [field]
-                (let
-                  [property (child-with-tag entity :property #(=
-                                                                (-> field :attrs :property)
-                                                                (-> % :attrs :name)))
-                   farname (:entity (:attrs property))
-                   farside (first (children application #(= (:name (:attrs %)) farname)))
-                   magnitude (try (read-string (:magnitude (:attrs farside))) (catch Exception _ 7))]
-                  (if
-                    (> magnitude 2)
-                    (embed-script-fragment
-                      "js/selectize-one.js"
-                      [["{{widget_id}}" (-> property :attrs :name)]
-                       ["{{widget_value}}" (str "{{record." (-> property :attrs :name) "}}")]
-                       ["{{entity}}" farname]
-                       ["{{field}}" (select-field-name farside)]
-                       ["{{key}}" (first (key-names farside))]]))))
-              (children-with-tag
-                form :field
-                #(= "select" (widget-type (property-for-field % entity) application))))
-            (if
-              (child-with-tag
-                form :field
-                #(= "text-area" (widget-type (property-for-field % entity) application)))
-              (embed-script-fragment "js/text-area-md-support.js"
-                                     [["{{page}}" (-> form :attrs :name)]]))))))}})
+     vector
+     (remove
+      nil?
+      (flatten
+       (list
+        (map
+         (fn [field]
+           (let
+             [property (child-with-tag
+                        entity
+                        :property
+                        #(=
+                          (-> field :attrs :property)
+                          (-> % :attrs :name)))
+              farname (:entity (:attrs property))
+              farside (first
+                       (children
+                        application
+                        #(= (:name (:attrs %)) farname)))
+              magnitude (try
+                          (read-string
+                           (:magnitude
+                            (:attrs farside)))
+                          (catch Exception _ 7))]
+             (if
+               (> magnitude 2)
+               (embed-script-fragment
+                "js/selectize-one.js"
+                [["{{widget_id}}" (-> property :attrs :name)]
+                 ["{{widget_value}}"
+                  (str "{{record." (-> property :attrs :name) "}}")]
+                 ["{{entity}}" farname]
+                 ["{{field}}" (select-field-name farside)]
+                 ["{{key}}" (first (key-names farside))]]))))
+         (children-with-tag
+          form :field
+          #(=
+            "select"
+            (widget-type (property-for-field % entity) application))))
+        (if
+          (child-with-tag
+           form :field
+           #(=
+             "text-area"
+             (widget-type (property-for-field % entity) application)))
+          (embed-script-fragment
+           "js/text-area-md-support.js"
+           [["{{page}}" (-> form :attrs :name)]]))))))}})
 
 
 (defn form-to-template
@@ -666,7 +747,8 @@
                    (children
                      entity
                      (fn [p] (and (= (:tag p) :property)
-                                  (= (:name (:attrs p)) (:property (:attrs field)))))))
+                                  (= (:name (:attrs p))
+                                     (:property (:attrs field)))))))
         input-type (case (:type (:attrs property))
                      ("integer" "real" "money") "number"
                      ("date" "timestamp") "date"
@@ -686,8 +768,8 @@
 
 
 (defn- list-thead
-  "Return a table head element for the list view for this `list-spec` of this `entity` within
-  this `application`."
+  "Return a table head element for the list view for this `list-spec` of
+  this `entity` within this `application`."
   [list-spec entity application]
   {:tag :thead
    :content
@@ -734,7 +816,8 @@
       :content
       [{:tag :div :attrs {:class "back-link-container"}
          :content
-         [{:tag :a :attrs {:id "prev-selector" :class "back-link"}
+         [{:tag :a
+           :attrs {:id "prev-selector" :class "back-link"}
            :content ["Previous"]}]}]}
      :big-links
      {:tag :div
@@ -747,10 +830,16 @@
             (list
               {:tag :div :attrs {:class "big-link-container"}
                :content
-               [{:tag :a :attrs {:id "next-selector" :role "button" :class "big-link"}
+               [{:tag :a
+                 :attrs {:id "next-selector"
+                         :role "button"
+                         :class "big-link"}
                  :content ["Next"]}]}
               (wrap-in-if-member-of
-                (big-link (str "Add a new " (pretty-name entity)) (editor-name entity application))
+                (big-link (str
+                           "Add a new "
+                           (pretty-name entity))
+                          (editor-name entity application))
                 :writeable
                 entity
                 application)))))}
@@ -761,8 +850,12 @@
               :method "POST"}
       :content
       [(csrf-widget)
-       {:tag :input :attrs {:id "offset" :name "offset" :type "hidden" :value "{{params.offset|default:0}}"}}
-       {:tag :input :attrs {:id "limit" :name "limit" :type "hidden" :value "{{params.limit|default:50}}"}}
+       {:tag :input
+        :attrs {:id "offset" :name "offset" :type "hidden"
+                :value "{{params.offset|default:0}}"}}
+       {:tag :input
+        :attrs {:id "limit" :name "limit" :type "hidden"
+                :value "{{params.limit|default:50}}"}}
        {:tag :table
         :attrs {:caption (:name (:attrs entity))}
         :content
@@ -808,30 +901,42 @@
      lists (children-with-tag entity :list)]
     (if
       (and
-        (= (:tag entity) :entity) ;; it seems to be an ADL entity
-        (not (link-table? entity)))
+       (= (:tag entity) :entity) ;; it seems to be an ADL entity
+       (not (link-table? entity)))
       (merge
-        (if
-          forms
-          (apply merge (map #(assoc {} (keyword (path-part % entity application))
-                               (form-to-template % entity application))
-                            forms))
-          {(keyword (str "form-" (:name (:attrs entity))))
-           (form-to-template nil entity application)})
-        (if
-          pages
-          (apply merge (map #(assoc {} (keyword (path-part % entity application))
-                               (page-to-template % entity application))
-                            pages))
-          {(keyword (str "page-" (:name (:attrs entity))))
-           (page-to-template nil entity application)})
-        (if
-          lists
-          (apply merge (map #(assoc {} (keyword (path-part % entity application))
-                               (list-to-template % entity application))
-                            lists))
-          {(keyword (str "list-" (:name (:attrs entity))))
-           (form-to-template nil entity application)})))))
+       (if
+         forms
+         (apply
+          merge
+          (map #(assoc
+                  {}
+                  (keyword (path-part % entity application))
+                  (form-to-template % entity application))
+               forms))
+         {(keyword (str "form-" (:name (:attrs entity))))
+          (form-to-template nil entity application)})
+       (if
+         pages
+         (apply
+          merge
+          (map #(assoc
+                  {}
+                  (keyword (path-part % entity application))
+                  (page-to-template % entity application))
+               pages))
+         {(keyword (str "page-" (:name (:attrs entity))))
+          (page-to-template nil entity application)})
+       (if
+         lists
+         (apply
+          merge
+          (map #(assoc
+                  {}
+                  (keyword (path-part % entity application))
+                  (list-to-template % entity application))
+               lists))
+         {(keyword (str "list-" (:name (:attrs entity))))
+          (form-to-template nil entity application)})))))
 
 
 (defn emit-entity-dt
@@ -840,7 +945,9 @@
    {:tag :dt
     :content
     [{:tag :a
-      :attrs {:href (str "{{servlet-context}}/" (path-part :list entity application))}
+      :attrs {:href (str
+                     "{{servlet-context}}/"
+                     (path-part :list entity application))}
       :content [(pretty-name entity)]}]}
     :readable
     entity
@@ -895,46 +1002,35 @@
 
 (defn write-template-file
   [filename template application]
-  (let [filepath (str *output-path* "resources/templates/auto/" filename)]
+  (let [filepath (str
+                  *output-path*
+                  "resources/templates/auto/"
+                  filename)]
     (if
       template
-      (try
-        (do
-          (make-parents filepath)
-          (spit
-           filepath
-           (s/join
-            "\n"
-            (flatten
-             (list
-              (file-header filename application)
-              (doall
-               (map
-                #(let [content (template %)]
-                   (list
-                    (str "{% block " (name %) " %}")
-                    (emit-content content)
-                    "{% endblock %}"))
-                   (keys template)))
-              (file-footer filename application)))))
-          (if (> *verbosity* 0) (*warn* "\tGenerated " filepath)))
-        (catch Exception any
-          (let [report (str
-                        "ERROR: Exception "
-                        (.getName (.getClass any))
-                        (.getMessage any)
-                        " while printing "
-                        filepath)]
-            (try
-              (spit
-               filepath
-               (with-out-str
-                 (*warn* (str "<!-- " report "-->"))
-                 (p/pprint template)))
-              (catch Exception _ nil))
-            (*warn* report)
-            (throw any)))))
-    (str filepath)))
+      (do-or-warn
+       (do
+         (make-parents filepath)
+         (spit
+          filepath
+          (s/join
+           "\n"
+           (flatten
+            (list
+             (file-header filename application)
+             (doall
+              (map
+               #(let [content (template %)]
+                  (list
+                   (str "{% block " (name %) " %}")
+                   (emit-content content)
+                   "{% endblock %}"))
+               (keys template)))
+             (file-footer filename application)))))
+         (if
+           (pos? *verbosity*)
+           (*warn* "\tGenerated " filepath))
+         (str filepath))))))
 
 
 ;; (def a (x/parse "../youyesyet/youyesyet.canonical.adl.xml"))
@@ -948,7 +1044,8 @@
 
 
 (defn to-selmer-templates
-  "Generate all [Selmer](https://github.com/yogthos/Selmer) templates implied by this ADL `application` spec."
+  "Generate all [Selmer](https://github.com/yogthos/Selmer) templates implied
+  by this ADL `application` spec."
   [application]
   (let
     [templates-map (reduce
@@ -962,17 +1059,11 @@
         #(if
            (templates-map %)
            (let [filename (str (name %) ".html")]
-             (try
-               (write-template-file filename (templates-map %) application)
-               (catch Exception any
-                 (*warn*
-                   (str
-                     "ERROR: Exception "
-                     (.getName (.getClass any))
-                     " "
-                     (.getMessage any)
-                     " while writing "
-                     filename))))))
+             (do-or-warn
+               (write-template-file
+                filename
+                (templates-map %)
+                application))))
         (keys templates-map)))))
 
 
