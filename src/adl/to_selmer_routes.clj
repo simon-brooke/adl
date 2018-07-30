@@ -132,12 +132,13 @@
                                 :entity
                                 #(= (-> % :attrs :name) f-name))]
     (if (and (entity? entity) (entity? farside))
-      (hash-map
-       (keyword (auxlist-data-name auxlist))
-       (list
-        (symbol (str "db/" (list-related-query-name entity farside)))
-        'db/*db*
-        {:id (list :id 'params)}))
+      (list 'if (list 'all-keys-present? 'params (set (key-names entity true)))
+            (hash-map
+             (keyword (auxlist-data-name auxlist))
+             (list
+              (symbol (str "db/" (list-related-query-name entity farside)))
+              'db/*db*
+              {:id (list :id 'params)})))
       (do
         (if-not
           (entity? entity)
