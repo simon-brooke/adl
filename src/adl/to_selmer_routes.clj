@@ -107,18 +107,18 @@
                 (keyword (-> property :attrs :farkey))
                 (list (keyword (-> property :attrs :name)) 'params)))
               {})
-;;     "link" (list
-;;            'do
-;;            (list
-;;             'comment
-;;             "Can't yet handle link properties")
-;;            {})
-;;     (list
-;;      'do
-;;      (list
-;;       'comment
-;;       (str "Unexpedted type " (-> property :atts :type)))
-     {}))
+    "link" (list
+           'do
+           (list
+            'comment
+            "Can't yet handle link properties")
+           {})
+    (list
+     'do
+     (list
+      'comment
+      (str "Unexpedted type " (-> property :atts :type)))
+     {})))
 
 
 (defn compose-fetch-auxlist-data
@@ -132,12 +132,14 @@
                                 :entity
                                 #(= (-> % :attrs :name) f-name))]
     (if (and (entity? entity) (entity? farside))
-      (hash-map
-       (keyword (auxlist-data-name auxlist))
-       (list
-        (symbol (str "db/" (list-related-query-name entity farside)))
-        'db/*db*
-        {:id (list :id 'params)}))
+      (list 'if (list 'all-keys-present? 'params (set (key-names entity true)))
+            (hash-map
+             (keyword (auxlist-data-name auxlist))
+             (list
+              ;; TODO: wrong query name being generated
+              (symbol (str "db/" (list-related-query-name entity farside)))
+              'db/*db*
+              {:id (list :id 'params)})))
       (do
         (if-not
           (entity? entity)
@@ -163,18 +165,21 @@
    'let
    (vector
     'record (compose-fetch-record e))
-   (reduce
-    merge
+   (list
+    'reduce
+    'merge
     {:error (list :warnings 'record)
      :record (list 'dissoc 'record :warnings)}
-    (concat
-     (map
-      #(compose-get-menu-options % a)
-      (filter #(:entity (:attrs %))
-              (descendants-with-tag e :property)))
-     (map
-      #(compose-fetch-auxlist-data % e a)
-      (descendants-with-tag f :auxlist))))))
+    (cons
+     'list
+     (concat
+      (map
+       #(compose-get-menu-options % a)
+       (filter #(:entity (:attrs %))
+               (descendants-with-tag e :property)))
+      (map
+       #(compose-fetch-auxlist-data % e a)
+       (descendants-with-tag f :auxlist)))))))
 
 
 (defn make-page-get-handler-content
