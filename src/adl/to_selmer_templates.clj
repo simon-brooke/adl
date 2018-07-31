@@ -545,7 +545,7 @@
         [{:tag :td
           :content
           [(if
-             (or (= (:tag list-spec) :form)
+             (or (= (:tag list-spec) :list)
                  (-> list-spec :attrs :onselect))
              {:tag :a
               :attrs
