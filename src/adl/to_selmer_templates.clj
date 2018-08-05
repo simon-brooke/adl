@@ -405,6 +405,12 @@
                :value (str "{{record." widget-name "}}")
                :maxlength (str (max (get-size-for-widget property) 16))
                :size (str (min (get-size-for-widget property) 60))}
+              (case (-> property :attrs :type)
+                "real"
+                {:step 0.000001} ;; this is a bit arbitrary!
+                "integer"
+                {:step 1}
+                nil)
               ;; TODO: should match pattern from typedef
               (if
                 (:minimum (:attrs typedef))
@@ -561,67 +567,70 @@
                    entity
                    :property
                    #(=
-                     (-> % :attrs :name)
-                     (-> auxlist :attrs :property)))
+                      (-> % :attrs :name)
+                      (-> auxlist :attrs :property)))
         farside (child-with-tag
                   application
                   :entity
                   #(=
-                    (-> % :attrs :name)
-                    (-> property :attrs :entity)))]
+                     (-> % :attrs :name)
+                     (-> property :attrs :entity)))]
     (if
       (and property farside)
       {:tag :div
        :attrs {:class "auxlist"}
        :content
        (apply
-        vector
-        (remove
-         nil?
-         (flatten
-          (list
-           ;; only show auxlists if we've got keys
-           (str "{% if all "
-                (s/join " " (map #(str "params." %) (key-names entity)))
-                " %}")
-          {:tag :h2
-           :content [(prompt auxlist form entity application)]}
-          {:tag :table
-           :content
-           [{:tag :thead
-             :content
-             [{:tag :tr
-               :content
-               (apply
-                vector
-                (remove
-                 nil?
-                 (flatten
-                  (list
-                   (map
-                    #(hash-map
-                      :tag :th
-                      :content [(prompt % form entity application)])
-                    (children-with-tag auxlist :field))
-                   {:tag :th :content ["&nbsp;"]}))))}]}
-            (list-tbody
-             (auxlist-data-name auxlist)
-             auxlist
-             farside
-             application)]}
-          (if
-            (= (-> auxlist :attrs :canadd) "true")
-            (wrap-in-if-member-of
-             (big-link (str
-                        "Add a new "
-                        (pretty-name property))
-                       (editor-name farside application))
-             :writeable
-             farside
-             application)
-            )
-           "{% endif %}"
-            ))))})))
+         vector
+         (remove
+           nil?
+           (flatten
+             (list
+               ;; only show auxlists if we've got keys
+               (str "{% if all "
+                    (s/join " " (map #(str "params." %) (key-names entity)))
+                    " %}")
+               ;; only show the body of auxlists if the list is non-empty
+               (str "{% if " (auxlist-data-name auxlist) "|not-empty %}")
+
+               {:tag :h2
+                :content [(prompt auxlist form entity application)]}
+               {:tag :table
+                :content
+                [{:tag :thead
+                  :content
+                  [{:tag :tr
+                    :content
+                    (apply
+                      vector
+                      (remove
+                        nil?
+                        (flatten
+                          (list
+                            (map
+                              #(hash-map
+                                 :tag :th
+                                 :content [(prompt % form entity application)])
+                              (children-with-tag auxlist :field))
+                            {:tag :th :content ["&nbsp;"]}))))}]}
+                 (list-tbody
+                   (auxlist-data-name auxlist)
+                   auxlist
+                   farside
+                   application)]}
+               "{% endif %}"
+               (if
+                 (= (-> auxlist :attrs :canadd) "true")
+                 (wrap-in-if-member-of
+                   (big-link (str
+                               "Add a new "
+                               (pretty-name property))
+                             (editor-name farside application))
+                   :writeable
+                   farside
+                   application)
+                 )
+               "{% endif %}"))))})))
 
 
 (defn compose-form-auxlists

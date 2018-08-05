@@ -77,7 +77,7 @@
      'if
      (list
       'all-keys-present?
-      'params (set (key-names e true)))
+      'params (key-names e true))
      (list
       'support/do-or-log-error
       (list
@@ -138,7 +138,7 @@
                                 :entity
                                 #(= (-> % :attrs :name) f-name))]
     (if (and (entity? entity) (entity? farside))
-      (list 'if (list 'all-keys-present? 'params (set (key-names entity true)))
+      (list 'if (list 'all-keys-present? 'params  (key-names entity true))
             (hash-map
              (keyword (auxlist-data-name auxlist))
              (list
@@ -189,7 +189,12 @@
                (descendants-with-tag e :property)))
       (map
        #(compose-fetch-auxlist-data % e a)
-       (descendants-with-tag f :auxlist)))))))
+       (descendants-with-tag f :auxlist))
+       (list
+         (list 'if (list :error 'request)
+               {:error (list :error 'request)})
+         (list 'if (list :message 'request)
+               {:message (list :message 'request)})))))))
 
 
 (defn make-page-get-handler-content
@@ -248,7 +253,7 @@
          (str
           "db/list-"
           (:name (:attrs e))))
-        (symbol "db/*db*") {})
+        (symbol "db/*db*") 'params)
        :message (str
                  "Error while fetching "
                  (singularise (:name (:attrs e)))
@@ -304,49 +309,51 @@
     [create-name (query-name e :create)
      update-name (query-name e :update)]
     (list
-     'let
-     (vector
-      'result
-      (list
-       'valid-user-or-forbid
-       (list
-        'with-params-or-error
+      'let
+      (vector
+        'result
         (list
-         'do-or-server-fail
-         (list
-          'if
-          (list 'all-keys-present? 'params (key-names e true))
+          'valid-user-or-forbid
           (list
-           update-name
-           'db/*db*
-           'params)
-          (list
-           create-name
-           'db/*db*
-           'params))
-         200) ;; OK
-        'params
-        (set
-         (map
-          #(keyword (:name (:attrs %)))
-          (insertable-properties e))))
-       'request))
-     (list
-      'if
+            'with-params-or-error
+            (list
+              'if
+              (list 'all-keys-present? 'params (key-names e true))
+              (list
+                'do-or-server-fail
+                (list
+                  update-name
+                  'db/*db*
+                  'params)
+                200)
+              (list
+                'do-or-server-fail
+                (list
+                  create-name
+                  'db/*db*
+                  'params)
+                201))
+            'params
+            (set
+              (map
+                #(keyword (:name (:attrs %)))
+                (required-properties e))))
+          'request))
       (list
-       (set [200 400])
-       (list :status 'result))
-      (list
-       (symbol (handler-name f e a :get))
-       (list
-        'assoc
-        'request
-        :params
-        (list
-         'merge
-         'params
-         'result)))
-      'result))))
+        (symbol (handler-name f e a :get))
+        (list 'merge
+              (list
+                'assoc
+                'request
+                :params
+                (list
+                  'merge
+                  'params
+                  'result))
+              (list 'case (:status 'result)
+                    200 {:message "Record stored"}
+                    201 (str "Record created: " (list :body 'result))
+                    {:error (list :body 'result)}))))))
 
 
 (defn make-post-handler
