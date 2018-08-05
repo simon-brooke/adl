@@ -3,6 +3,7 @@
       :author "Simon Brooke"}
   adl.to-selmer-templates
   (:require [adl-support.core :refer :all]
+            [adl-support.forms-support :refer :all]
             [adl.to-hugsql-queries :refer [expanded-token]]
             [adl-support.utils :refer :all]
             [clojure.java.io :refer [file make-parents resource]]
@@ -65,7 +66,6 @@
 
 (defn emit-content
   ([content]
-   (do-or-warn
      (cond
        (nil? content)
        nil
@@ -77,8 +77,7 @@
        (seq? content)
        (map emit-content (remove nil? content))
        true
-       (str "<!-- don't know what to do with '" content "' -->"))
-    (str "Failed while writing " content)))
+       (str "<!-- don't know what to do with '" content "' -->")))
   ([filename application k]
    (emit-content filename nil nil application k))
   ([filename spec entity application k]
@@ -374,6 +373,20 @@
                   "{% endif %}")))})
 
 
+(defn get-size-for-widget
+  "Return, as an integer, the fieldwidth for the input widget for this
+  `property`."
+  [property]
+  (let [s (try
+            (read-string
+             (:size (:attrs property)))
+            (catch Exception _ 16))]
+  (if
+   (not (integer? s))
+   16
+   s)))
+
+
 (defn compose-input-widget-para
   "Generate an input widget for this `field-or-property` of this `form` for
   this `entity` taken from within this `application`, in context of a para
@@ -390,17 +403,14 @@
                :name widget-name
                :type w-type
                :value (str "{{record." widget-name "}}")
-               :maxlength (:size (:attrs property))
-               :size (cond
-                      (nil? (:size (:attrs property)))
-                      "16"
-                      (try
-                        (> (read-string
-                            (:size (:attrs property))) 60)
-                        (catch Exception _ false))
-                      "60"
-                      true
-                      (:size (:attrs property)))}
+               :maxlength (str (max (get-size-for-widget property) 16))
+               :size (str (min (get-size-for-widget property) 60))}
+              (case (-> property :attrs :type)
+                "real"
+                {:step 0.000001} ;; this is a bit arbitrary!
+                "integer"
+                {:step 1}
+                nil)
               ;; TODO: should match pattern from typedef
               (if
                 (:minimum (:attrs typedef))
@@ -479,10 +489,12 @@
 
 
 (defn edit-link
-  [entity application parameters]
+  [source entity application parameters]
   (str
     "{{servlet-context}}/"
-    (editor-name entity application)
+    (or
+     (-> source :attrs :onselect)
+     (editor-name entity application))
     "?"
     (s/join
       "&amp;"
@@ -494,7 +506,7 @@
 
 (defn list-tbody
   "Return a table body element for the list view for this `list-spec` of
-  this `entity` within this `application`, using data from this source."
+  this `entity` within this `application`, using data from this `source`."
   [source list-spec entity application]
   {:tag :tbody
    :content
@@ -502,40 +514,50 @@
     {:tag :tr
      :content
      (apply
-       vector
+      vector
+      (remove
+       nil?
        (concat
-         (map
-           (fn [field]
-             {:tag :td :content
-              (let
-               [p (first
-                   (filter
-                    #(=
-                      (:name (:attrs %))
-                      (:property (:attrs field)))
-                    (all-properties entity)))
-                s (safe-name (:name (:attrs p)) :sql)
-                e (first
-                    (filter
-                      #(= (:name (:attrs %)) (:entity (:attrs p)))
-                      (children-with-tag application :entity)))
-                c (str "{{ record." s " }}")]
-               (if
-                 (= (:type (:attrs p)) "entity")
-                 [{:tag :a
-                   :attrs {:href (edit-link
-                                  e
+        (map
+         (fn [field]
+           {:tag :td :content
+            (let
+              [p (first
+                  (filter
+                   #(=
+                     (:name (:attrs %))
+                     (:property (:attrs field)))
+                   (all-properties entity)))
+               s (safe-name (:name (:attrs p)) :sql)
+               e (first
+                  (filter
+                   #(= (:name (:attrs %)) (:entity (:attrs p)))
+                   (children-with-tag application :entity)))
+               c (str "{{ record." s " }}")]
+              (if
+                (= (:type (:attrs p)) "entity")
+                [{:tag :a
+                  :attrs {:href (edit-link
+                                 source
+                                 (child-with-tag
                                   application
-                                  (list (:name (:attrs p))))}
-                   :content [(str "{{ record." s "_expanded }}")]}]
-                 [c]))})
-           (children-with-tag list-spec :field))
-         [{:tag :td
+                                  :entity
+                                  #(= (-> % :attrs :name)(-> p :attrs :entity)))
+                                 application
+                                 (list (:name (:attrs p))))}
+                  :content [(str "{{ record." s "_expanded }}")]}]
+                [c]))})
+         (children-with-tag list-spec :field))
+        [{:tag :td
           :content
-          [{:tag :a
-     :attrs
-     {:href (edit-link entity application (key-names entity))}
-     :content ["View"]}]}]))}
+          [(if
+             (or (= (:tag list-spec) :list)
+                 (-> list-spec :attrs :onselect))
+             {:tag :a
+              :attrs
+              {:href (edit-link source entity application (key-names entity))}
+              :content ["View"]}
+             "&nbsp;")]}])))}
     "{% endfor %}"]})
 
 
@@ -545,42 +567,70 @@
                    entity
                    :property
                    #(=
-                     (-> % :attrs :name)
-                     (-> auxlist :attrs :property)))
+                      (-> % :attrs :name)
+                      (-> auxlist :attrs :property)))
         farside (child-with-tag
                   application
                   :entity
                   #(=
-                    (-> % :attrs :name)
-                    (-> property :attrs :entity)))]
+                     (-> % :attrs :name)
+                     (-> property :attrs :entity)))]
     (if
       (and property farside)
       {:tag :div
        :attrs {:class "auxlist"}
        :content
-       [{:tag :h2
-         :content [(prompt auxlist form entity application)]}
-        {:tag :table
-         :content
-         [{:tag :thead
-           :content
-           [{:tag :tr
-             :content
-             (apply
-               vector
-               (flatten
-                 (list
-                   (map
-                     #(hash-map
-                        :tag :th
-                        :content [(prompt % form entity application)])
-                     (children-with-tag auxlist :field))
-                   {:tag :th :content ["&nbsp;"]})))}]}
-          (list-tbody
-           (-> property :attrs :name)
-           auxlist
-           farside
-           application)]}]})))
+       (apply
+         vector
+         (remove
+           nil?
+           (flatten
+             (list
+               ;; only show auxlists if we've got keys
+               (str "{% if all "
+                    (s/join " " (map #(str "params." %) (key-names entity)))
+                    " %}")
+               ;; only show the body of auxlists if the list is non-empty
+               (str "{% if " (auxlist-data-name auxlist) "|not-empty %}")
+
+               {:tag :h2
+                :content [(prompt auxlist form entity application)]}
+               {:tag :table
+                :content
+                [{:tag :thead
+                  :content
+                  [{:tag :tr
+                    :content
+                    (apply
+                      vector
+                      (remove
+                        nil?
+                        (flatten
+                          (list
+                            (map
+                              #(hash-map
+                                 :tag :th
+                                 :content [(prompt % form entity application)])
+                              (children-with-tag auxlist :field))
+                            {:tag :th :content ["&nbsp;"]}))))}]}
+                 (list-tbody
+                   (auxlist-data-name auxlist)
+                   auxlist
+                   farside
+                   application)]}
+               "{% endif %}"
+               (if
+                 (= (-> auxlist :attrs :canadd) "true")
+                 (wrap-in-if-member-of
+                   (big-link (str
+                               "Add a new "
+                               (pretty-name property))
+                             (editor-name farside application))
+                   :writeable
+                   farside
+                   application)
+                 )
+               "{% endif %}"))))})))
 
 
 (defn compose-form-auxlists
@@ -1030,11 +1080,12 @@
          (if
            (pos? *verbosity*)
            (*warn* "\tGenerated " filepath))
-         (str filepath))))))
+         (str filepath))
+       (str "While generating " filepath)))))
 
 
 ;; (def a (x/parse "../youyesyet/youyesyet.canonical.adl.xml"))
-;; (def e (child-with-tag a :entity))
+;; (def e (child-with-tag a :entity #(= (-> % :attrs :name) "teams")))
 ;; (def f (child-with-tag e :form))
 ;; (write-template-file "froboz" (form-to-template f e a) a)
 ;; (def t (form-to-template f e a))

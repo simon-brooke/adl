@@ -44,14 +44,16 @@
    (where-clause entity (key-properties entity)))
   ([entity properties]
    (let
-     [entity-name (:name (:attrs entity))
+     [entity-name (safe-name entity :sql)
       property-names (map #(:name (:attrs %)) properties)]
      (if-not (empty? property-names)
        (str
         "WHERE "
         (s/join
          "\n\tAND"
-         (map #(str entity-name "." % " = :" %) property-names)))))))
+         (map
+          #(str entity-name "." (safe-name % :sql) " = :" %)
+          property-names)))))))
 
 
 (defn order-by-clause
@@ -62,7 +64,7 @@
    (order-by-clause entity prefix false))
   ([entity prefix expanded?]
   (let
-    [entity-name (safe-name (:name (:attrs entity)) :sql)
+    [entity-name (safe-name entity :sql)
      preferred (filter #(#{"user" "all"} (-> % :attrs :distinct))
                          (children entity #(= (:tag %) :property)))]
     (if
@@ -89,10 +91,10 @@
   TODO: this depends on the idea that system-unique properties
   are not insertable, which is... dodgy."
   [entity]
-  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
+  (let [entity-name (safe-name entity :sql)
         pretty-name (singularise entity-name)
         insertable-property-names (map
-                                    #(safe-name (:name (:attrs %)) :sql)
+                                    #(safe-name % :sql)
                                     (insertable-properties entity))
         query-name (str "create-" pretty-name "!")
         signature (if (has-primary-key? entity)
@@ -126,9 +128,11 @@
 (defn update-query
   "Generate an appropriate `update` query for this `entity`"
   [entity]
-    (let [entity-name (safe-name (:name (:attrs entity)) :sql)
+    (let [entity-name (safe-name entity :sql)
           pretty-name (singularise entity-name)
-          property-names (map #(:name (:attrs %)) (insertable-properties entity))
+          property-names (map
+                          #(-> % :attrs :name)
+                          (insertable-properties entity))
           query-name (str "update-" pretty-name "!")
           signature ":! :n"]
       (hash-map
@@ -142,18 +146,22 @@
               "-- :doc updates an existing " pretty-name " record\n"
               "UPDATE " entity-name "\n"
               "SET "
-              (s/join ",\n\t" (map #(str (safe-name % :sql) " = " (keyword %)) property-names))
+              (s/join
+               ",\n\t"
+               (map
+                #(str (safe-name % :sql) " = " (keyword %))
+                property-names))
               "\n"
               (where-clause entity))})))
 
 
 (defn search-query [entity application]
   "Generate an appropriate search query for string fields of this `entity`"
-  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
+  (let [entity-name (safe-name entity :sql)
         pretty-name (singularise entity-name)
         query-name (str "search-strings-" entity-name)
         signature ":? :*"
-        properties (remove #(#{"link"}(:type (:attrs %))) (all-properties entity))]
+        properties (remove #(#{"(safe-name entity :sql)"}(:type (:attrs %))) (all-properties entity))]
     (hash-map
       (keyword query-name)
       {:name query-name
@@ -180,7 +188,7 @@
                    string?
                    (map
                      #(let
-                        [sn (safe-name (-> % :attrs :name) :sql)]
+                        [sn (safe-name % :sql)]
                         (str
                         "(if (:" (-> % :attrs :name) " params) (str \"AND "
                         (case (-> % :attrs :type)
@@ -214,7 +222,7 @@
   ([entity properties]
    (if-not
      (empty? properties)
-     (let [entity-name (safe-name (:name (:attrs entity)) :sql)
+     (let [entity-name (safe-name entity :sql)
            pretty-name (singularise entity-name)
            query-name (if (= properties (key-properties entity))
                         (str "get-" pretty-name)
@@ -254,7 +262,7 @@
   Parameters `:limit` and `:offset` may be supplied. If not present limit defaults
   to 100 and offset to 0."
   [entity]
-  (let [entity-name (safe-name (:name (:attrs entity)) :sql)
+  (let [entity-name (safe-name entity :sql)
         pretty-name (singularise entity-name)
         query-name (str "list-" entity-name)
         signature ":? :*"]
@@ -282,7 +290,8 @@
   [entity application]
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
-        links (filter #(#{"link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
+        entity-safe (safe-name entity :sql)
+        links (filter #(#{"list" "link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
     (apply
       merge
       (map
@@ -295,10 +304,11 @@
                                   (= (:tag x) :entity)
                                   (= (:name (:attrs x)) far-name)))))
                pretty-far (singularise far-name)
+               safe-far (safe-name far-entity :sql)
                farkey (-> % :attrs :farkey)
                link-type (-> % :attrs :type)
                link-field (-> % :attrs :name)
-               query-name (str "list-" entity-name "-by-" pretty-far)
+               query-name (list-related-query-name % entity far-entity)
                signature ":? :*"]
            (hash-map
              (keyword query-name)
@@ -315,23 +325,27 @@
                   (case link-type
                     "entity" (list
                                (str "-- :name " query-name " " signature)
-                               (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT lv_" entity-name ".* \nFROM lv_" entity-name ", " entity-name)
-                               (str "WHERE lv_" entity-name "." (first (key-names entity)) " = "
-                                    entity-name "." (first (key-names entity))
-                                    "\n\tAND " entity-name "." link-field " = :id")
+                               (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" entity-safe ".* \nFROM lv_" entity-safe)
+                               (str "WHERE lv_" entity-safe "." (safe-name % :sql) " = :id")
                                (order-by-clause entity "lv_" false))
                     "link" (let [link-table-name
                                  (link-table-name % entity far-entity)]
                              (list
                                (str "-- :name " query-name " " signature)
-                               (str "-- :doc links all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT * \nFROM " entity-name ", " link-table-name)
-                               (str "WHERE " entity-name "."
-                                    (first (key-names entity))
-                                    " = " link-table-name "." (singularise entity-name) "_id")
-                               (str "\tAND " link-table-name "." (singularise far-name) "_id = :id")
-                               (order-by-clause entity)))
+                               (str "-- :doc links all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far ", " link-table-name)
+                               (str "WHERE lv_" safe-far "."
+                                    (safe-name (first (key-names far-entity)) :sql)
+                                    " = " link-table-name "." (singularise safe-far) "_id")
+                               (str "\tAND " link-table-name "." (singularise entity-safe) "_id = :id")
+                               (order-by-clause far-entity "lv_" false)))
+                    "list" (list
+                               (str "-- :name " query-name " " signature)
+                               (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far)
+                               (str "WHERE lv_" safe-far "." (safe-name (first (key-names far-entity)) :sql) " = :id")
+                               (order-by-clause far-entity "lv_" false))
                     (list (str "ERROR: unexpected type " link-type " of property " %)))))
               }))
         links))))
@@ -341,7 +355,7 @@
   "Generate an appropriate `delete` query for this `entity`"
   (if
     (has-primary-key? entity)
-    (let [entity-name (:name (:attrs entity))
+    (let [entity-name (safe-name entity :sql)
           pretty-name (singularise entity-name)
           query-name (str "delete-" pretty-name "!")
           signature ":! :n"]
