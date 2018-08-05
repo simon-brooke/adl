@@ -311,6 +311,13 @@
     (list
       'let
       (vector
+        'insert-params (list
+                         'prepare-insertion-params
+                         'params
+                         (set
+                           (map
+                             #(-> % :attrs :name)
+                             (insertable-properties e))))
         'result
         (list
           'valid-user-or-forbid
@@ -324,14 +331,14 @@
                 (list
                   update-name
                   'db/*db*
-                  'params)
+                  'insert-params)
                 200)
               (list
                 'do-or-server-fail
                 (list
                   create-name
                   'db/*db*
-                  'params)
+                  'insert-params)
                 201))
             'params
             (set
