@@ -290,7 +290,8 @@
   [entity application]
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
-        links (filter #(#{"link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
+        entity-safe (safe-name entity :sql)
+        links (filter #(#{"list" "link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
     (apply
       merge
       (map
@@ -303,10 +304,11 @@
                                   (= (:tag x) :entity)
                                   (= (:name (:attrs x)) far-name)))))
                pretty-far (singularise far-name)
+               safe-far (safe-name far-entity :sql)
                farkey (-> % :attrs :farkey)
                link-type (-> % :attrs :type)
                link-field (-> % :attrs :name)
-               query-name (list-related-query-name far-entity entity)
+               query-name (list-related-query-name % entity far-entity)
                signature ":? :*"]
            (hash-map
              (keyword query-name)
@@ -323,23 +325,27 @@
                   (case link-type
                     "entity" (list
                                (str "-- :name " query-name " " signature)
-                               (str "-- :doc lists all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT lv_" entity-name ".* \nFROM lv_" entity-name ", " entity-name)
-                               (str "WHERE lv_" entity-name "." (first (key-names entity)) " = "
-                                    entity-name "." (first (key-names entity))
-                                    "\n\tAND " entity-name "." link-field " = :id")
+                               (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" entity-safe ".* \nFROM lv_" entity-safe)
+                               (str "WHERE lv_" entity-safe "." (safe-name % :sql) " = :id")
                                (order-by-clause entity "lv_" false))
                     "link" (let [link-table-name
                                  (link-table-name % entity far-entity)]
                              (list
                                (str "-- :name " query-name " " signature)
-                               (str "-- :doc links all existing " pretty-name " records related to a given " pretty-far)
-                               (str "SELECT * \nFROM " entity-name ", " link-table-name)
-                               (str "WHERE " entity-name "."
-                                    (first (key-names entity))
-                                    " = " link-table-name "." (singularise entity-name) "_id")
-                               (str "\tAND " link-table-name "." (safe-name (singularise far-name) :sql) "_id = :id")
-                               (order-by-clause entity)))
+                               (str "-- :doc links all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far ", " link-table-name)
+                               (str "WHERE lv_" safe-far "."
+                                    (safe-name (first (key-names far-entity)) :sql)
+                                    " = " link-table-name "." (singularise safe-far) "_id")
+                               (str "\tAND " link-table-name "." (singularise entity-safe) "_id = :id")
+                               (order-by-clause far-entity "lv_" false)))
+                    "list" (list
+                               (str "-- :name " query-name " " signature)
+                               (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
+                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far)
+                               (str "WHERE lv_" safe-far "." (safe-name (first (key-names far-entity)) :sql) " = :id")
+                               (order-by-clause far-entity "lv_" false))
                     (list (str "ERROR: unexpected type " link-type " of property " %)))))
               }))
         links))))

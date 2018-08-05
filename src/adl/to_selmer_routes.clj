@@ -113,11 +113,17 @@
             'comment
             "Can't yet handle link properties")
            {})
+    "list" (list
+           'do
+           (list
+            'comment
+            "Can't yet handle link properties")
+           {})
     (list
      'do
      (list
       'comment
-      (str "Unexpedted type " (-> property :atts :type)))
+      (str "Unexpected type " (-> property :atts :type)))
      {})))
 
 
@@ -136,10 +142,14 @@
             (hash-map
              (keyword (auxlist-data-name auxlist))
              (list
-              ;; TODO: wrong query name being generated
-              (symbol (str "db/" (list-related-query-name entity farside)))
+              (symbol (str "db/" (list-related-query-name property entity farside)))
               'db/*db*
-              {:id (list :id 'params)})))
+              {:id
+               (list
+                (case (-> property :attrs :type)
+                  "link" :id
+                  "list" (keyword (-> property :attrs :name)))
+                'params)})))
       (do
         (if-not
           (entity? entity)

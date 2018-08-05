@@ -466,6 +466,7 @@
              #(and
                 (entity? %)
                 (= (:name (:attrs %)) (:entity (:attrs property)))))
+        unique? (unique-link? e1 e2)
         link-table-name (link-table-name property e1 e2)]
     (if
       ;; we haven't already emitted this one...
@@ -485,6 +486,13 @@
                                     [(construct-link-property e1)
                                      (construct-link-property e2)]
                                     permissions)))}]
+        (if-not unique?
+          (*warn*
+           (str "WARNING: Manually check link tables between "
+                (-> e1 :attrs :name)
+                " and "
+                (-> e2 :attrs :name)
+                " for redundancy")))
         ;; mark it as emitted
         (swap! emitted-link-tables conj link-table-name)
         ;; emit it
@@ -498,7 +506,7 @@
                 (:name (:attrs e1))
                 " with "
                 (:name (:attrs e2))))
-            ;; and immediately emit its referential integrity links
+                       ;; and immediately emit its referential integrity links
             (emit-referential-integrity-links link-entity application)))))))
 
 
