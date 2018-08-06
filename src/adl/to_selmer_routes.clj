@@ -85,7 +85,8 @@
        (symbol "db/*db*")
        'params)
       :message warning
-      :error-return {:warnings [warning]}))))
+      :error-return {:warnings [warning]})
+     'params)))
 
 
 (defn compose-get-menu-options
@@ -357,14 +358,18 @@
                   'merge
                   'params
                   'result))
-              (list 'case (:status 'result)
+              (list 'case (list :status 'result)
                     200 {:message "Record stored"}
                     201 (list 'try
-                          (list 'merge
-                            (list 'read-string (list :body 'result)))
+                          (list 'hash-map
+                                :params
+                                (list 'merge 'params
+                            (list :body 'result))
+                                :message
+                                (list 'str "Record created")(list :body 'result))
                           (list
                             'catch 'Exception 'x
-                            {:message (list 'str "Record created: " (list :body 'result))
+                            {:message "Record created"
                              :error "Exception while reading returned key"}))
                     {:error (list :body 'result)}))))))
 
