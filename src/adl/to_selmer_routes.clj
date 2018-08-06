@@ -293,7 +293,7 @@
             (list 'support/resolve-template (str (path-part f e a) ".html"))
             (list 'merge
                   {:title (capitalise (:name (:attrs f)))
-                   :params  'params}
+                   :params  (list 'merge (property-defaults e) 'params)}
                   (case (:tag f)
                     :form (make-form-get-handler-content f e a n)
                     :page (make-page-get-handler-content f e a n)
@@ -359,7 +359,13 @@
                   'result))
               (list 'case (:status 'result)
                     200 {:message "Record stored"}
-                    201 (str "Record created: " (list :body 'result))
+                    201 (list 'try
+                          (list 'merge
+                            (list 'read-string (list :body 'result)))
+                          (list
+                            'catch 'Exception 'x
+                            {:message (list 'str "Record created: " (list :body 'result))
+                             :error "Exception while reading returned key"}))
                     {:error (list :body 'result)}))))))
 
 
