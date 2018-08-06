@@ -201,28 +201,34 @@
 
 (defn delete-widget
   "Return an appropriate 'save' widget for this `form` operating on this
-  `entity` taken from this `application`.
-  TODO: should be suppressed unless member of a group which can delete."
+  `entity` taken from this `application`."
   [form entity application]
-  (wrap-in-if-member-of
-    {:tag :p
-     :attrs {:class "widget action-dangerous"}
-     :content [{:tag :label
-                :attrs {:for "delete-button"
-                        :class "action-dangerous"}
-                :content [(str
-                           "To delete this "
-                           (:name (:attrs entity))
-                           " record")]}
-               {:tag :input
-                :attrs {:id "delete-button"
-                        :name "delete-button"
-                        :class "action-dangerous"
-                        :type "submit"
-                        :value (str "Delete!")}}]}
-    :editable
-    entity
-    application))
+  (flatten
+   (list
+    (str "{% if all "
+         (s/join " " (map #(str "params." %) (key-names entity)))
+         " %}")
+
+    (wrap-in-if-member-of
+     {:tag :p
+      :attrs {:class "widget action-dangerous"}
+      :content [{:tag :label
+                 :attrs {:for "delete-button"
+                         :class "action-dangerous"}
+                 :content [(str
+                            "To delete this "
+                            (:name (:attrs entity))
+                            " record")]}
+                {:tag :input
+                 :attrs {:id "delete-button"
+                         :name "delete-button"
+                         :class "action-dangerous"
+                         :type "submit"
+                         :value (str "Delete!")}}]}
+     :editable
+     entity
+     application)
+    "{% endif %}")))
 
 
 (defn select-property
