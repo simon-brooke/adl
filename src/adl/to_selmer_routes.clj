@@ -77,7 +77,7 @@
      'if
      (list
       'all-keys-present?
-      'params (key-names e true))
+      'params (set (map #(safe-name % :sql) (key-names e true))))
      (list
       'support/do-or-log-error
       (list
@@ -302,6 +302,9 @@
 
 
 (defn make-form-post-handler-content
+  "Generate the body of the post handler for the form `f` of
+  entity `e` in application `a`. The argument `n` is bound to the name
+  of the function, but is not currently used."
   ;; Literally the only thing the post handler has to do is to
   ;; generate the database store operation. Then it can hand off
   ;; to the get handler.
@@ -317,7 +320,7 @@
                          'params
                          (set
                            (map
-                             #(-> % :attrs :name)
+                             #(safe-name (-> % :attrs :name) :sql)
                              (insertable-properties e))))
         'result
         (list
