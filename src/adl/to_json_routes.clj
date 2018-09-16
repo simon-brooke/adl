@@ -77,7 +77,18 @@
    ['request]
    (list
     'let
-    ['params '(massage-params request)]
+    ['params (list
+               'merge
+               (apply hash-map
+                     (interleave
+                       (map
+                         #(keyword (column-name %))
+                         (descendants-with-tag
+                           (:entity query)
+                           :property
+                           #(not (= (-> % :attrs :required) "true"))))
+                       (repeat nil)))
+                   '(massage-params request))]
     (list
      'valid-user-or-forbid
      (list
@@ -86,8 +97,7 @@
        'do-or-server-fail
        (list
         (symbol (str "db/" (:name query)))
-        'db/*db*
-        'params)
+        'db/*db* 'params)
        (case (:type query)
          :insert-1 201 ;; created
          :delete-1 204 ;; no content
@@ -96,10 +106,13 @@
       'params
       (set
        (map
-        #(keyword (:name (:attrs %)))
+        #(keyword (column-name %))
         (case (:type query)
-          (:insert-1 :update-1)
-          (-> query :entity insertable-properties)
+          :insert-1
+          (-> query :entity required-properties)
+          :update-1 (concat
+                      (-> query :entity key-properties)
+                      (-> query :entity required-properties))
           (:select-1 :delete-1)
           (-> query :entity key-properties)
           ;; default
