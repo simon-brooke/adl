@@ -77,7 +77,7 @@
      'if
      (list
       'all-keys-present?
-      'params (set (map #(safe-name % :sql) (key-names e true))))
+      'params (set (map #(keyword (safe-name % :sql)) (key-names e true))))
      (list
       'support/do-or-log-error
       (list
@@ -288,13 +288,16 @@
      (vector 'request)
      (list 'let (vector
                  'params
-                 (list 'support/massage-params 'request))
+                 (list
+                   'merge
+                   (property-defaults e)
+                   (list 'support/massage-params 'request)))
            (list
             'l/render
             (list 'support/resolve-template (str (path-part f e a) ".html"))
             (list 'merge
                   {:title (capitalise (:name (:attrs f)))
-                   :params  (list 'merge (property-defaults e) 'params)}
+                   :params 'params}
                   (case (:tag f)
                     :form (make-form-get-handler-content f e a n)
                     :page (make-page-get-handler-content f e a n)
