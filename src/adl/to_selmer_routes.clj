@@ -77,7 +77,7 @@
      'if
      (list
       'all-keys-present?
-      'params (set (map #(keyword (safe-name % :sql)) (key-names e true))))
+      'params (set (map #(keyword (safe-name % :sql)) (key-names e))))
      (list
       'support/do-or-log-error
       (list
