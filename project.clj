@@ -1,4 +1,4 @@
-(defproject adl "1.4.5"
+(defproject adl "1.4.6-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
@@ -28,8 +28,8 @@
   ;; `lein release`, first merge `develop` into `master`, and then, in branch
   ;; `master`, run `lein release`
 
-  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
-                                    :sign-releases true}]]
+  :deploy-repositories [["releases" :clojars]
+                        ["snapshots" :clojars]]
 
   :release-tasks [["vcs" "assert-committed"]
                   ["clean"]
