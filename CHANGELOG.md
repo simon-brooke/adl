@@ -1,3 +1,7 @@
+# Release 1.4.5
+
+Generation of skeleton Clojure webapp is now largely complete; this release is not the final 'beta' release of this functionality, but is a dummy run towards that release.
+
 # Release 1.4.1
 
 Release 1.4.1 adds a 'magnitude' element to entities, in order to provide a pragma for when

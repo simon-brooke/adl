@@ -1,11 +1,11 @@
-(defproject adl "1.4.4"
+(defproject adl "1.4.5-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
   :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
             :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.4-SNAPSHOT"]
+  :dependencies [[adl-support "0.1.4"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
@@ -23,9 +23,6 @@
             [lein-release "1.0.5"]
             ;; [uncomplexor "0.1.0-SNAPSHOT"]
             ]
-
-;;   :lein-release {:scm :git
-;;                  :deploy-via :clojars} ;; :deploy-via :clojars fails - with an scp error.
 
   ;; `lein release` doesn't work with `git flow release`. To use
   ;; `lein release`, first merge `develop` into `master`, and then, in branch
