@@ -1090,16 +1090,6 @@
        (str "While generating " filepath)))))
 
 
-;; (def a (x/parse "../youyesyet/youyesyet.canonical.adl.xml"))
-;; (def e (child-with-tag a :entity #(= (-> % :attrs :name) "teams")))
-;; (def f (child-with-tag e :form))
-;; (write-template-file "froboz" (form-to-template f e a) a)
-;; (def t (form-to-template f e a))
-;; (map type t)
-;; t
-
-
-
 (defn to-selmer-templates
   "Generate all [Selmer](https://github.com/yogthos/Selmer) templates implied
   by this ADL `application` spec."
