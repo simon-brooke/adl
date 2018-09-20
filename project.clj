@@ -24,9 +24,8 @@
             ;; [uncomplexor "0.1.0-SNAPSHOT"]
             ]
 
-  ;; `lein release` doesn't work with `git flow release`. To use
-  ;; `lein release`, first merge `develop` into `master`, and then, in branch
-  ;; `master`, run `lein release`
+  ;; `lein release` doesn't play nice with `git flow release`. Run `lein release` in the
+  ;; `develop` branch, then reset the `master` branch to the release tag.
 
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
