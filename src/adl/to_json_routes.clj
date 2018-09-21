@@ -44,7 +44,9 @@
 ;;; So the solution may be to an intervening namespace 'cache', which has one
 ;;; memoised function for each hugsql query.
 
-(defn file-header [application]
+(defn file-header
+  "Generate an appropriate file header for JSON routes for this `application`."
+  [application]
   (list
     'ns
     (symbol (str (safe-name (:name (:attrs application))) ".routes.auto-json"))
@@ -66,7 +68,10 @@
       (vector (symbol (str (safe-name (:name (:attrs application))) ".db.core")) :as 'db))))
 
 
-(defn declarations [handlers-map]
+(defn declarations
+  "Generate a forward declaration of all JSON route handlers we're going to
+  generate for this `application`."
+  [handlers-map]
   (cons 'declare (sort (map #(symbol (name %)) (keys handlers-map)))))
 
 
@@ -244,8 +249,9 @@
             (str ";; don't know what to do with query `" :key "` of type `" (:type query) "`.")))))))
 
 
-(defn defroutes [handlers-map]
+(defn defroutes
   "Generate JSON routes for all queries implied by this ADL `application` spec."
+  [handlers-map]
   (cons
     'defroutes
     (cons
@@ -264,6 +270,7 @@
 
 
 (defn make-handlers-map
+  "Analyse this `application` and generate from it a map of the handlers to be output."
   [application]
   (reduce
     merge
@@ -282,6 +289,7 @@
 
 
 (defn to-json-routes
+  "Generate a `/routes/auto-json.clj` file for this `application`."
   [application]
   (let [handlers-map (make-handlers-map application)
         filepath (str *output-path* "src/clj/" (:name (:attrs application)) "/routes/auto_json.clj")]

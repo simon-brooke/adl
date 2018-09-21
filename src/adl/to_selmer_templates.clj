@@ -39,6 +39,8 @@
 
 
 (defn big-link
+  "Generate a primary navigation link with this `content` to this `url`.
+  TODO: should be renamed. `primary-link` would be better."
   [content url]
   {:tag :div
    :attrs {:class "big-link-container"}
@@ -53,6 +55,8 @@
 
 
 (defn back-link
+  "Generate a retrograde primary navigation link with this `content` to this
+  `url`, indicating a backward move through the appliication."
   [content url]
   {:tag :div
    :attrs {:class "back-link-container"}
@@ -144,6 +148,9 @@
 
 
 (defn compose-if-member-of-tag
+  "Generate an appropriate `ifmemberof` tag (see `adl-support.tags`) given this
+  `privilege` for the  ADL elements listed in `elts`, which may be fields,
+  properties, list, forms, pages or entities."
   [privilege & elts]
   (let
     [all-permissions (distinct (apply find-permissions elts))
@@ -308,6 +315,11 @@
 
 
 (defn select-widget
+  "Generate an HTML `SELECT` widget for this `property` of this `entity` within
+  this `application`, to be used in this `form`. TODO: Many selectable things
+  are potentially too numerous to be simply represented in a simple static
+  SELECT, it needs some asynchronous fetching. See
+  [issue 47](https://github.com/simon-brooke/youyesyet/issues/47)."
   [property form entity application]
   (let [farname (:entity (:attrs property))
         farside (first
@@ -332,6 +344,10 @@
 
 
 (defn compose-readable-or-not-authorised
+  "Compose content to emit if the user is not authorised to write, or
+  not authorised to read, property `p` in form, list or page `f` of
+  entity `e` within application `a`, while generating a widget with id
+  `w`."
   [p f e a w]
   (list
     (compose-if-member-of-tag :readable p e a)
@@ -354,6 +370,8 @@
 
 
 (defn compose-widget-para
+  "Compose a widget paragraph for property `p` in form, list or page `f` of
+  entity `e` within application `a`, with id `w` and this `content`."
   [p f e a w content]
   {:tag :p
    :attrs {:class "widget"}
@@ -568,6 +586,10 @@
 
 
 (defn compose-form-auxlist
+  "Compose an auxiliary list from this `auxlist` specification of dependent
+  records (i.e. the far side of a
+  one-to-many link) of the record of this `entity` within this `application`
+  being edited in this `form` "
   [auxlist form entity application]
   (let [property (child-with-tag
                    entity
@@ -640,6 +662,8 @@
 
 
 (defn compose-form-auxlists
+  "Generate all auxiliary lists required for this `form` of this `entity`
+  within this `application`."
   [form entity application]
   (remove
     nil?
@@ -649,6 +673,7 @@
 
 
 (defn compose-form-content
+  "Compose the content for this `form` of this `entity` within this `application`."
   [form entity application]
   {:content
    {:tag :div
@@ -692,6 +717,8 @@
 
 
 (defn compose-form-extra-head
+  "Compose any extra-head declarations (i.e. special Javascript tags) required
+  for this `form` of this `entity` within this `application`."
   [form entity application]
   {:extra-head
    (apply
@@ -722,6 +749,8 @@
 
 
 (defn compose-form-extra-tail
+  "Compose any extra-tail declarations (i.e. special Javascript tags) required
+  for this `form` of this `entity` within this `application`."
   [form entity application]
   {:extra-tail
    {:tag :script :attrs {:type "text/javascript"}
@@ -791,13 +820,17 @@
 (defn page-to-template
   "Generate a template as specified by this `page` element for this `entity`,
   taken from this `application`. If `page` is nil, generate a default page
-  template for the entity."
+  template for the entity.
+
+  TODO: not yet written."
   [page entity application]
   ;; TODO
   )
 
 
 (defn compose-list-search-widget
+  "Compose a list search widget for this `field` referencing a property within
+  this `entity`."
   [field entity]
   (let [property (first
                    (children
@@ -1057,6 +1090,8 @@
 
 
 (defn write-template-file
+  "Write a template file with this `filename` from this `template` in the
+  context of this `application`."
   [filename template application]
   (let [filepath (str
                   *output-path*

@@ -24,8 +24,8 @@
             ;; [uncomplexor "0.1.0-SNAPSHOT"]
             ]
 
-;;   :lein-release {:scm :git
-;;                  :deploy-via :clojars} ;; :deploy-via :clojars fails - with an scp error.
+  :codox {:metadata {:doc "FIXME: write docs"}
+          :output-path "docs"}
 
   ;; `lein release` doesn't work with `git flow release`. To use
   ;; `lein release`, first merge `develop` into `master`, and then, in branch

@@ -287,6 +287,7 @@
 
 
 (defn foreign-queries
+  "Generate any foreign entity queries for this `entity` of this `application`."
   [entity application]
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
@@ -351,8 +352,9 @@
         links))))
 
 
-(defn delete-query [entity]
+(defn delete-query
   "Generate an appropriate `delete` query for this `entity`"
+  [entity]
   (if
     (has-primary-key? entity)
     (let [entity-name (safe-name entity :sql)

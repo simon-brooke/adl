@@ -66,6 +66,7 @@
 
 
 (defn compose-fetch-record
+  "Compose Clojure code to retrieve a single record of entity `e`."
   [e]
   (let
     [entity-name (singularise (:name (:attrs e)))
@@ -90,6 +91,8 @@
 
 
 (defn compose-get-menu-options
+  "Compose Clojure code to fetch from the database menu options for this
+  `property` within this `application`."
   [property application]
   ;; TODO: doesn't handle the case of type="link"
   (case (-> property :attrs :type)
@@ -129,6 +132,8 @@
 
 
 (defn compose-fetch-auxlist-data
+  "Compose Clojure code to fetch data to populate this `auxlist` of a form
+  editing a record of this `entity` within this `application`."
   [auxlist entity application]
   (let [p-name (-> auxlist :attrs :property)
         property (child-with-tag entity
@@ -171,6 +176,9 @@
 
 
 (defn make-form-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the form
+  `f` of the entity `e` within application `a`. The argument `n`
+  is not used."
   [f e a n]
   (list
    'let
@@ -199,6 +207,8 @@
 
 
 (defn make-page-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the page
+  `f` of the entity `e` within application `a`. The argument `n` is ignored."
   [f e a n]
   (list
    'let
@@ -209,6 +219,8 @@
 
 
 (defn make-list-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the list
+  `f` of the entity `e` within application `a`. The argument `n` is ignored."
   [f e a n]
   (list
    'let
@@ -280,6 +292,8 @@
 
 
 (defn make-get-handler
+  "Generate a Clojure function to handle HTTP `GET` requests for form, list or
+  page `f` of entity `e` within application `a`."
   [f e a]
   (let [n (handler-name f e a :get)]
     (list
@@ -307,10 +321,11 @@
 (defn make-form-post-handler-content
   "Generate the body of the post handler for the form `f` of
   entity `e` in application `a`. The argument `n` is bound to the name
-  of the function, but is not currently used."
-  ;; Literally the only thing the post handler has to do is to
-  ;; generate the database store operation. Then it can hand off
-  ;; to the get handler.
+  of the function, but is not currently used.
+
+  Literally the only thing the post handler has to do is to
+  execute the database store operation. Then it can hand off
+  to the get handler."
   [f e a n]
   (let
     [create-name (query-name e :create)
@@ -381,6 +396,8 @@
 
 
 (defn make-post-handler
+  "Generate an HTTP `POST` handler for the page, form or list `f` of the
+  entity `e` of application `a`."
   [f e a]
   (let [n (handler-name f e a :post)]
     (list
@@ -427,6 +444,8 @@
 
 
 (defn make-defroutes
+  "Generate a `defroutes` declaration for all routes of all forms, pages and
+  lists within this `application`."
   [application]
   (let [routes (flatten
                 (map
@@ -475,6 +494,8 @@
 
 
 (defn make-handlers
+  "Generate all the Selmer route handlers for all the forms, lists and pages
+  of the entity `e` within this `application`."
   [e application]
   (doall
    (map
@@ -489,6 +510,7 @@
 
 
 (defn to-selmer-routes
+  "Generate a `/routes/auto.clj` file for this `application`."
   [application]
   (let [filepath (str
                   *output-path*

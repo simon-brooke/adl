@@ -41,6 +41,8 @@
 
 
 (defn emit-defined-field-type
+  "Generate appropriate field type and constraints for this `property`
+  given this `typedef`."
   [property application]
   (let [typedef (typedef property application)]
     ;; this is a hack based on the fact that emit-field-type doesn't check
@@ -90,6 +92,7 @@
 
 
 (defn emit-entity-field-type
+  "Emit an appropriate field type for this `property`, expected to reference an entity, in this `application`."
   [property application]
   (let [farside (child
                   application
@@ -109,6 +112,8 @@
 
 
 (defn emit-field-type
+  "Emit an appropriate field type for this `property`, expected to belong to
+  this `entity` within this `application`."
   [property entity application key?]
   (case (:type (:attrs property))
     "integer" (if
@@ -128,6 +133,8 @@
 
 
 (defn emit-link-field
+  "Emit an appropriate link field for this `property` of this `entity`
+  within this `application`."
   [property entity application]
   (emit-property
     {:tag :property
@@ -140,6 +147,10 @@
 
 
 (defn emit-permissions-grant
+  "Emit an appropriate grant of permissions on this `table-name` at this
+  `privilege` level given these `permissions`. `privilege` is expected
+  to be one of #{:SELECT :INSERT :UPDATE :DELETE}.
+  TODO: more thought needed here."
   [table-name privilege permissions]
   (let [selector
         (case privilege
@@ -172,6 +183,8 @@
 
 
 (defn field-name
+  "Return the appropriate field name for this `property`.
+  TODO: really belongs in `adl-support.utils`."
   [property]
   (safe-name
     (or
@@ -181,6 +194,7 @@
 
 
 (defn emit-property
+  "Emit a field declaration representing this `property` of this `entity` within this `application`."
   ([property entity application]
    (emit-property property entity application false))
   ([property entity application key?]
@@ -231,6 +245,9 @@
 
 
 (defn compose-convenience-view-select-list
+  "Compose the body of an SQL `SELECT` statement for a convenience view of this
+  `entity` within this `application`, recursively. `top-level?` should be set
+  only on first invocation."
   [entity application top-level?]
   (remove
     nil?
@@ -252,8 +269,10 @@
 
 
 (defn compose-convenience-where-clause
-  ;; TODO: does not correctly compose links at one stage down the tree.
-  ;; See lv_electors, lv_followuprequests for examples of the problem.
+  "Compose an SQL `WHERE` clause for a convenience view of this
+  `entity` within this `application`.
+  TODO: does not correctly compose links at one stage down the tree.
+  See `lv_electors`, `lv_followuprequests` for examples of the problem."
   [entity application top-level?]
   (remove
     nil?
@@ -355,6 +374,8 @@
 
 
 (defn emit-referential-integrity-link
+  "Emit a referential integrity link for this `property` of the entity
+  `nearside` within this `application`."
   [property nearside application]
   (let
     [farside (entity-for-property property application)]
@@ -382,6 +403,8 @@
 
 
 (defn emit-referential-integrity-links
+  "Emit all appropriate referential integrity links for this `entity`
+  within this `application`."
   ([entity application]
    (map
      #(emit-referential-integrity-link % entity application)
@@ -401,6 +424,8 @@
 
 
 (defn emit-table
+  "Emit a table declaration for this `entity` of this `application`,
+  documented with this `doc-comment` if specified."
   ([entity application doc-comment]
    (let [table-name (safe-name (:table (:attrs entity)) :sql)
          permissions (children-with-tag entity :permission)]
@@ -450,6 +475,8 @@
 
 
 (defn construct-link-property
+  "Create a dummy property for a link-table referencing this `entity`, in order
+  that the field generation functions already defined may be applied to it."
   [entity]
   {:tag :property
    :attrs {:name (safe-name (str (singularise (:name (:attrs entity))) "_id") :sql)
@@ -460,6 +487,11 @@
 
 
 (defn emit-link-table
+  "Emit a link table for the specified `property` of the entity `e1` within
+  this `application`, provided that such a table has not already been emitted
+  from the other end. The argument `emitted-link-tables` contains an atom
+  which references a set of the names of all those link tables which have
+  already been emitted, and this is modified in the execution of this function."
   [property e1 application emitted-link-tables]
   (let [e2 (child
              application
@@ -511,6 +543,8 @@
 
 
 (defn emit-link-tables
+  "Emit all required link tables for this `entity` within this `application`,
+  given these `emitted-link-tables` which have already been emitted."
   ([entity application emitted-link-tables]
    (map
      #(emit-link-table % entity application emitted-link-tables)
@@ -525,6 +559,7 @@
 
 
 (defn emit-group-declaration
+  "Emit a declaration for this authorisation `group` within this `application`."
   [group application]
   (list
     (emit-header
@@ -534,6 +569,8 @@
 
 
 (defn emit-file-header
+  "Generate an appropriate file header for the Postgres initialisation script
+  for this `application`."
   [application]
   (emit-header
     "--"
@@ -550,6 +587,8 @@
 
 
 (defn emit-application
+  "Emit all SQL declarations required to initialise a Postgres database for
+  this `application`."
   [application]
   (let [emitted-link-tables (atom #{})]
     (s/join
@@ -574,6 +613,7 @@
 
 
 (defn to-psql
+  "Generate a complete Postgres database initialisation script for this `application`."
   [application]
   (let [filepath (str
                    *output-path*

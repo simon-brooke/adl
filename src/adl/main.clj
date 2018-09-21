@@ -41,6 +41,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def cli-options
+  "Command-line interface options"
   [["-a" "--abstract-key-name-convention [string]" "the abstract key name convention to use for generated key fields (TODO: not yet implemented)"
     :default "id"]
    ["-h" "--help" "Show this message"
@@ -55,9 +56,10 @@
    ])
 
 
-(defn usage [parsed-options]
+(defn usage
   "Show a usage message. `parsed-options` should be options as
   parsed by [clojure.tools.cli](https://github.com/clojure/tools.cli)"
+  [parsed-options]
   (print-usage
     "adl"
     parsed-options
