@@ -5,7 +5,7 @@
   :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
             :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.4"]
+  :dependencies [[adl-support "0.1.5"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
@@ -20,12 +20,10 @@
 
   :plugins [[lein-codox "0.10.3"]
             [lein-kibit "0.1.6"]
-            [lein-release "1.0.5"]
-            ;; [uncomplexor "0.1.0-SNAPSHOT"]
-            ]
+            [lein-release "1.0.5"]]
 
   :codox {:metadata {:doc "FIXME: write docs"}
-          :output-path "docs"}
+          :output-path "doc"}
 
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]

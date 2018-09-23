@@ -369,7 +369,7 @@
          :type :delete-1
          :query
          (str "-- :name " query-name " " signature "\n"
-              "-- :doc updates an existing " pretty-name " record\n"
+              "-- :doc deletes an existing " pretty-name " record\n"
               "DELETE FROM " entity-name "\n"
               (where-clause entity))}))))
 
