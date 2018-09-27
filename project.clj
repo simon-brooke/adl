@@ -5,7 +5,7 @@
   :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
             :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.5"]
+  :dependencies [[adl-support "0.1.6-SNAPSHOT"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
@@ -37,9 +37,7 @@
                   ["codox"]
                   ["change" "version" "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]
-                  ;; ["vcs" "tag"] -- not working, problems with secret key
                   ["uberjar"]
                   ["install"]
-                  ;; ["deploy" "clojars"] -- also not working
                   ["change" "version" "leiningen.release/bump-version"]
                   ["vcs" "commit"]])

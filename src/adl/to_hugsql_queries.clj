@@ -50,7 +50,7 @@
        (str
         "WHERE "
         (s/join
-         "\n\tAND"
+         "\n\tAND "
          (map
           #(str entity-name "." (safe-name % :sql) " = :" %)
           property-names)))))))
@@ -66,7 +66,7 @@
   (let
     [entity-name (safe-name entity :sql)
      preferred (filter #(#{"user" "all"} (-> % :attrs :distinct))
-                         (children entity #(= (:tag %) :property)))]
+                         (descendants-with-tag entity :property))]
     (if
       (empty? preferred)
       ""
@@ -79,7 +79,10 @@
                (and expanded? (= "entity" (-> % :attrs :type)))
                (str (safe-name % :sql) expanded-token)
                (safe-name % :sql))
-            (flatten (cons preferred (key-properties entity))))))))))
+            (order-preserving-set
+              (concat
+                preferred
+                (key-properties entity))))))))))
 
 ;; (def a (x/parse "../youyesyet/youyesyet.adl.xml"))
 ;; (def e (child-with-tag a :entity #(= "dwellings" (-> % :attrs :name))))
@@ -99,7 +102,7 @@
         query-name (str "create-" pretty-name "!")
         signature (if (has-primary-key? entity)
                     ":? :1" ;; bizarrely, if you want to return the keys,
-                            ;; you have to use a query signature.
+                    ;; you have to use a query signature.
                     ":! :n")]
     (hash-map
       (keyword query-name)
@@ -122,7 +125,7 @@
                      ",\n\t"
                      (map
                        #(safe-name % :sql)
-                           (key-names entity))))))})))
+                       (key-names entity))))))})))
 
 
 (defn update-query

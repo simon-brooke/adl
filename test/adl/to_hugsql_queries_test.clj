@@ -18,6 +18,99 @@
      (= aa bb))
     (= a b)))
 
+(deftest order-by-tests
+  (let [application {:tag :application,
+             :attrs {:version "0.1.1", :name "test-app"},
+             :content
+             [{:tag :entity,
+               :attrs {:name "address"},
+               :content
+               [{:tag :key,
+                 :attrs nil,
+                 :content
+                 [{:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "system",
+                    :type "integer",
+                    :name "id"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  {:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "all",
+                    :generator "assigned"
+                    :type "string",
+                    :size "12"
+                    :name "postcode"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  ]}
+                {:tag :property,
+                 :attrs
+                 {:distinct "user", :size "128", :type "string", :name "street"},
+                 :content nil}
+                {:tag :property,
+                 :attrs {:size "64", :type "string", :name "town"},
+                 :content nil}
+                ]}]}
+        entity (child-with-tag application :entity)]
+      (testing "user distinct properties should provide the default ordering"
+      (let [expected
+            "ORDER BY address.street, address.postcode, address.id"
+            actual (order-by-clause entity)]
+        (is (string-equal-ignore-whitespace? actual expected))))))
+
+
+(deftest keys-name-extraction-tests
+    (let [application {:tag :application,
+             :attrs {:version "0.1.1", :name "test-app"},
+             :content
+             [{:tag :entity,
+               :attrs {:name "address"},
+               :content
+               [{:tag :key,
+                 :attrs nil,
+                 :content
+                 [{:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "system",
+                    :type "integer",
+                    :name "id"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  {:tag :property,
+                   :attrs
+                   {:immutable "true",
+                    :required "true",
+                    :distinct "all",
+                    :generator "assigned"
+                    :type "string",
+                    :size "12"
+                    :name "postcode"},
+                   :content
+                   [{:tag :generator, :attrs {:action "native"}, :content nil}]}
+                  ]}
+                {:tag :property,
+                 :attrs
+                 {:distinct "user", :size "128", :type "string", :name "street"},
+                 :content nil}
+                {:tag :property,
+                 :attrs {:size "64", :type "string", :name "town"},
+                 :content nil}
+                ]}]}
+        entity (child-with-tag application :entity)]
+    (testing "keys name extraction"
+      (let [expected #{"id" "postcode"}
+            actual (key-names entity)]
+        (is (= actual expected))))))
+
+
 (deftest entity-tests
   (let [application {:tag :application,
              :attrs {:version "0.1.1", :name "test-app"},
@@ -58,13 +151,6 @@
                  :content nil}
                 ]}]}
         entity (child-with-tag application :entity)]
-    (testing "user distinct properties should provide the default ordering"
-      (let [expected
-            "ORDER BY address.street,
-            address.postcode,
-            address.id"
-            actual (order-by-clause entity)]
-        (is (string-equal-ignore-whitespace? actual expected))))
     (testing "keys name extraction"
       (let [expected #{"id"}
             actual (key-names entity)]
@@ -152,10 +238,11 @@
             actual (:signature (first (vals (list-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation"
-      (let [expected "-- :name delete-addres! :! :n
-            -- :doc updates an existing addres record
+      (let [expected "-- :name delete-address! :! :n
+            -- :doc deletes an existing address record
             DELETE FROM address
-            WHERE address.id = :id\n\n"
+            WHERE address.id = :id
+            ANDaddress.postcode = :postcode"
             actual (:query (first (vals (delete-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query signature"
@@ -224,8 +311,9 @@
             VALUES (':street',
               ':town',
               ':postcode')
-            returning id,
-            postcode\n\n"
+            returning
+            postcode,
+            id"
             actual (:query (first (vals (insert-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "update query generation - compound key"
@@ -239,25 +327,27 @@
             actual (:query (first (vals (update-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "search query generation - user-distinct field in key"
-      (let [expected  "-- :name search-strings-addres :? :1
-            -- :doc selects existing address records having any string field matching `:pattern` by substring match
-            SELECT * FROM address
-            WHERE street LIKE '%:pattern%'
-              OR town LIKE '%:pattern%'
-              OR postcode LIKE '%:pattern%'
-            ORDER BY address.street,
-              address.postcode,
-              address.id
+      (let [expected  "-- :name search-strings-address :? :*
+            -- :doc selects existing address records having any string field matching the parameter of the same name by substring match
+            SELECT DISTINCT * FROM lv_address\nWHERE true
+            --~ (if (:street params) (str \"AND street LIKE '%\" (:street params) \"%' \"))
+            --~ (if (:town params) (str \"AND town LIKE '%\" (:town params) \"%' \"))
+            --~ (if (:id params) (str \"AND id = :id\"))
+            --~ (if (:postcode params) (str \"AND postcode LIKE '%\" (:postcode params) \"%' \"))
+            ORDER BY lv_address.street,
+            lv_address.postcode,
+            lv_address.id
             --~ (if (:offset params) \"OFFSET :offset \")
-            --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")\n\n"
+            --~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")"
             actual (:query (first (vals (search-query entity application))))]
         (is (string-equal-ignore-whitespace? actual expected))))
     (testing "delete query generation - compound key"
-      (let [expected "-- :name delete-addres! :! :n
-            -- :doc updates an existing addres record
-            DELETE FROM address
-            WHERE address.id = :id
-              AND address.postcode = ':postcode'\n\n"
+      (let [expected "-- :name delete-address! :! :n
+            -- :doc deletes an existing address record
+            DELETE FROM address\nWHERE address.id = :id
+            AND address.postcode = :postcode"
             actual (:query (first (vals (delete-query entity))))]
         (is (string-equal-ignore-whitespace? actual expected))))))
 
+;; "-- :name delete-address! :! :n\n-- :doc deletes an existing address record\nDELETE FROM address\nWHERE address.id = :id\n\tAND address.postcode = :postcode"
+;; "-- :name delete-address! :! :n\n-- :doc deletes an existing address record\nDELETE FROM address\nWHERE address.id = :id\n AND address.postcode = :postcode\n\n"))
