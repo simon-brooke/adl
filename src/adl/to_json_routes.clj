@@ -3,7 +3,7 @@
   adl.to-json-routes
   (:require [adl-support.core :refer :all]
             [adl-support.utils :refer :all]
-            [adl.to-hugsql-queries :refer [queries]]
+            [adl.to-hugsql-queries :refer [generate-documentation queries]]
             [clj-time.core :as t]
             [clj-time.format :as f]
             [clojure.java.io :refer [file make-parents writer]]
@@ -65,6 +65,7 @@
       '[noir.response :as nresponse]
       '[noir.util.route :as route]
       '[ring.util.http-response :as response]
+      (vector (symbol (str (safe-name (:name (:attrs application))) ".cache")) :as 'cache)
       (vector (symbol (str (safe-name (:name (:attrs application))) ".db.core")) :as 'db))))
 
 
@@ -79,79 +80,82 @@
   "Generate and return the function body for the handler for this `query`."
   [query]
   (list
-   ['request]
-   (list
-    'let
-    ['params (list
-               'merge
-               (apply hash-map
-                     (interleave
-                       (map
-                         #(keyword (column-name %))
-                         (descendants-with-tag
-                           (:entity query)
-                           :property
-                           #(not (= (-> % :attrs :required) "true"))))
-                       (repeat nil)))
-                   '(massage-params request))]
-    (list
-     'valid-user-or-forbid
-     (list
-      'with-params-or-error
+    ['request]
+    (let
+      [v (volatility (:entity query))
+       function (symbol (str
+                          (if
+                            (and
+                              (number? v)
+                              (> v 0)
+                              (#{:select-1 :select-many :text-search} (:type query)))
+                            "cache"
+                            "db")
+                          "/"
+                          (:name query)))]
+
       (list
-       'do-or-server-fail
-       (list
-        (symbol (str "db/" (:name query)))
-        'db/*db* 'params)
-       (case (:type query)
-         :insert-1 201 ;; created
-         :delete-1 204 ;; no content
-         ;; default
-         200)) ;; OK
-      'params
-      (set
-       (map
-        #(keyword (column-name %))
-        (case (:type query)
-          :insert-1
-          (-> query :entity required-properties)
-          :update-1 (concat
-                      (-> query :entity key-properties)
-                      (-> query :entity required-properties))
-          (:select-1 :delete-1)
-          (-> query :entity key-properties)
-          ;; default
-          nil))))
-     'request))))
+        'let
+        ['params (list
+                   'merge
+                   (apply hash-map
+                          (interleave
+                            (map
+                              #(keyword (column-name %))
+                              (descendants-with-tag
+                                (:entity query)
+                                :property
+                                #(not (= (-> % :attrs :required) "true"))))
+                            (repeat nil)))
+                   '(massage-params request))]
+        (list
+          'valid-user-or-forbid
+          (list
+            'with-params-or-error
+            (list
+              'do-or-server-fail
+              (list
+                function
+                'db/*db* 'params)
+              (case (:type query)
+                :insert-1 201 ;; created
+                :delete-1 204 ;; no content
+                ;; default
+                200)) ;; OK
+            'params
+            (set
+              (map
+                #(keyword (column-name %))
+                (case (:type query)
+                  :insert-1
+                  (-> query :entity required-properties)
+                  :update-1 (concat
+                              (-> query :entity key-properties)
+                              (-> query :entity required-properties))
+                  (:select-1 :delete-1)
+                  (-> query :entity key-properties)
+                  ;; default
+                  nil))))
+          'request)))))
 
 
 (defn generate-handler-src
   "Generate and return the handler for this `query`."
-  [handler-name query-map method doc]
-  (hash-map
-    :method method
-    :src (remove
-           nil?
-           (if
-             (or
-               (zero? (volatility (:entity query-map)))
-               (#{:delete-1 :insert-1 :update-1} (:type query-map)))
+  [handler-name query-map method]
+  (let [doc (str
+              "Auto-generated function to "
+              (generate-documentation query-map))
+        v (volatility (:entity query-map))]
+    (hash-map
+      :method method
+      :src (remove
+             nil?
              (concat
                (list
                  'defn
                  handler-name
-                 (str "Auto-generated method to " doc))
-               (generate-handler-body query-map))
-             (concat
-               (list
-                 'def
-                 handler-name
-                 (list
-                   'memo/ttl
-                   (cons 'fn (generate-handler-body query-map))
-                   {}
-                   :ttl/threshold
-                   (* (volatility (:entity query-map)) 1000))))))))
+                 doc
+                 (generate-handler-body query-map)))))))
 
 
 (defn handler
@@ -168,78 +172,14 @@
          :route (str "/json/" handler-name)}
         (case
           (:type query)
-          :delete-1
+          (:delete-1 :insert-1 :update-1)
           (generate-handler-src
-            handler-name query :post
-            (str "delete one record from the `"
-                 (-> query :entity :attrs :name)
-                 "` table. Expects the following key(s) to be present in `params`: `"
-                 (-> query :entity key-names)
-                 "`."))
-          :insert-1
+            handler-name query :post)
+          (:select-1 :select-many :text-search)
           (generate-handler-src
-            handler-name query :post
-            (str "insert one record to the `"
-                 (-> query :entity :attrs :name)
-                 "` table. Expects the following key(s) to be present in `params`: `"
-                 (pr-str
-                   (map
-                     #(keyword (:name (:attrs %)))
-                     (-> query :entity insertable-properties )))
-                 "`. Returns a map containing the keys `"
-                 (-> query :entity key-names)
-                 "` identifying the record created."))
-          :update-1
-          (generate-handler-src
-            handler-name query :post
-            (str "update one record in the `"
-                 (-> query :entity :attrs :name)
-                 "` table. Expects the following key(s) to be present in `params`: `"
-                 (pr-str
-                   (distinct
-                     (sort
-                       (map
-                         #(keyword (:name (:attrs %)))
-                         (flatten
-                           (cons
-                             (-> query :entity key-properties)
-                             (-> query :entity insertable-properties)))))))
-                 "`."))
-          :select-1
-          (generate-handler-src
-            handler-name query :get
-            (str "select one record from the `"
-                 (-> query :entity :attrs :name)
-                 "` table. Expects the following key(s) to be present in `params`: `"
-                 (-> query :entity key-names)
-                 "`. Returns a map containing the following keys: `"
-                 (map #(keyword (:name (:attrs %))) (-> query :entity all-properties))
-                 "`."))
-          :select-many
-          (generate-handler-src
-            handler-name query :get
-            (str "select all records from the `"
-                 (-> query :entity :attrs :name)
-                 "` table. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
-                 (pr-str
-                   (map
-                     #(keyword (:name (:attrs %)))
-                     (-> query :entity all-properties)))
-                 "`."))
-          :text-search
-          (generate-handler-src
-            handler-name query :get
-            (str "select all records from the `"
-                 (-> query :entity :attrs :name)
-                 ;; TODO: this doc-string is out of date
-                 "` table with any text field matching the value of the key `:pattern` which should be in the request. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
-                 (pr-str
-                   (map
-                     #(keyword (:name (:attrs %)))
-                     (-> query :entity all-properties)))
-                 "`."))
+            handler-name query :get)
           (:select-many-to-many
-           :select-one-to-many)
+            :select-one-to-many)
           (hash-map :method :get
                     :src (list 'defn handler-name [{:keys ['params]}]
                                (list 'do (list (symbol (str "db/" (:name query))) 'params))))
@@ -247,26 +187,6 @@
           (hash-map
             :src
             (str ";; don't know what to do with query `" :key "` of type `" (:type query) "`.")))))))
-
-
-(defn defroutes
-  "Generate JSON routes for all queries implied by this ADL `application` spec."
-  [handlers-map]
-  (cons
-    'defroutes
-    (cons
-      'auto-rest-routes
-      (map
-        #(let [handler (handlers-map %)]
-           (list
-             (symbol (s/upper-case (name (:method handler))))
-             (str "/json/auto/" (safe-name (:name handler)))
-             'request
-              (list
-                'route/restricted
-               (list (:name handler) 'request))))
-        (sort
-          (keys handlers-map))))))
 
 
 (defn make-handlers-map
@@ -288,6 +208,26 @@
       (children-with-tag application :entity))))
 
 
+(defn defroutes
+  "Generate JSON routes for all queries implied by this ADL `application` spec."
+  [handlers-map]
+  (cons
+    'defroutes
+    (cons
+      'auto-rest-routes
+      (map
+        #(let [handler (handlers-map %)]
+           (list
+             (symbol (s/upper-case (name (:method handler))))
+             (str "/json/auto/" (safe-name (:name handler)))
+             'request
+             (list
+               'route/restricted
+               (list (:name handler) 'request))))
+        (sort
+          (keys handlers-map))))))
+
+
 (defn to-json-routes
   "Generate a `/routes/auto-json.clj` file for this `application`."
   [application]
@@ -306,8 +246,8 @@
                 (println)
                 h)
               (sort (keys handlers-map))))
-          (pprint (defroutes handlers-map))))
-      (if (pos? *verbosity*)
-        (*warn* (str "\tGenerated " filepath))))))
+          (pprint (defroutes handlers-map)))))
+    (if (pos? *verbosity*)
+      (*warn* (str "\tGenerated " filepath)))))
 
 

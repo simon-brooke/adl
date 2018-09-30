@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language - command line invocation."
       :author "Simon Brooke"}
   adl.main
-  (:require [adl.to-hugsql-queries :as h]
+  (:require [adl.to-cache :as c]
+            [adl.to-hugsql-queries :as h]
             [adl.to-json-routes :as j]
             [adl.to-psql :as p]
             [adl.to-selmer-routes :as s]
@@ -52,8 +53,7 @@
     :default "generated"]
    ["-v" "--verbosity [LEVEL]" nil "Verbosity level - integer value required"
     :parse-fn #(Integer/parseInt %)
-    :default 0]
-   ])
+    :default 0]])
 
 
 (defn usage
@@ -105,6 +105,7 @@
         #(if
            (.exists (java.io.File. %))
            (let [application (x/parse (canonicalise %))]
+             (c/to-cache application)
              (h/to-hugsql-queries application)
              (j/to-json-routes application)
              (p/to-psql application)

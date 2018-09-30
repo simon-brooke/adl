@@ -48,12 +48,12 @@
       property-names (map #(:name (:attrs %)) properties)]
      (if-not (empty? property-names)
        (str
-        "WHERE "
-        (s/join
-         "\n\tAND "
-         (map
-          #(str entity-name "." (safe-name % :sql) " = :" %)
-          property-names)))))))
+         "WHERE "
+         (s/join
+           "\n\tAND "
+           (map
+             #(str entity-name "." (safe-name % :sql) " = :" %)
+             property-names)))))))
 
 
 (defn order-by-clause
@@ -63,26 +63,26 @@
   ([entity prefix]
    (order-by-clause entity prefix false))
   ([entity prefix expanded?]
-  (let
-    [entity-name (safe-name entity :sql)
-     preferred (filter #(#{"user" "all"} (-> % :attrs :distinct))
-                         (descendants-with-tag entity :property))]
-    (if
-      (empty? preferred)
-      ""
-      (str
-        "ORDER BY " prefix entity-name "."
-        (s/join
-          (str ",\n\t" prefix entity-name ".")
-          (map
-            #(if
-               (and expanded? (= "entity" (-> % :attrs :type)))
-               (str (safe-name % :sql) expanded-token)
-               (safe-name % :sql))
-            (order-preserving-set
-              (concat
-                preferred
-                (key-properties entity))))))))))
+   (let
+     [entity-name (safe-name entity :sql)
+      preferred (filter #(#{"user" "all"} (-> % :attrs :distinct))
+                        (descendants-with-tag entity :property))]
+     (if
+       (empty? preferred)
+       ""
+       (str
+         "ORDER BY " prefix entity-name "."
+         (s/join
+           (str ",\n\t" prefix entity-name ".")
+           (map
+             #(if
+                (and expanded? (= "entity" (-> % :attrs :type)))
+                (str (safe-name % :sql) expanded-token)
+                (safe-name % :sql))
+             (order-preserving-set
+               (concat
+                 preferred
+                 (key-properties entity))))))))))
 
 ;; (def a (x/parse "../youyesyet/youyesyet.adl.xml"))
 ;; (def e (child-with-tag a :entity #(= "dwellings" (-> % :attrs :name))))
@@ -131,31 +131,31 @@
 (defn update-query
   "Generate an appropriate `update` query for this `entity`"
   [entity]
-    (let [entity-name (safe-name entity :sql)
-          pretty-name (singularise entity-name)
-          property-names (map
-                          #(-> % :attrs :name)
-                          (insertable-properties entity))
-          query-name (str "update-" pretty-name "!")
-          signature ":! :n"]
-      (hash-map
-        (keyword query-name)
-        {:name query-name
-         :signature signature
-         :entity entity
-         :type :update-1
-         :query
-         (str "-- :name " query-name " " signature "\n"
-              "-- :doc updates an existing " pretty-name " record\n"
-              "UPDATE " entity-name "\n"
-              "SET "
-              (s/join
-               ",\n\t"
-               (map
+  (let [entity-name (safe-name entity :sql)
+        pretty-name (singularise entity-name)
+        property-names (map
+                         #(-> % :attrs :name)
+                         (insertable-properties entity))
+        query-name (str "update-" pretty-name "!")
+        signature ":! :n"]
+    (hash-map
+      (keyword query-name)
+      {:name query-name
+       :signature signature
+       :entity entity
+       :type :update-1
+       :query
+       (str "-- :name " query-name " " signature "\n"
+            "-- :doc updates an existing " pretty-name " record\n"
+            "UPDATE " entity-name "\n"
+            "SET "
+            (s/join
+              ",\n\t"
+              (map
                 #(str (safe-name % :sql) " = " (keyword %))
                 property-names))
-              "\n"
-              (where-clause entity))})))
+            "\n"
+            (where-clause entity))})))
 
 
 (defn search-query [entity application]
@@ -193,29 +193,29 @@
                      #(let
                         [sn (safe-name % :sql)]
                         (str
-                        "(if (:" (-> % :attrs :name) " params) (str \"AND "
-                        (case (-> % :attrs :type)
-                          ("string" "text")
-                          (str
-                            sn
-                            " LIKE '%\" (:" (-> % :attrs :name) " params) \"%' ")
-                          ("date" "time" "timestamp")
-                          (str
-                            sn
-                            " = ':" (-> % :attrs :name) "'")
-                          "entity"
-                          (str
-                           sn
-                            "_expanded LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
-                          (str
-                            sn
-                            " = :"
-                            (-> % :attrs :name)))
-                        "\"))"))
+                          "(if (:" (-> % :attrs :name) " params) (str \"AND "
+                          (case (-> % :attrs :type)
+                            ("string" "text")
+                            (str
+                              sn
+                              " LIKE '%\" (:" (-> % :attrs :name) " params) \"%' ")
+                            ("date" "time" "timestamp")
+                            (str
+                              sn
+                              " = ':" (-> % :attrs :name) "'")
+                            "entity"
+                            (str
+                              sn
+                              "_expanded LIKE '%\" (:" (-> % :attrs :name) " params) \"%'")
+                            (str
+                              sn
+                              " = :"
+                              (-> % :attrs :name)))
+                          "\"))"))
                      properties))))
-               (order-by-clause entity "lv_" true)
-               "--~ (if (:offset params) \"OFFSET :offset \")"
-               "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
+             (order-by-clause entity "lv_" true)
+             "--~ (if (:offset params) \"OFFSET :offset \")"
+             "--~ (if (:limit params) \"LIMIT :limit\" \"LIMIT 100\")")))})))
 
 ;; (search-query e a)
 
@@ -345,11 +345,11 @@
                                (str "\tAND " link-table-name "." (singularise entity-safe) "_id = :id")
                                (order-by-clause far-entity "lv_" false)))
                     "list" (list
-                               (str "-- :name " query-name " " signature)
-                               (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
-                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far)
-                               (str "WHERE lv_" safe-far "." (safe-name (first (key-names far-entity)) :sql) " = :id")
-                               (order-by-clause far-entity "lv_" false))
+                             (str "-- :name " query-name " " signature)
+                             (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
+                             (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far)
+                             (str "WHERE lv_" safe-far "." (safe-name (first (key-names far-entity)) :sql) " = :id")
+                             (order-by-clause far-entity "lv_" false))
                     (list (str "ERROR: unexpected type " link-type " of property " %)))))
               }))
         links))))
@@ -403,23 +403,94 @@
   (let [filepath (str *output-path* "resources/sql/queries.auto.sql")]
     (make-parents filepath)
     (do-or-warn
-     (do
-       (spit
-        filepath
-        (s/join
-         "\n\n"
-         (cons
-          (emit-header
-           "--"
-           "File queries.sql"
-           (str "autogenerated by adl.to-hugsql-queries at " (t/now))
-           "See [Application Description Language](https://github.com/simon-brooke/adl).")
-          (map
-           :query
-           (sort
-            #(compare (:name %1) (:name %2))
-            (vals
-             (queries application)))))))
-       (if (pos? *verbosity*)
-         (*warn* (str "\tGenerated " filepath)))))))
+      (do
+        (spit
+          filepath
+          (s/join
+            "\n\n"
+            (cons
+              (emit-header
+                "--"
+                "File queries.sql"
+                (str "autogenerated by adl.to-hugsql-queries at " (t/now))
+                "See [Application Description Language](https://github.com/simon-brooke/adl).")
+              (map
+                :query
+                (sort
+                  #(compare (:name %1) (:name %2))
+                  (vals
+                    (queries application)))))))
+        (if (pos? *verbosity*)
+          (*warn* (str "\tGenerated " filepath)))))))
 
+
+(defn generate-documentation
+  "Generate, as a string, appropriate documentation for a function wrapping this `query` map."
+  [query]
+  (let [v (volatility (:entity query))]
+    (s/join
+      " "
+      (list
+        (case
+          (:type query)
+          :delete-1
+          (str "delete one record from the `"
+               (-> query :entity :attrs :name)
+               "` table. Expects the following key(s) to be present in `params`: `"
+               (-> query :entity key-names)
+               "`.")
+          :insert-1
+          (str "insert one record to the `"
+               (-> query :entity :attrs :name)
+               "` table. Expects the following key(s) to be present in `params`: `"
+               (pr-str
+                 (map
+                   #(keyword (:name (:attrs %)))
+                   (-> query :entity insertable-properties )))
+               "`. Returns a map containing the keys `"
+               (-> query :entity key-names)
+               "` identifying the record created.")
+          :select-1
+          (str "select one record from the `"
+               (-> query :entity :attrs :name)
+               "` table. Expects the following key(s) to be present in `params`: `"
+               (-> query :entity key-names)
+               "`. Returns a map containing the following keys: `"
+               (map #(keyword (:name (:attrs %))) (-> query :entity all-properties))
+               "`.")
+          :select-many
+          (str "select all records from the `"
+               (-> query :entity :attrs :name)
+               "` table. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
+               (pr-str
+                 (map
+                   #(keyword (:name (:attrs %)))
+                   (-> query :entity all-properties)))
+               "`.")
+          :text-search
+          (str "select all records from the `"
+               (-> query :entity :attrs :name)
+               ;; TODO: this doc-string is out of date
+               "` table with any text field matching the value of the key `:pattern` which should be in the request. If the keys `(:limit :offset)` are present in the request then they will be used to page through the data. Returns a sequence of maps each containing the following keys: `"
+               (pr-str
+                 (map
+                   #(keyword (:name (:attrs %)))
+                   (-> query :entity all-properties)))
+               "`.")
+          :update-1
+          (str "update one record in the `"
+               (-> query :entity :attrs :name)
+               "` table. Expects the following key(s) to be present in `params`: `"
+               (pr-str
+                 (distinct
+                   (sort
+                     (map
+                       #(keyword (:name (:attrs %)))
+                       (flatten
+                         (cons
+                           (-> query :entity key-properties)
+                           (-> query :entity insertable-properties)))))))
+               "`."))
+        (if-not
+          (zero? v)
+          (str "Results will be held in cache for " v " seconds."))))))
