@@ -96,33 +96,34 @@
   [property application]
   ;; TODO: doesn't handle the case of type="link"
   (case (-> property :attrs :type)
-    "entity" (if-let [e (child-with-tag
-                        application
-                        :entity
-                        #(= (-> % :attrs :name)
-                            (-> property :attrs :entity)))]
-              (hash-map
-               (keyword (-> property :attrs :name))
-               (list
-                'get-menu-options
-                (singularise (-> e :attrs :name))
-                (query-name e :search-strings)
-                (query-name e :search-strings)
-                (keyword (-> property :attrs :farkey))
-                (list (keyword (-> property :attrs :name)) 'params)))
-              {})
-    "link" (list
-           'do
-           (list
-            'comment
-            "Can't yet handle link properties")
-           {})
-    "list" (list
-           'do
-           (list
-            'comment
-            "Can't yet handle link properties")
-           {})
+    ("entity" "link" "list")
+    (if-let [e (child-with-tag
+                 application
+                 :entity
+                 #(= (-> % :attrs :name)
+                     (-> property :attrs :entity)))]
+      (hash-map
+        (keyword (-> property :attrs :name))
+        (list
+          'get-menu-options
+          (singularise (-> e :attrs :name))
+          (query-name e :search-strings)
+          (query-name e :search-strings)
+          (keyword (-> property :attrs :farkey))
+          (list (keyword (-> property :attrs :name)) 'params)))
+      {})
+;;     "link" (list
+;;            'do
+;;            (list
+;;             'comment
+;;             "Can't yet handle link properties")
+;;            {})
+;;     "list" (list
+;;            'do
+;;            (list
+;;             'comment
+;;             "Can't yet handle link properties")
+;;            {})
     (list
      'do
      (list
@@ -181,14 +182,23 @@
   is not used."
   [f e a n]
   (list
-   'let
-   (vector
-    'record (compose-fetch-record e))
-   (list
-    'reduce
-    'merge
-    {:error (list :warnings 'record)
-     :record (list 'dissoc 'record :warnings)}
+    'let
+    (vector
+      'record (compose-fetch-record e))
+    (list
+      'reduce
+      'merge
+      {:title (list
+                'form-title
+                'record
+                (capitalise (:name (:attrs f)))
+                (apply
+                  vector
+                  (map
+                    #(keyword (safe-name %))
+                    (user-distinct-properties e))))
+       :error (list :warnings 'record)
+       :record (list 'dissoc 'record :warnings)}
     (cons
      'list
      (concat
@@ -297,25 +307,28 @@
   [f e a]
   (let [n (handler-name f e a :get)]
     (list
-     'defn
-     (symbol n)
-     (vector 'request)
-     (list 'let (vector
-                 'params
-                 (list
-                   'merge
-                   (property-defaults e)
-                   (list 'support/massage-params 'request)))
-           (list
-            'l/render
-            (list 'support/resolve-template (str (path-part f e a) ".html"))
-            (list 'merge
-                  {:title (capitalise (:name (:attrs f)))
-                   :params 'params}
-                  (case (:tag f)
-                    :form (make-form-get-handler-content f e a n)
-                    :page (make-page-get-handler-content f e a n)
-                    :list (make-list-get-handler-content f e a n))))))))
+      'defn
+      (symbol n)
+      (vector 'request)
+      (list 'let (vector
+                   'params
+                   (list 'support/massage-params 'request))
+            (list
+              'l/render
+              (list 'support/resolve-template (str (path-part f e a) ".html"))
+              (list 'merge
+                    {:title (case (:tag f)
+                              :list
+                              (str "List " (pretty-name e))
+                              :form
+                              (str "Add a " (singularise (pretty-name e)))
+                              :page
+                              (singularise (pretty-name e)))
+                     :params 'params}
+                    (case (:tag f)
+                      :form (make-form-get-handler-content f e a n)
+                      :page (make-page-get-handler-content f e a n)
+                      :list (make-list-get-handler-content f e a n))))))))
 
 
 (defn make-form-post-handler-content
@@ -330,6 +343,8 @@
   (let
     [create-name (query-name e :create)
      update-name (query-name e :update)]
+    ;; NOTE! Default values should be specified on database fields. They
+    ;; should NOT be inserted by application layer code.
     (list
       'let
       (vector
@@ -387,7 +402,8 @@
                                 (list 'merge 'params
                             (list :body 'result))
                                 :message
-                                (list 'str "Record created")(list :body 'result))
+                                (list 'str "Record created")
+                                (list :body 'result))
                           (list
                             'catch 'Exception 'x
                             {:message "Record created"
