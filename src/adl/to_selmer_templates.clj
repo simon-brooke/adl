@@ -264,12 +264,7 @@
   (let
     [type (:type (:attrs property))
      farname (:entity (:attrs property))
-     farside (first
-               (children
-                 application
-                 #(and
-                    (= (:tag %) :entity)
-                    (= (:name (:attrs %)) farname))))
+     farside (entity-for-property property application)
      fs-distinct (user-distinct-properties farside)
      farkey (or
               (:farkey (:attrs property))
@@ -322,10 +317,7 @@
   [issue 47](https://github.com/simon-brooke/youyesyet/issues/47)."
   [property form entity application]
   (let [farname (:entity (:attrs property))
-        farside (first
-                 (children
-                  application
-                  #(= (:name (:attrs %)) farname)))
+        farside (entity-for-property property application)
         magnitude (try
                     (read-string (:magnitude (:attrs farside)))
                     (catch Exception _ 7))
@@ -597,12 +589,7 @@
                    #(=
                       (-> % :attrs :name)
                       (-> auxlist :attrs :property)))
-        farside (child-with-tag
-                  application
-                  :entity
-                  #(=
-                     (-> % :attrs :name)
-                     (-> property :attrs :entity)))]
+        farside (entity-for-property property application)]
     (if
       (and property farside)
       {:tag :div
@@ -771,10 +758,7 @@
                           (-> field :attrs :property)
                           (-> % :attrs :name)))
               farname (:entity (:attrs property))
-              farside (first
-                       (children
-                        application
-                        #(= (:name (:attrs %)) farname)))
+              farside (entity-for-property property application)
               magnitude (try
                           (read-string
                            (:magnitude

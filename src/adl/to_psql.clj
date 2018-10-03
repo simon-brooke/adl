@@ -94,11 +94,7 @@
 (defn emit-entity-field-type
   "Emit an appropriate field type for this `property`, expected to reference an entity, in this `application`."
   [property application]
-  (let [farside (child
-                  application
-                  #(and
-                     (entity? %)
-                     (= (:name (:attrs %)) (:entity (:attrs property)))))
+  (let [farside (entity-for-property property application)
         key-properties (children-with-tag
                          (first (children-with-tag farside :key))
                          :property)]
@@ -229,11 +225,7 @@
 
 (defn compose-convenience-entity-field
   [field entity application]
-  (let [farside (child
-                  application
-                  #(and
-                     (entity? %)
-                     (= (:name (:attrs %)) (:entity (:attrs field)))))]
+  (let [farside (entity-for-property (property-for-field field entity) application)]
     (flatten
       (map
         (fn [f]
@@ -355,11 +347,7 @@
                   (map
                     (fn [f]
                       (let
-                        [farside (child
-                                   application
-                                   #(and
-                                      (entity? %)
-                                      (= (:name (:attrs %)) (:entity (:attrs f)))))]
+                        [farside (entity-for-property f application)]
                         (str
                           (safe-name (:table (:attrs entity)) :sql)
                           "."

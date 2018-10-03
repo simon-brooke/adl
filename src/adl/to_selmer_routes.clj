@@ -110,7 +110,7 @@
           (query-name e :search-strings)
           (query-name e :search-strings)
           (keyword (-> property :attrs :farkey))
-          (list (keyword (-> property :attrs :name)) 'params)))
+          (list (keyword (-> property :attrs :name)) 'record)))
       {})
 ;;     "link" (list
 ;;            'do
@@ -141,9 +141,7 @@
                                  :property
                                  #(= (-> % :attrs :name) p-name))
         f-name (-> property :attrs :entity)
-        farside (child-with-tag application
-                                :entity
-                                #(= (-> % :attrs :name) f-name))]
+        farside (entity-for-property property application)]
     (if (and (entity? entity) (entity? farside))
       (list 'if (list 'all-keys-present? 'params  (key-names entity true))
             (hash-map
