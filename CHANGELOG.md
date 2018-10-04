@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log is intended to follow the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## Release 1.4.6, 2018-09-22
+
+Beta release; improved documentation.
+
 ## Release 1.4.5, 2018-09-20
 
 Generation of skeleton Clojure webapp is now largely complete; this release is not the final 'beta' release of this functionality, but is a dummy run towards that release.

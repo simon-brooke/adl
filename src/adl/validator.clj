@@ -1,4 +1,5 @@
-(ns ^{:doc "Application Description Language: validator for ADL structure."
+(ns ^{:doc "Application Description Language: validator for ADL structure.
+      TODO: this is at present largely a failed experiment."
       :author "Simon Brooke"}
   adl.validator
   (:require [adl-support.utils :refer :all]
@@ -36,6 +37,7 @@
 
 
 (defn try-validate
+  "Pass this `validation` and the object `o` to bouncer"
   [o validation]
   (if
     (symbol? validation)
@@ -54,10 +56,10 @@
     [(str "Error: not a symbol" validation) o]))
 
 (defmacro disjunct-valid?
-  ;; Yes, this is a horrible hack. I should be returning the error structure
-  ;; not printing it. But I can't see how to make that work with `bouncer`.
-  ;; OK, so: most of the validators will (usually) fail, and that's OK. How
-  ;; do we identify the one which ought not to have failed?
+  "Yes, this is a horrible hack. I should be returning the error structure
+   not printing it. But I can't see how to make that work with `bouncer`.
+   OK, so: most of the validators will (usually) fail, and that's OK. How
+   do we identify the one which ought not to have failed?"
   [o & validations]
   `(println
    (str
@@ -655,7 +657,9 @@
                          entity-validations)]]})
 
 
-(defn valid-adl? [src]
+(defn valid-adl?
+  "Return `true` if `src` is syntactically valid ADL."
+  [src]
   (b/valid? src application-validations))
 
 (defn validate-adl [src]

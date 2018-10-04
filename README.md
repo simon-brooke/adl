@@ -4,9 +4,23 @@ A language for describing applications, from which code can be automatically gen
 
 [![Clojars Project](https://img.shields.io/clojars/v/adl.svg)](https://clojars.org/adl)
 
+## Contents
+
+1. [Usage](#user-content-usage)
+2. [History](#user-content-history)
+3. [Why this is a good idea](#user-content-why-this-is-a-good-idea)
+4. [What exists](#user-content-what-exists)
+5. [Future direction](#user-content-future-direction)
+6. [Contributing](#user-content-contributing)
+
+
 ## Usage
 
-A document describing the proposed application should be written in XML using the DTD `resources/schemas/adl-1.4.1.dtd`. It may then be transformed into a C# or Java application using the XSL transforms, see **History** below, but this code is very out of date and the resulting application is unlikely to be very usable. Alternatively, it can be transformed into a Clojure [Luminus](http://www.luminusweb.net/) application using the Clojure transformation, as follows:
+A document describing the proposed application should be written in XML using the DTD `resources/schemas/adl-1.4.1.dtd`. It may then be transformed into a C# or Java application using the XSL transforms, see **History** below, but this code is very out of date and the resulting application is unlikely to be very usable.
+
+### Clojure
+
+Alternatively, it can be transformed into a Clojure [Luminus](http://www.luminusweb.net/) application using the Clojure transformation, as follows:
 
     simon@fletcher:~/workspace/adl$ java -jar target/adl-[VERSION]-standalone.jar --help
     Usage: java -jar adl-[VERSION]-standalone.jar -options [adl-file]
@@ -17,7 +31,61 @@ A document describing the proposed application should be written in XML using th
       -p, --path [PATH]: The path under which generated files should be written; (default: generated)
       -v, --verbosity [LEVEL], : Verbosity level - integer value required; (default: 0)
 
-This is not yet complete but it is at an advanced stage and already produces code which is useful.
+Of more simply using the [leiningen](https://leiningen.org/) plugin, see [lein-adl](https://github.com/simon-brooke/lein-adl).
+
+#### What is generated for Clojure
+
+The following files are generated:
+
+* `resources/sql/queries.auto.sql` - [HugSQL](https://www.hugsql.org/) queries for selection, insertion, modification and deletion of records of all entities described in the ADL file.
+* `resources/sql/[application-name].postgres.sql` - [Postgres](https://www.postgresql.org/) database initialisation script including tables for all entities, convenience views for all entities, all necessary link tables and referential integrity constraints.
+* `resources/templates/auto/*.html` - [Selmer](https://github.com/yogthos/Selmer) templates for each form or list list specified in the ADL file (pages are not yet handled).
+* `src/clj/[application-name]/routes/auto.clj` - [Compojure]() routes for each form or list list specified in the ADL file (pages are not yet handled).
+* `src/clj/[application-name]/routes/auto-json.clj` - [Compojure]() routes returning JSON responses for each query generated in `resources/sql/queries.auto.sql`.
+
+*You are strongly advised never to edit any of these files*.
+
+* To override any query, add that query to a file `resources/sql/queries.sql`
+* To add additional material (for example reference data) to the database initialisation, add it to a separate file or a family of separate files.
+* To override any template, copy the template file from `resources/templates/auto/` to `resources/templates/` and edit it there.
+* To override any route, write a function of the same name in the namespace `[application-name].routes.manual`.
+
+#### Some assembly required
+
+It would be very nice to be able to type
+
+    lein new luminus froboz +adl
+
+and have a new Luminus project initialised with a skeleton ADL file, and all the glue needed to make it work, already in place. [This is planned](https://github.com/simon-brooke/adl/issues/6), but just at present it isn't there and you will have to do some work yourself.
+
+Where, in `src/clj/[application-name]/db/core.clj` [Luminus]() would autogenerate
+
+    (conman/bind-connection *db* "sql/queries.sql")
+
+You should substitute
+
+    (conman/bind-connection *db* "sql/queries.auto.sql" "sql/queries.sql")
+    (hugsql/def-sqlvec-fns "sql/queries.auto.sql")
+
+You should add the following two stanzas to the `app-routes` definition in `src/clj/[project-name]/handler.clj`.
+
+    (-> #'auto-rest-routes
+        (wrap-routes middleware/wrap-csrf)
+        (wrap-routes middleware/wrap-formats))
+    (-> #'auto-selmer-routes
+        (wrap-routes middleware/wrap-csrf)
+        (wrap-routes middleware/wrap-formats))
+
+Finally, you should prepend `"adl"` to the vector of `prep-tasks` in the `uberjar` profile of you `project.clj` file, thus:
+
+    :profiles {:uberjar {:omit-source true
+                         :prep-tasks ["adl"
+                                      "compile"
+                                      ["npm" "install"]
+                                      ["cljsbuild" "once" "min"]]
+                         ...
+
+The above assumes you are using Luminus to initialise your project; if you are not, then I expect that you are confident enough using Clojure that you can work out where these changes should be made in your own code.
 
 ## History
 
@@ -72,6 +140,8 @@ All of this worked (well) back in 2010, but it relied on some proprietary librar
 Back in 2007, XSLT seemed a really good technology for doing this sort of thing. But it's prolix, and while back then I was expert in it, I don't really use it much now. So my plan is to write future transforms in Clojure, and, because these days I work mostly in Clojure, the transforms I shall write will mostly target the Clojure ecosystem.
 
 Ultimately ADL will probably transition from XML to [EDN](https://github.com/edn-format/edn).
+
+I plan to generate a [re-frame](https://github.com/Day8/re-frame) skeleton, to support client side and [React Native](https://facebook.github.io/react-native/) applications, but this is not yet in place.
 
 This doesn't mean you can't pick up the framework and write transforms in other languages and/or to other language ecosystems. In fact, I'd encourage you to do so.
 

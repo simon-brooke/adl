@@ -1,4 +1,6 @@
-(ns adl.to-reframe
+(ns ^{:doc "Application Description Language: generate re-frame UI. TODO: doesn't even nearly work yet."
+      :author "Simon Brooke"}
+  adl.to-reframe
   (:require [adl-support.utils :refer :all]
             [clojure.string :as s]
             [clj-time.core :as t]
@@ -31,6 +33,7 @@
 
 
 (defn file-header
+  "Generate an appropriate file header for a re-frame view."
   ([parent-name this-name extra-requires]
   (list 'ns (symbol (str parent-name ".views." this-name))
     (str "Re-frame views for " parent-name
@@ -47,44 +50,46 @@
 
 
 (defn generate-form
-  "Generate as re-frame this `form` taken from this `entity` of this `document`."
+  "Generate as re-frame this `form` taken from this `entity` of this `application`.
+
+  TODO: write it!"
   [form entity application]
-  (let [record @(subscribe [:record])
-        errors @(subscribe [:errors])
-        messages @(subscribe [:messages])
-        properties (required-properties entity form)]
-    (list
-     'defn
-     (symbol
-      (s/join
-       "-"
-       (:name (:attrs entity))
-       (:name (:attrs form))
-       "-form-panel"))
-     []
-     (apply
-      vector
-      (remove
-       nil?
-       (list
-        :div
-        (or
-         (:top (:content form))
-         (:top (:content application)))
-        (map #(list 'ui/error-panel %) errors)
-        (map #(list 'ui/message-panel %) messages)
-        [:h1 (:name (:attrs form))]
-        [:div.container {:id "main-container"}
-         (apply
-          vector
-          (list
-           :div
-           {}
-           (map
-            #(generate-widget % form entity)
-            properties)))]
-        (or
-         (:foot (:content form))
-         (:foot (:content application))))))
-     )))
+;;   (let [record @(subscribe [:record])
+;;         errors @(subscribe [:errors])
+;;         messages @(subscribe [:messages])
+;;         properties (required-properties entity form)]
+;;     (list
+;;      'defn
+;;      (symbol
+;;       (s/join
+;;        "-"
+;;        (:name (:attrs entity))
+;;        (:name (:attrs form))
+;;        "-form-panel"))
+;;      []
+;;      (apply
+;;       vector
+;;       (remove
+;;        nil?
+;;        (list
+;;         :div
+;;         (or
+;;          (:top (:content form))
+;;          (:top (:content application)))
+;;         (map #(list 'ui/error-panel %) errors)
+;;         (map #(list 'ui/message-panel %) messages)
+;;         [:h1 (:name (:attrs form))]
+;;         [:div.container {:id "main-container"}
+;;          (apply
+;;           vector
+;;           (list
+;;            :div
+;;            {}
+;;            (map
+;;             #(generate-widget % form entity)
+;;             properties)))]
+;;         (or
+;;          (:foot (:content form))
+;;          (:foot (:content application))))))))
+     )
 

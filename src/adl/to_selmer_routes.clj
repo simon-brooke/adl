@@ -66,84 +66,103 @@
 
 
 (defn compose-fetch-record
-  [e]
+  "Compose Clojure code to retrieve a single record of entity `e` in application `a`; in addition
+  to the fields of the record in the database, the record should also contain the values of
+  the `link` and `list` properties of the entity, retrieved from their tables.
+  TODO: what about `entity` properties?."
+  [e a]
   (let
     [entity-name (singularise (:name (:attrs e)))
      warning (str
-              "Error while fetching "
-              entity-name
-              " record")]
+               "Error while fetching "
+               entity-name
+               " record")]
     (list
-     'if
-     (list
-      'all-keys-present?
-      'params (set (map #(keyword (safe-name % :sql)) (key-names e))))
-     (list
-      'support/do-or-log-error
+      'if
       (list
-       (query-name e :get)
-       (symbol "db/*db*")
-       'params)
-      :message warning
-      :error-return {:warnings [warning]})
-     'params)))
+        'all-keys-present?
+        'params (set (map #(keyword (safe-name % :sql)) (key-names e))))
+      (list
+        'support/do-or-log-error
+        (cons
+          'merge
+          (cons
+            (list
+              (query-name e :get)
+              (symbol "db/*db*")
+              'params)
+            (map
+              #(let [farside (entity-for-property % a)
+                     farkey (keyword (or (:farkey %) (first (key-names farside))))]
+                 {(keyword (-> % :attrs :name))
+                  (list
+                    'map
+                    (keyword (first (key-names farside)))
+                    (list
+                      (symbol
+                        (str "db/" (list-related-query-name % e farside)))
+                      'db/*db*
+                      {farkey (list (keyword (first (key-names e))) 'params)}))})
+              (filter
+                #(#{"link" "list"} (-> % :attrs :type))
+                (properties e)))))
+        :message warning
+        :error-return {:warnings [warning]})
+      'params)))
 
 
 (defn compose-get-menu-options
-  [property application]
-  ;; TODO: doesn't handle the case of type="link"
-  (case (-> property :attrs :type)
-    "entity" (if-let [e (child-with-tag
-                        application
-                        :entity
-                        #(= (-> % :attrs :name)
-                            (-> property :attrs :entity)))]
-              (hash-map
-               (keyword (-> property :attrs :name))
-               (list
-                'get-menu-options
-                (singularise (-> e :attrs :name))
-                (query-name e :search-strings)
-                (query-name e :search-strings)
-                (keyword (-> property :attrs :farkey))
-                (list (keyword (-> property :attrs :name)) 'params)))
-              {})
-    "link" (list
-           'do
-           (list
-            'comment
-            "Can't yet handle link properties")
-           {})
-    "list" (list
-           'do
-           (list
-            'comment
-            "Can't yet handle link properties")
-           {})
-    (list
-     'do
-     (list
-      'comment
-      (str "Unexpected type " (-> property :atts :type)))
-     {})))
+  "Compose Clojure code to fetch from the database menu options for this
+  `property` within this `application`."
+  [property nearside application]
+  (if-let [farside (entity-for-property property application)]
+    (hash-map
+      (keyword (-> property :attrs :name))
+      (list
+        'sort-by
+        (keyword (first (user-distinct-property-names farside)))
+        (list
+          'set
+          (list
+            'get-menu-options
+            (singularise (-> farside :attrs :name))
+                (case
+                  (-> property :attrs :type)
+                  ("list" "link")
+                  (list-related-query-name property nearside farside true)
+                  "entity"
+                  (query-name farside :get))
+            (query-name farside :search-strings)
+            (keyword (or (-> property :attrs :farkey)
+                         (first (key-names farside))))
+            (list
+              (keyword
+                (case
+                  (-> property :attrs :type)
+                  ("link" "list")
+                  (first (key-names nearside))
+                  "entity"
+                  (-> property :attrs :name)))
+              'record)))))
+    (throw (Exception. (str "Unexpected type " (-> property :atts :type))))))
 
 
 (defn compose-fetch-auxlist-data
+  "Compose Clojure code to fetch data to populate this `auxlist` of a form
+  editing a record of this `entity` within this `application`."
   [auxlist entity application]
   (let [p-name (-> auxlist :attrs :property)
         property (child-with-tag entity
                                  :property
                                  #(= (-> % :attrs :name) p-name))
         f-name (-> property :attrs :entity)
-        farside (child-with-tag application
-                                :entity
-                                #(= (-> % :attrs :name) f-name))]
+        farside (entity-for-property property application)]
     (if (and (entity? entity) (entity? farside))
       (list 'if (list 'all-keys-present? 'params  (key-names entity true))
             (hash-map
              (keyword (auxlist-data-name auxlist))
              (list
-              (symbol (str "db/" (list-related-query-name property entity farside)))
+              (list-related-query-name property entity farside true)
               'db/*db*
               {:id
                (list
@@ -171,23 +190,37 @@
 
 
 (defn make-form-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the form
+  `f` of the entity `e` within application `a`. The argument `n`
+  is not used."
   [f e a n]
   (list
-   'let
-   (vector
-    'record (compose-fetch-record e))
-   (list
-    'reduce
-    'merge
-    {:error (list :warnings 'record)
-     :record (list 'dissoc 'record :warnings)}
+    'let
+    (vector
+      'record (compose-fetch-record e a))
+    (list
+      'reduce
+      'merge
+      {:title (list
+                'form-title
+                'record
+                (capitalise (:name (:attrs f)))
+                (apply
+                  vector
+                  (map
+                    #(keyword (safe-name %))
+                    (user-distinct-properties e))))
+       :error (list :warnings 'record)
+       :record (list 'dissoc 'record :warnings)}
     (cons
      'list
      (concat
       (map
-       #(compose-get-menu-options % a)
-       (filter #(:entity (:attrs %))
-               (descendants-with-tag e :property)))
+       #(compose-get-menu-options % e a)
+        (descendants-with-tag
+          e
+          :property
+          #(#{"link" "list" "entity"} (-> % :attrs :type))))
       (map
        #(compose-fetch-auxlist-data % e a)
        (descendants-with-tag f :auxlist))
@@ -199,16 +232,20 @@
 
 
 (defn make-page-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the page
+  `f` of the entity `e` within application `a`. The argument `n` is ignored."
   [f e a n]
   (list
    'let
    (vector
-    'record (compose-fetch-record e))
+    'record (compose-fetch-record e a))
    {:warnings (list :warnings 'record)
     :record (list 'assoc 'record :warnings nil)}))
 
 
 (defn make-list-get-handler-content
+  "Compose Clojure code to form body of an HTTP `GET` handler for the list
+  `f` of the entity `e` within application `a`. The argument `n` is ignored."
   [f e a n]
   (list
    'let
@@ -280,41 +317,49 @@
 
 
 (defn make-get-handler
+  "Generate a Clojure function to handle HTTP `GET` requests for form, list or
+  page `f` of entity `e` within application `a`."
   [f e a]
   (let [n (handler-name f e a :get)]
     (list
-     'defn
-     (symbol n)
-     (vector 'request)
-     (list 'let (vector
-                 'params
-                 (list
-                   'merge
-                   (property-defaults e)
-                   (list 'support/massage-params 'request)))
-           (list
-            'l/render
-            (list 'support/resolve-template (str (path-part f e a) ".html"))
-            (list 'merge
-                  {:title (capitalise (:name (:attrs f)))
-                   :params 'params}
-                  (case (:tag f)
-                    :form (make-form-get-handler-content f e a n)
-                    :page (make-page-get-handler-content f e a n)
-                    :list (make-list-get-handler-content f e a n))))))))
+      'defn
+      (symbol n)
+      (vector 'request)
+      (list 'let (vector
+                   'params
+                   (list 'support/massage-params 'request))
+            (list
+              'l/render
+              (list 'support/resolve-template (str (path-part f e a) ".html"))
+              (list 'merge
+                    {:title (case (:tag f)
+                              :list
+                              (str "List " (pretty-name e))
+                              :form
+                              (str "Add a " (singularise (pretty-name e)))
+                              :page
+                              (singularise (pretty-name e)))
+                     :params 'params}
+                    (case (:tag f)
+                      :form (make-form-get-handler-content f e a n)
+                      :page (make-page-get-handler-content f e a n)
+                      :list (make-list-get-handler-content f e a n))))))))
 
 
 (defn make-form-post-handler-content
   "Generate the body of the post handler for the form `f` of
   entity `e` in application `a`. The argument `n` is bound to the name
-  of the function, but is not currently used."
-  ;; Literally the only thing the post handler has to do is to
-  ;; generate the database store operation. Then it can hand off
-  ;; to the get handler.
+  of the function, but is not currently used.
+
+  Literally the only thing the post handler has to do is to
+  execute the database store operation. Then it can hand off
+  to the get handler."
   [f e a n]
   (let
     [create-name (query-name e :create)
      update-name (query-name e :update)]
+    ;; NOTE! Default values should be specified on database fields. They
+    ;; should NOT be inserted by application layer code.
     (list
       'let
       (vector
@@ -372,7 +417,8 @@
                                 (list 'merge 'params
                             (list :body 'result))
                                 :message
-                                (list 'str "Record created")(list :body 'result))
+                                (list 'str "Record created")
+                                (list :body 'result))
                           (list
                             'catch 'Exception 'x
                             {:message "Record created"
@@ -381,6 +427,8 @@
 
 
 (defn make-post-handler
+  "Generate an HTTP `POST` handler for the page, form or list `f` of the
+  entity `e` of application `a`."
   [f e a]
   (let [n (handler-name f e a :post)]
     (list
@@ -427,6 +475,8 @@
 
 
 (defn make-defroutes
+  "Generate a `defroutes` declaration for all routes of all forms, pages and
+  lists within this `application`."
   [application]
   (let [routes (flatten
                 (map
@@ -475,6 +525,8 @@
 
 
 (defn make-handlers
+  "Generate all the Selmer route handlers for all the forms, lists and pages
+  of the entity `e` within this `application`."
   [e application]
   (doall
    (map
@@ -489,6 +541,7 @@
 
 
 (defn to-selmer-routes
+  "Generate a `/routes/auto.clj` file for this `application`."
   [application]
   (let [filepath (str
                   *output-path*

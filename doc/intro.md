@@ -1,6 +1,6 @@
 # Introduction
 
-**NOTE**: *this markdown was automatically generated from `adl_user_doc.html`, which in turn was taken from the Wiki page on which this documentation was originally written.*
+**NOTE**: *this markdown was automatically generated from `adl_user_doc.html`, which in turn was taken from the Wiki page on which this documentation was originally written.* **It is substantially out of date.**
 
 Application Description Language framework
 ==========================================
@@ -8,21 +8,21 @@ Application Description Language framework
 ## Contents
 --------
 
-*   [1 What is Application Description Language?](#What_is_Application_Description_Language.3F)
+*   [1 What is Application Description Language?](#What_is_Application_Description_Language)
 *   [2 Current versions](#Current_versions)
-*   [3 What is the Application Description Language Framework?](#What_is_the_Application_Description_Language_Framework.3F)
-*   [4 Why does it matter?](#Why_does_it_matter.3F)
+*   [3 What is the Application Description Language Framework?](#What_is_the_Application_Description_Language_Framework)
+*   [4 Why does it matter?](#Why_does_it_matter)
     *   [4.1 Automated Application Generation](#Automated_Application_Generation)
     *   [4.2 Integration with hand-written code](#Integration_with_hand-written_code)
     *   [4.3 High quality auto-generated code](#High_quality_auto-generated_code)
-*   [5 What can the Application Description Language framework now do?](#What_can_the_Application_Description_Language_framework_now_do.3F)
+*   [5 What can the Application Description Language framework now do?](#What_can_the_Application_Description_Language_framework_now_do)
     *   [5.1 adl2entityclass.xsl](#adl2entityclass.xsl)
     *   [5.2 adl2mssql.xsl](#adl2mssql.xsl)
     *   [5.3 adl2views.xsl](#adl2views.xsl)
     *   [5.4 adl2controllerclasses.xsl](#adl2controllerclasses.xsl)
     *   [5.5 adl2hibernate.xsl](#adl2hibernate.xsl)
     *   [5.6 adl2pgsql.xsl](#adl2pgsql.xsl)
-*   [6 So is ADL a quick way to build Monorail applications?](#So_is_ADL_a_quick_way_to_build_Monorail_applications.3F)
+*   [6 So is ADL a quick way to build Monorail applications?](#So_is_ADL_a_quick_way_to_build_Monorail_applications)
 *   [7 Limitations on ADL](#Limitations_on_ADL)
     *   [7.1 Current limitations](#Current_limitations)
         *   [7.1.1 Authentication model](#Authentication_model)

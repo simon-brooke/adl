@@ -37,7 +37,9 @@
 ;;; to-hugsql-queries, because essentially we need one JSON entry point to wrap
 ;;; each query.
 
-(defn file-header [application]
+(defn file-header
+  "TODO: Nothing here works yet."
+  [application]
   (list
     'ns
     (symbol (str (safe-name (:name (:attrs application))) ".routes.auto-api"))
