@@ -25,7 +25,7 @@
             ]
 
   ;; `lein release` doesn't play nice with `git flow release`. Run `lein release` in the
-  ;; `develop` branch, then reset the `master` branch to the release tag.
+  ;; `develop` branch, then merge the the release tag into the `master` branch.
 
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
