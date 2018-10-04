@@ -273,14 +273,25 @@
     ;; Yes, I know it looks BONKERS generating this as an HTML string. But
     ;; there is a reason. We don't know whether the `selected` attribute
     ;; should be present or absent until rendering.
-    [(str "{% for option in " (-> property :attrs :name)
-          " %}<option value='{{option."
-          farkey
-          "}}' {% ifequal record."
-          (-> property :attrs :name)
-          " option." farkey "%}selected='selected'{% endifequal %}>"
-          "{{option." (select-field-name farside)
-          "}}</option>{% endfor %}")]))
+    (case (-> property :attrs :type)
+      "entity"
+      [(str "{% for option in " (-> property :attrs :name)
+            " %}<option value='{{option."
+            farkey
+            "}}' {% ifequal record."
+            (-> property :attrs :name)
+            " option." farkey "%}selected='selected'{% endifequal %}>"
+            "{{option." (select-field-name farside)
+            "}}</option>{% endfor %}")]
+      ("list" "link")
+      [(str "{% for option in " (-> property :attrs :name)
+            " %}<option value='{{option."
+            farkey
+            "}}' {% ifcontains record."
+            (-> property :attrs :name)
+            " option." farkey " %}selected='selected'{% endifcontains %}>"
+            "{{option." (select-field-name farside)
+            "}}</option>{% endfor %}")])))
 
 
 (defn widget-type

@@ -66,70 +66,85 @@
 
 
 (defn compose-fetch-record
-  "Compose Clojure code to retrieve a single record of entity `e`."
-  [e]
+  "Compose Clojure code to retrieve a single record of entity `e` in application `a`; in addition
+  to the fields of the record in the database, the record should also contain the values of
+  the `link` and `list` properties of the entity, retrieved from their tables.
+  TODO: what about `entity` properties?."
+  [e a]
   (let
     [entity-name (singularise (:name (:attrs e)))
      warning (str
-              "Error while fetching "
-              entity-name
-              " record")]
+               "Error while fetching "
+               entity-name
+               " record")]
     (list
-     'if
-     (list
-      'all-keys-present?
-      'params (set (map #(keyword (safe-name % :sql)) (key-names e))))
-     (list
-      'support/do-or-log-error
+      'if
       (list
-       (query-name e :get)
-       (symbol "db/*db*")
-       'params)
-      :message warning
-      :error-return {:warnings [warning]})
-     'params)))
+        'all-keys-present?
+        'params (set (map #(keyword (safe-name % :sql)) (key-names e))))
+      (list
+        'support/do-or-log-error
+        (cons
+          'merge
+          (cons
+            (list
+              (query-name e :get)
+              (symbol "db/*db*")
+              'params)
+            (map
+              #(let [farside (entity-for-property % a)
+                     farkey (keyword (or (:farkey %) (first (key-names farside))))]
+                 {(keyword (-> % :attrs :name))
+                  (list
+                    'map
+                    (keyword (first (key-names farside)))
+                    (list
+                      (symbol
+                        (str "db/" (list-related-query-name % e farside)))
+                      'db/*db*
+                      {farkey (list (keyword (first (key-names e))) 'params)}))})
+              (filter
+                #(#{"link" "list"} (-> % :attrs :type))
+                (properties e)))))
+        :message warning
+        :error-return {:warnings [warning]})
+      'params)))
 
 
 (defn compose-get-menu-options
   "Compose Clojure code to fetch from the database menu options for this
   `property` within this `application`."
-  [property application]
-  ;; TODO: doesn't handle the case of type="link"
-  (case (-> property :attrs :type)
-    ("entity" "link" "list")
-    (if-let [e (child-with-tag
-                 application
-                 :entity
-                 #(= (-> % :attrs :name)
-                     (-> property :attrs :entity)))]
-      (hash-map
-        (keyword (-> property :attrs :name))
+  [property nearside application]
+  (if-let [farside (entity-for-property property application)]
+    (hash-map
+      (keyword (-> property :attrs :name))
+      (list
+        'sort-by
+        (keyword (first (user-distinct-property-names farside)))
         (list
-          'get-menu-options
-          (singularise (-> e :attrs :name))
-          (query-name e :search-strings)
-          (query-name e :search-strings)
-          (keyword (-> property :attrs :farkey))
-          (list (keyword (-> property :attrs :name)) 'record)))
-      {})
-;;     "link" (list
-;;            'do
-;;            (list
-;;             'comment
-;;             "Can't yet handle link properties")
-;;            {})
-;;     "list" (list
-;;            'do
-;;            (list
-;;             'comment
-;;             "Can't yet handle link properties")
-;;            {})
-    (list
-     'do
-     (list
-      'comment
-      (str "Unexpected type " (-> property :atts :type)))
-     {})))
+          'set
+          (list
+            'get-menu-options
+            (singularise (-> farside :attrs :name))
+                (case
+                  (-> property :attrs :type)
+                  ("list" "link")
+                  (list-related-query-name property nearside farside true)
+                  "entity"
+                  (query-name farside :get))
+            (query-name farside :search-strings)
+            (keyword (or (-> property :attrs :farkey)
+                         (first (key-names farside))))
+            (list
+              (keyword
+                (case
+                  (-> property :attrs :type)
+                  ("link" "list")
+                  (first (key-names nearside))
+                  "entity"
+                  (-> property :attrs :name)))
+              'record)))))
+    (throw (Exception. (str "Unexpected type " (-> property :atts :type))))))
 
 
 (defn compose-fetch-auxlist-data
@@ -147,7 +162,7 @@
             (hash-map
              (keyword (auxlist-data-name auxlist))
              (list
-              (symbol (str "db/" (list-related-query-name property entity farside)))
+              (list-related-query-name property entity farside true)
               'db/*db*
               {:id
                (list
@@ -182,7 +197,7 @@
   (list
     'let
     (vector
-      'record (compose-fetch-record e))
+      'record (compose-fetch-record e a))
     (list
       'reduce
       'merge
@@ -201,9 +216,11 @@
      'list
      (concat
       (map
-       #(compose-get-menu-options % a)
-       (filter #(:entity (:attrs %))
-               (descendants-with-tag e :property)))
+       #(compose-get-menu-options % e a)
+        (descendants-with-tag
+          e
+          :property
+          #(#{"link" "list" "entity"} (-> % :attrs :type))))
       (map
        #(compose-fetch-auxlist-data % e a)
        (descendants-with-tag f :auxlist))
@@ -221,7 +238,7 @@
   (list
    'let
    (vector
-    'record (compose-fetch-record e))
+    'record (compose-fetch-record e a))
    {:warnings (list :warnings 'record)
     :record (list 'assoc 'record :warnings nil)}))
 

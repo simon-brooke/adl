@@ -295,7 +295,7 @@
   (let [entity-name (:name (:attrs entity))
         pretty-name (singularise entity-name)
         entity-safe (safe-name entity :sql)
-        links (filter #(#{"list" "link" "entity"} (:type (:attrs %))) (children-with-tag entity :property))]
+        links (filter #(:entity (:attrs %)) (children-with-tag entity :property))]
     (apply
       merge
       (map
@@ -312,7 +312,7 @@
                farkey (-> % :attrs :farkey)
                link-type (-> % :attrs :type)
                link-field (-> % :attrs :name)
-               query-name (list-related-query-name % entity far-entity)
+               query-name (list-related-query-name % entity far-entity false)
                signature ":? :*"]
            (hash-map
              (keyword query-name)
@@ -330,24 +330,24 @@
                     "entity" (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
-                               (str "SELECT lv_" entity-safe ".* \nFROM lv_" entity-safe)
+                               (str "SELECT DISTINCT lv_" entity-safe ".* \nFROM lv_" entity-safe)
                                (str "WHERE lv_" entity-safe "." (safe-name % :sql) " = :id")
                                (order-by-clause entity "lv_" false))
-                    "link" (let [link-table-name
+                    "link" (let [ltn
                                  (link-table-name % entity far-entity)]
                              (list
                                (str "-- :name " query-name " " signature)
                                (str "-- :doc links all existing " pretty-far " records related to a given " pretty-name)
-                               (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far ", " link-table-name)
+                               (str "SELECT DISTINCT lv_" safe-far ".* \nFROM lv_" safe-far ", " ltn)
                                (str "WHERE lv_" safe-far "."
                                     (safe-name (first (key-names far-entity)) :sql)
-                                    " = " link-table-name "." (singularise safe-far) "_id")
-                               (str "\tAND " link-table-name "." (singularise entity-safe) "_id = :id")
+                                    " = " ltn "." (singularise safe-far) "_id")
+                               (str "\tAND " ltn "." (singularise entity-safe) "_id = :id")
                                (order-by-clause far-entity "lv_" false)))
                     "list" (list
                              (str "-- :name " query-name " " signature)
                              (str "-- :doc lists all existing " pretty-far " records related to a given " pretty-name)
-                             (str "SELECT lv_" safe-far ".* \nFROM lv_" safe-far)
+                             (str "SELECT DISTINCT lv_" safe-far ".* \nFROM lv_" safe-far)
                              (str "WHERE lv_" safe-far "." (safe-name (first (key-names far-entity)) :sql) " = :id")
                              (order-by-clause far-entity "lv_" false))
                     (list (str "ERROR: unexpected type " link-type " of property " %)))))
