@@ -1,11 +1,11 @@
-(defproject adl "1.4.6"
+(defproject adl "1.4.7-SNAPSHOT"
   :description "An application to transform an ADL application specification
   document into skeleton code for a Clojure web-app"
   :url "https://github.com/simon-brooke/adl"
   :license {:name "GNU Lesser General Public License, version 3.0 or (at your option) any later version"
             :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"}
 
-  :dependencies [[adl-support "0.1.6-SNAPSHOT"]
+  :dependencies [[adl-support "0.1.6"]
                  [bouncer "1.0.1"]
                  [clojure-saxon "0.9.4"]
                  [environ "1.1.0"]
@@ -22,8 +22,9 @@
             [lein-kibit "0.1.6"]
             [lein-release "1.0.5"]]
 
-  :codox {:metadata {:doc "FIXME: write docs"}
-          :output-path "doc"}
+  :codox {:metadata {:doc "**TODO*: write docs"
+                     :doc/format :markdown}
+          :output-path "docs"}
 
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
