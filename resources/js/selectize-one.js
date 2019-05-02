@@ -10,18 +10,16 @@ $('#{{widget_id}}').selectize({
   create: false,
 
   load: function(query, callback) {
-    console.log('Desperately seeking ' + query);
-    if (query === null || !query.length) return callback();
+    if (query === null || !query.length || query.length < 5) return callback();
     $.ajax({
       url: '/json/auto/search-strings-{{entity}}?{{field}}=' + query,
       type: 'GET',
-      dataType: 'jsonp',
-      error: function() {
-        console.log( 'Query ' + query + ' failed.');
-        callback();
+      dataType: 'json',
+      error: function(xhr, status, error) {
+        console.log( 'Query `' + query + '` failed with status: `' + status + '`; error: `' + error +'`');
+        console.dir(xhr);
       },
       success: function(res) {
-        console.log('Received ' + res + ' records for ' + query);
         callback(res);
       }
     });

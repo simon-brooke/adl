@@ -1,7 +1,8 @@
 (ns ^{:doc "Application Description Language - command line invocation."
       :author "Simon Brooke"}
   adl.main
-  (:require [adl.to-hugsql-queries :as h]
+  (:require [adl.to-cache :as c]
+            [adl.to-hugsql-queries :as h]
             [adl.to-json-routes :as j]
             [adl.to-psql :as p]
             [adl.to-selmer-routes :as s]
@@ -41,6 +42,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def cli-options
+  "Command-line interface options"
   [["-a" "--abstract-key-name-convention [string]" "the abstract key name convention to use for generated key fields (TODO: not yet implemented)"
     :default "id"]
    ["-h" "--help" "Show this message"
@@ -51,13 +53,13 @@
     :default "generated"]
    ["-v" "--verbosity [LEVEL]" nil "Verbosity level - integer value required"
     :parse-fn #(Integer/parseInt %)
-    :default 0]
-   ])
+    :default 0]])
 
 
-(defn usage [parsed-options]
+(defn usage
   "Show a usage message. `parsed-options` should be options as
   parsed by [clojure.tools.cli](https://github.com/clojure/tools.cli)"
+  [parsed-options]
   (print-usage
     "adl"
     parsed-options
@@ -103,6 +105,7 @@
         #(if
            (.exists (java.io.File. %))
            (let [application (x/parse (canonicalise %))]
+             (c/to-cache application)
              (h/to-hugsql-queries application)
              (j/to-json-routes application)
              (p/to-psql application)
