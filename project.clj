@@ -23,7 +23,7 @@
             [lein-release "1.0.5"]]
 
   :codox {:metadata {:doc "FIXME: write docs"}
-          :output-path "doc"}
+          :output-path "docs"}
 
   :deploy-repositories [["releases" :clojars]
                         ["snapshots" :clojars]]
